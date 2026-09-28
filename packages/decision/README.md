@@ -1,0 +1,1 @@
+Worker 2 owns runtime candidate evaluation and policy selection.
