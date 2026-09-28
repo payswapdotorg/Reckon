@@ -1,0 +1,16 @@
+node_modules/
+.pnpm-store/
+dist/
+build/
+coverage/
+.cache/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.idea/
+.vscode/
+tmp/
+artifacts/local/
+research/runs/
