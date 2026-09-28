@@ -1,0 +1,1 @@
+Worker 3 owns end-to-end vertical and cross-domain acceptance tests. Fixture evidence must remain labeled.
