@@ -1,0 +1,1 @@
+Worker 3 owns the consumer-facing API composition root, auth/tenant boundary and runtime request handling.
