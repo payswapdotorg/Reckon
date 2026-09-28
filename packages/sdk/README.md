@@ -1,0 +1,1 @@
+Worker 3 owns public consumer SDKs; never expose internal persistence schemas.
