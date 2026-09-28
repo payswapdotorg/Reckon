@@ -351,7 +351,7 @@ The implementation MUST support replaceable algorithms:
 6. bounded real-world experiments;
 7. calibration.
 
-Static recommendation logs alone are insufficient to validate long-horizon policy changes; simulation exists to probe sequential behavior and counterfactual policies. This follows the motivation behind Google Research RecSim and RecSim NG. citeturn284345search0turn284345search3
+Static recommendation logs alone are insufficient to validate long-horizon policy changes; simulation exists to probe sequential behavior and counterfactual policies. This follows the motivation behind Google Research RecSim and RecSim NG. See `docs/research/sources.md`.
 
 ## 12. Agent organization search
 
