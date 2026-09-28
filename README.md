@@ -136,7 +136,7 @@ Reckon explicitly supports a learning ladder rather than assuming online RL from
 7. calibration against observed outcomes;
 8. repeated policy and agent-organization search.
 
-The simulation architecture is informed by Google Research's RecSim/RecSim NG work on sequential and multi-actor recommender environments. citeturn284345search0turn284345search3
+The simulation architecture is informed by Google Research's RecSim/RecSim NG work on sequential and multi-actor recommender environments. See `docs/research/sources.md`.
 
 ## Existing RaaS landscape
 
