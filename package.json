@@ -4,12 +4,11 @@
   "version": "0.1.0",
   "description": "Provider-neutral recommendation, experience planning and scheduling infrastructure",
   "type": "module",
-  "engines": {"node": ">=22"},
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "check": "pnpm typecheck && pnpm lint && pnpm test",
-    "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "pnpm -r --if-present lint",
-    "test": "pnpm -r --if-present test",
-    "build": "pnpm -r --if-present build"
+    "check": "node scripts/verify-repo.mjs",
+    "check:repo": "node scripts/verify-repo.mjs"
   }
 }
