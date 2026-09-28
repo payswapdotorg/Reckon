@@ -1,0 +1,1 @@
+Worker 1 owns feature assembly across item, realization, experience, subject, context, objective, session and uncertainty.
