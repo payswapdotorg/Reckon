@@ -14,6 +14,10 @@ Reckon decides:
 
 It is not limited to top-N recommendation.
 
+## Locked architecture
+
+Read `docs/architecture/architecture-lock.md` before dispatching workers. Any deviation requires a repository Architecture Change Record; workers must stop and surface it rather than silently redesigning a shared contract.
+
 ## Required TL3 behavior
 
 1. Verify the repository before trusting any prior implementation claim.
