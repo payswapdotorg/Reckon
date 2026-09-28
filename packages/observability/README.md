@@ -1,0 +1,1 @@
+Worker 3 owns decision, scheduler, model, latency, cost and outcome telemetry contracts.
