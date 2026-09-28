@@ -42,7 +42,7 @@ The additional dimensions are:
 
 ## Research basis
 
-Google Research introduced RecSim as a configurable simulator for sequential recommender interactions and later RecSim NG as a multi-actor probabilistic simulation platform intended to address long-horizon and ecosystem-level recommendation evaluation. citeturn284345search0turn284345search3turn284345search5
+Google Research introduced RecSim as a configurable simulator for sequential recommender interactions and later RecSim NG as a multi-actor probabilistic simulation platform intended to address long-horizon and ecosystem-level recommendation evaluation. See `docs/research/sources.md`.
 
 Contextual bandit recommendation research provides a principled sequential decision framing and supports offline evaluation before deploying a different policy live. One influential Yahoo Front Page study reported a 12.5% click lift over a context-free bandit on a dataset of more than 33 million events; this is a historical study result, not a Reckon performance claim. citeturn284345search14
 
