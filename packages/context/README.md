@@ -1,0 +1,1 @@
+Worker 1 owns context snapshots and context capability normalization. See docs/work-items/worker-1.md.
