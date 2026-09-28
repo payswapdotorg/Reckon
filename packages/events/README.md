@@ -1,0 +1,1 @@
+Worker 1 owns append-oriented event/outcome ingestion semantics, idempotency, provenance and observed/simulated/counterfactual typing.
