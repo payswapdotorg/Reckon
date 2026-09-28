@@ -1,0 +1,1 @@
+Worker 2 owns Personal Agent and Agent Body runtime contracts/execution.
