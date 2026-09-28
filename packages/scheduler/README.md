@@ -1,0 +1,1 @@
+Worker 2 owns Experience Plan scheduling, re-planning and switch/interruption decisions.
