@@ -1,0 +1,1 @@
+Worker 3 owns provider/host adapters behind normalized contracts.
