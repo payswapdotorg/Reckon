@@ -1,0 +1,1 @@
+Worker 1 owns stable/situational preference state, confidence, provenance, decay and cross-device learning deltas.
