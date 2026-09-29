@@ -1,13 +1,13 @@
 {
   "name": "@reckon/events",
   "version": "0.1.0",
-  "description": "Event/outcome ingestion backbone (W1 lane)",
+  "description": "Event/outcome ingestion backbone \u2014 append-oriented, tenant-scoped, idempotent, evidence-typed (W1-001)",
   "type": "module",
   "private": true,
   "main": "./src/index.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json --noEmit || true",
-    "test": "vitest run --passWithNoTests"
+    "build": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@reckon/contracts": "workspace:*"

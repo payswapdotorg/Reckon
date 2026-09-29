@@ -1,13 +1,13 @@
 {
   "name": "@reckon/context",
   "version": "0.1.0",
-  "description": "Subject/audience context state (W1 lane)",
+  "description": "Subject/audience context state \u2014 validated snapshots, deterministic ordering, attention view (W1-002)",
   "type": "module",
   "private": true,
   "main": "./src/index.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json --noEmit || true",
-    "test": "vitest run --passWithNoTests"
+    "build": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@reckon/contracts": "workspace:*"

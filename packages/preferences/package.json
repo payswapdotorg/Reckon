@@ -1,13 +1,13 @@
 {
   "name": "@reckon/preferences",
   "version": "0.1.0",
-  "description": "Preference state and deltas (W1 lane)",
+  "description": "Preference state and deltas \u2014 stable/situational routing, decay, confidence, lineage (W1-003)",
   "type": "module",
   "private": true,
   "main": "./src/index.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json --noEmit || true",
-    "test": "vitest run --passWithNoTests"
+    "build": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@reckon/contracts": "workspace:*"
