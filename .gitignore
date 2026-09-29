@@ -13,4 +13,4 @@ coverage/
 .vscode/
 tmp/
 artifacts/local/
-research/runs/
+research/runs/*.tsbuildinfo
