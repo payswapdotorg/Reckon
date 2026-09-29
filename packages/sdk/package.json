@@ -1,15 +1,19 @@
 {
   "name": "@reckon/sdk",
   "version": "0.1.0",
-  "description": "Consumer SDK (W3 lane)",
+  "description": "Typed host-integration SDK over the frozen Reckon contracts: contract-validated requests/responses, typed errors, injectable transport. No LLM, no internal persistence shapes (W3-002).",
   "type": "module",
   "private": true,
   "main": "./src/index.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json --noEmit || true",
-    "test": "vitest run --passWithNoTests"
+    "build": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@reckon/contracts": "workspace:*"
+    "@reckon/contracts": "workspace:*",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "fastify": "^5.12.5"
   }
 }
