@@ -1,13 +1,13 @@
 {
   "name": "@reckon/observability",
   "version": "0.1.0",
-  "description": "Observability/telemetry contracts (W3 lane)",
+  "description": "Append-only, digest-stamped observability records for decision latency, policy/model version, uncertainty, cost, outcome linkage, integration capability, errors and scheduler actions (W3-004).",
   "type": "module",
   "private": true,
   "main": "./src/index.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json --noEmit || true",
-    "test": "vitest run --passWithNoTests"
+    "build": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@reckon/contracts": "workspace:*"
