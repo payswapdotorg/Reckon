@@ -1,6 +1,8 @@
 # @reckon/agents
 
-The Agent Body runtime (Worker 2 lane). Implements **W2-007**.
+The Agent Body + Personal Agent runtime (Worker 2 lane). Implements
+**W2-007** (Agent Body runtime) and **W2-006** (Personal Agent
+runtime).
 
 ## What is here
 
@@ -9,9 +11,13 @@ The Agent Body runtime (Worker 2 lane). Implements **W2-007**.
 - `AgentInstanceHandle.run(task)` — executes an injected `BodyExecutor`
   under the envelope's enforcement.
 - `DeterministicTestExecutor` — **TEST INFRASTRUCTURE** (clearly
-  labeled; real executors arrive in later waves: W2-006 Personal Agent
-  runtime / W2-008 Agent Organization runtime).
+  labeled; real executors arrive in later waves).
 - `createStepClock` — deterministic clock for reproducible runs.
+- `PersonalAgentRuntime` (W2-006) — one logical user agent across
+  permitted device bodies; explicit-grant cross-device learning;
+  ADR-003 consent flags; `PersonalAgentStateSync` port with an
+  in-memory **TEST INFRASTRUCTURE** adapter (production sync is a
+  later wave).
 
 ## MODEL-NEUTRAL LAW (ADR-002, lock #16)
 
@@ -81,3 +87,54 @@ deterministic executor, identical inputs produce byte-identical run
 results (digest-tested). Task inputs must be canonical-serializable
 (non-serializable inputs are typed `INVALID_INPUT` — the deterministic
 run id requires it).
+
+## The Personal Agent runtime (W2-006)
+
+ONE LOGICAL USER AGENT (lock #7): `createPersonalAgentRuntime(agentId,
+deps)` manages N `AgentBody` instances — one `AgentBodyRuntime`, N
+`instantiate` calls — sharing the `agentId` logical identity. Every
+`runOnBody` is a pure passthrough to the W2-007 handle, so budgets,
+latency limits, permissions and the envelope law apply with full force
+(digest-tested against direct handle runs).
+
+**CROSS-DEVICE LEARNING IS OPT-IN (lock #8, ADR-003) — DEFAULT DENY.**
+Device bodies never observe each other's state implicitly.
+`visibleDeltas(bodyId)` returns a body's own device-local deltas
+ALWAYS, plus other bodies' deltas ONLY via an ACTIVE explicit
+`CrossDeviceLearningGrant`:
+
+- ACTIVE = `revokedAt === undefined` AND
+  `capabilities.derivedLearningDeltas === true` (a grant with any
+  `revokedAt` is inactive — revocation stops all future use; the
+  runtime has no clock, so "defined ⇒ inactive" is the deterministic
+  rule);
+- `bodyScope` is the sharing POOL: both the pulling body AND the
+  originating body must be in the pool (`"*"` = every body);
+- grants are agent-scoped (a grant naming another agent is a typed
+  error), capability-explicit, and carry caller-supplied timestamps
+  (never invented);
+- `crossDeviceSharingStatus(bodyId)` exposes sharing transparency.
+
+The sync primitive is the DERIVED learning delta — a frozen-contract
+`PreferenceDelta` (never raw telemetry; lock #8).
+
+**STATE-SYNC SURFACE**: `PersonalAgentStateSync` is a declared PORT
+(record/all — pure storage). The in-memory adapter here is **TEST
+INFRASTRUCTURE**; production sync adapters are a later wave. Consent
+filtering lives in the runtime, never in storage.
+
+**CONSENT/PRIVACY SURFACE (ADR-003)**: location/attention signals enter
+only as permitted FLAGS (`PermittedContextSignals` —
+`{locationPermitted, attentionObservationPermitted}`, nothing else by
+construction). `permittedSignalsFrom(snapshot)` converts a frozen
+`ContextSnapshot` into flags, dropping every raw value: the contract's
+location object exists only with `permitted: true`, and the frozen
+snapshot carries NO attention authorization scope — raw attention
+values therefore NEVER translate into attention permission (the host
+declares the flag explicitly). `runOnBody` records optional flags as
+the body's consent view (`consentViewFor`); there is no API path that
+hands a body raw location or attention values.
+
+Determinism: no wall-clock, no randomness, no async in the runtime;
+the same operation sequence yields digest-identical state
+(digest-tested).
