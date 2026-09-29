@@ -14,5 +14,5 @@
 export * from "./errors.js";
 export * from "./rng.js";
 export * from "./world-model.js";
-// W1-006 (simulator.ts) is exported once implemented below in this wave.
+export * from "./simulator.js";
 
