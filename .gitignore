@@ -14,3 +14,4 @@ coverage/
 tmp/
 artifacts/local/
 research/runs/*.tsbuildinfo
+*.tsbuildinfo

@@ -1,10 +1,12 @@
 import { fastify } from "fastify";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { ObservabilityRecorder } from "@reckon/observability";
 import { KeyStore } from "./auth.js";
 import { DEFAULT_API_VERSION } from "./config.js";
 import type { ApiConfig } from "./config.js";
 import { ApiError, ERROR_CODES, errorEnvelope } from "./errors.js";
 import { InMemoryIdempotencyStore } from "./idempotency.js";
+import { observedDecisionHandler, observedOutcomeIngest, recordRouteErrorSafely } from "./observability.js";
 import { notWiredDefaults } from "./ports.js";
 import type { HandlerPorts, PartialHandlerPorts } from "./ports.js";
 import { registerCandidateRoutes } from "./routes/candidates.js";
@@ -27,6 +29,39 @@ export function buildServer(config: ApiConfig): FastifyInstance {
   const idempotency = config.idempotencyStore ?? new InMemoryIdempotencyStore();
   const portStatus = new Map<string, "wired" | "not-wired">();
   const handlers = resolveHandlers(config.handlers, portStatus);
+
+  // W3-004 observability composition: wrap the WIRED decision/outcome
+  // handler ports with record-emitting wrappers (route contracts frozen),
+  // and emit an integration-capability record per handler port (wired =
+  // available). Latency comes from the injected clock.
+  const observability = config.observability;
+  const clock = observability?.clock ?? (() => Date.now());
+  const recorder =
+    observability !== undefined
+      ? new ObservabilityRecorder({
+          sink: observability.sink,
+          clock,
+          ...(observability.idGenerator !== undefined ? { idGenerator: observability.idGenerator } : {}),
+          ...(observability.evidenceClass !== undefined ? { evidenceClass: observability.evidenceClass } : {}),
+        })
+      : undefined;
+  if (recorder !== undefined) {
+    if (portStatus.get("decisionHandler") === "wired") {
+      handlers.decisionHandler = observedDecisionHandler(handlers.decisionHandler, { recorder, clock });
+    }
+    if (portStatus.get("outcomeIngest") === "wired") {
+      handlers.outcomeIngest = observedOutcomeIngest(handlers.outcomeIngest, { recorder });
+    }
+    for (const [port, status] of portStatus.entries()) {
+      recorder.recordIntegrationCapability({
+        integration: "@reckon/api",
+        capability: `handler:${port}`,
+        available: status === "wired",
+        ...(status === "wired" ? {} : { detail: "NotWired" }),
+      });
+    }
+  }
+
   const deps: RouteDeps = {
     keyStore,
     idempotency,
@@ -36,7 +71,41 @@ export function buildServer(config: ApiConfig): FastifyInstance {
 
   const app: FastifyInstance = fastify({ logger: config.logger ?? false });
 
-  app.setErrorHandler((error: Error & { statusCode?: number }, _request: FastifyRequest, reply: FastifyReply) => {
+  app.setErrorHandler((error: Error & { statusCode?: number }, request: FastifyRequest, reply: FastifyReply) => {
+    // W3-004: error-path records (scope "route"), safely — telemetry
+    // must never mask the real API error envelope.
+    if (recorder !== undefined) {
+      const statusCode =
+        error instanceof ApiError
+          ? error.statusCode
+          : typeof error.statusCode === "number"
+            ? error.statusCode
+            : 500;
+      if (statusCode >= 400) {
+        const code =
+          error instanceof ApiError
+            ? error.code
+            : statusCode === 404
+              ? ERROR_CODES.NOT_FOUND
+              : ERROR_CODES.INTERNAL;
+        const path = request.url.split("?")[0] ?? request.url;
+        recordRouteErrorSafely(recorder, {
+          code,
+          message: error.message,
+          route: `${request.method} ${path}`,
+          ...(request.reckonAuth !== undefined
+            ? {
+                tenant: {
+                  tenantId: request.reckonAuth.tenantId,
+                  ...(request.reckonAuth.workspaceId !== undefined
+                    ? { workspaceId: request.reckonAuth.workspaceId }
+                    : {}),
+                },
+              }
+            : {}),
+        });
+      }
+    }
     if (error instanceof ApiError) {
       reply.code(error.statusCode).send(errorEnvelope(error.code, error.message, error.details));
       return;

@@ -23,6 +23,12 @@ importers:
       '@reckon/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@reckon/events':
+        specifier: workspace:*
+        version: link:../../packages/events
+      '@reckon/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
       fastify:
         specifier: ^5.12.5
         version: 5.12.5
@@ -120,6 +126,13 @@ importers:
       '@reckon/contracts':
         specifier: workspace:*
         version: link:../contracts
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
+    devDependencies:
+      fastify:
+        specifier: ^5.12.5
+        version: 5.12.5
 
   packages/simulation:
     dependencies:

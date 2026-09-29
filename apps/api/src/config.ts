@@ -1,4 +1,7 @@
 import { readFileSync } from "node:fs";
+import type { EvidenceClass, Id } from "@reckon/contracts";
+import type { ObservabilitySink } from "@reckon/observability";
+import type { ObservabilityClock } from "@reckon/observability";
 import type { KeyAuthenticator, StaticKeyConfig } from "./auth.js";
 import { KeyStore } from "./auth.js";
 import { ConfigError } from "./errors.js";
@@ -12,10 +15,23 @@ const VALID_SCOPES: ReadonlySet<string> = new Set<string>(ROUTE_SCOPES);
 
 export const DEFAULT_API_VERSION = "0.1.0";
 
+/** Observability composition (W3-004): records through the sink port. */
+export interface ObservabilityConfig {
+  /** The append-only sink (in-memory / JSONL are TEST INFRASTRUCTURE). */
+  readonly sink: ObservabilitySink;
+  /** Injected clock — deterministic latency + record timestamps. */
+  readonly clock?: ObservabilityClock;
+  /** Record-id generator (default: crypto.randomUUID). */
+  readonly idGenerator?: () => Id;
+  /** Honest evidence-class label (default "controlled-local"). */
+  readonly evidenceClass?: EvidenceClass;
+}
+
 /**
  * Composition input for buildServer. Everything is injectable — handler
- * ports, key store, idempotency map — so tests and later waves wire their
- * own implementations. No global mutable singletons anywhere.
+ * ports, key store, idempotency map, observability sink — so tests and
+ * later waves wire their own implementations. No global mutable
+ * singletons anywhere.
  */
 export interface ApiConfig {
   /** API surface version (reported by /healthz and /readyz). */
@@ -30,6 +46,8 @@ export interface ApiConfig {
   readonly idempotencyStore?: IdempotencyStore;
   /** Fastify logger; off by default (keys are never logged either way). */
   readonly logger?: boolean;
+  /** W3-004: emit decision/outcome/scheduler/error records to a sink. */
+  readonly observability?: ObservabilityConfig;
 }
 
 /**

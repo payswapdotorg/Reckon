@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@reckon/contracts": "workspace:*",
+    "@reckon/events": "workspace:*",
+    "@reckon/observability": "workspace:*",
     "fastify": "^5.12.5"
   }
 }
