@@ -1,13 +1,14 @@
 {
   "name": "@reckon/organization",
   "version": "0.1.0",
-  "description": "Agent Organization runtime + search (W2 lane)",
+  "description": "Agent Organization runtime + topology comparison baseline (W2 lane)",
   "type": "module",
   "private": true,
   "main": "./src/index.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit || true",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@reckon/contracts": "workspace:*"
