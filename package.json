@@ -9,6 +9,15 @@
   },
   "scripts": {
     "check": "node scripts/verify-repo.mjs",
-    "check:repo": "node scripts/verify-repo.mjs"
+    "check:repo": "node scripts/verify-repo.mjs",
+    "build": "tsc -b packages/contracts && pnpm -r --filter './packages/*' --filter './apps/*' run build",
+    "test": "vitest run --root .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "generate:schemas": "pnpm --filter @reckon/contracts generate:schemas"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
+    "@types/node": "^22.10.0"
   }
 }

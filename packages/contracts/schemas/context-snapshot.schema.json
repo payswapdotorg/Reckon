@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "default": "reckon.context-snapshot",
+      "type": "string",
+      "const": "reckon.context-snapshot"
+    },
+    "schemaVersion": {
+      "default": "0.1.0",
+      "type": "string"
+    },
+    "contextId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "at": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "time": {
+      "type": "object",
+      "properties": {
+        "localTime": {
+          "type": "string"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "dayPart": {
+          "type": "string",
+          "enum": [
+            "morning",
+            "afternoon",
+            "evening",
+            "night",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "device": {
+      "type": "object",
+      "properties": {
+        "class": {
+          "type": "string",
+          "enum": [
+            "phone",
+            "tablet",
+            "desktop",
+            "tv",
+            "vehicle",
+            "audio",
+            "other",
+            "unknown"
+          ]
+        },
+        "screenAvailable": {
+          "type": "boolean"
+        },
+        "audioRoute": {
+          "type": "string",
+          "enum": [
+            "none",
+            "speaker",
+            "headphones",
+            "vehicle",
+            "other",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "network": {
+      "type": "object",
+      "properties": {
+        "class": {
+          "type": "string",
+          "enum": [
+            "offline",
+            "metered",
+            "wifi",
+            "cellular",
+            "unknown"
+          ]
+        },
+        "bandwidthHint": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "activity": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      }
+    },
+    "attention": {
+      "type": "object",
+      "properties": {
+        "availableMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "quality": {
+          "type": "string",
+          "enum": [
+            "full",
+            "partial",
+            "background",
+            "interrupted",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "session": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+        },
+        "positionInSession": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "fatigue": {
+      "type": "object",
+      "properties": {
+        "repetitionLevel": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "recentInterruptions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "location": {
+      "type": "object",
+      "properties": {
+        "coarse": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "permitted": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "permitted"
+      ]
+    },
+    "extra": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    }
+  },
+  "required": [
+    "contextId",
+    "at"
+  ],
+  "$id": "https://reckon.dev/schemas/context-snapshot.schema.json"
+}

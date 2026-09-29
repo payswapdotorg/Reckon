@@ -4,8 +4,8 @@
 
 Current services already cover substantial parts of recommender-as-a-service.
 
-- Amazon Personalize supports real-time item recommendations and updates personalization from recent interaction events. citeturn284345search2turn284345search8
-- Recombee provides user/item/interactions APIs and recommendation endpoints as a recommender-as-a-service product. citeturn284345search4turn284345search7
+- Amazon Personalize supports real-time item recommendations and updates personalization from recent interaction events. 8
+- Recombee provides user/item/interactions APIs and recommendation endpoints as a recommender-as-a-service product. 7
 
 Therefore Reckon should not position itself as “an API that returns recommended items” alone.
 
@@ -15,13 +15,13 @@ The intended product surface is:
 
 ```
 Top-N recommender
-        ⊂
+ ⊂
 Decision engine
-        ⊂
+ ⊂
 Experience planner
-        ⊂
+ ⊂
 Experience scheduler
-        ⊂
+ ⊂
 Adaptive decision infrastructure
 ```
 

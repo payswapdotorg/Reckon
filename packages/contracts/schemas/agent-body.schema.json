@@ -1,0 +1,424 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "default": "reckon.agent-body",
+      "type": "string",
+      "const": "reckon.agent-body"
+    },
+    "schemaVersion": {
+      "default": "0.1.0",
+      "type": "string"
+    },
+    "bodyId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "version": {
+      "default": "1",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "role": {
+      "type": "object",
+      "properties": {
+        "roleId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        }
+      },
+      "required": [
+        "roleId",
+        "description"
+      ]
+    },
+    "observations": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "observationId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "context",
+              "outcome",
+              "preference",
+              "catalog",
+              "system",
+              "custom"
+            ]
+          },
+          "customKind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "observationId",
+          "kind"
+        ]
+      }
+    },
+    "tools": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "toolId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "inputContract": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "permissions": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "permissionId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "capability": {
+                  "type": "string",
+                  "enum": [
+                    "observe",
+                    "read",
+                    "write",
+                    "tool",
+                    "network",
+                    "model-inference",
+                    "memory",
+                    "custom"
+                  ]
+                },
+                "customCapability": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "scope": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "grantedBy": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "required": [
+                "permissionId",
+                "capability"
+              ]
+            }
+          }
+        },
+        "required": [
+          "toolId",
+          "name"
+        ]
+      }
+    },
+    "permissions": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "permissionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "capability": {
+            "type": "string",
+            "enum": [
+              "observe",
+              "read",
+              "write",
+              "tool",
+              "network",
+              "model-inference",
+              "memory",
+              "custom"
+            ]
+          },
+          "customCapability": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "grantedBy": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "permissionId",
+          "capability"
+        ]
+      }
+    },
+    "memoryInterfaces": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "memoryId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "private",
+              "shared",
+              "ephemeral",
+              "persistent",
+              "custom"
+            ]
+          },
+          "customKind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "read",
+              "write",
+              "read-write"
+            ]
+          }
+        },
+        "required": [
+          "memoryId",
+          "kind",
+          "access"
+        ]
+      }
+    },
+    "actions": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "actionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "select",
+              "queue",
+              "switch",
+              "suggest",
+              "interrupt",
+              "resume",
+              "end",
+              "explore",
+              "ask",
+              "custom"
+            ]
+          },
+          "customKind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "payloadContract": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        },
+        "required": [
+          "actionId",
+          "kind"
+        ]
+      }
+    },
+    "budgets": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "cost",
+              "tokens",
+              "wall-clock-ms",
+              "calls",
+              "custom"
+            ]
+          },
+          "customKind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "limit": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          }
+        },
+        "required": [
+          "kind",
+          "limit"
+        ]
+      }
+    },
+    "latencyLimits": {
+      "type": "object",
+      "properties": {
+        "softMs": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "hardMs": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "hardMs"
+      ]
+    },
+    "evaluator": {
+      "type": "object",
+      "properties": {
+        "evaluatorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "default": "1",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "evaluatorId"
+      ]
+    },
+    "simulatorImplementation": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "kind",
+        "ref"
+      ]
+    },
+    "realImplementation": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "kind",
+        "ref"
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "system": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+        }
+      },
+      "required": [
+        "system"
+      ]
+    }
+  },
+  "required": [
+    "bodyId",
+    "role"
+  ],
+  "$id": "https://reckon.dev/schemas/agent-body.schema.json"
+}

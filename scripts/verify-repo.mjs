@@ -71,3 +71,51 @@ console.log("Reckon repository governance check: PASS");
 console.log(`Required files: ${required.length}`);
 console.log(`Work items: ${state.workItems.length}`);
 console.log("Implementation-complete flag: false");
+
+// ---- Toolchain freeze checks (CONTRACT-001) ----
+const contractsPkg = path.join(root, "packages/contracts");
+const requiredContracts = [
+  "package.json",
+  "tsconfig.json",
+  "src/index.ts",
+  "src/version.ts",
+  "src/primitives.ts",
+  "src/domain.ts",
+  "src/policy.ts",
+  "src/experience.ts",
+  "src/decision.ts",
+  "src/outcomes.ts",
+  "src/preferences.ts",
+  "src/agents.ts",
+  "src/organizations.ts",
+  "src/plans.ts",
+  "src/serialization.ts",
+  "src/export-json-schemas.ts",
+  "test/contracts.test.ts",
+];
+const missingContracts = requiredContracts.filter(p => !fs.existsSync(path.join(contractsPkg, p)));
+if (missingContracts.length) {
+  console.error("CONTRACT-001 incomplete — missing contracts files:");
+  console.error(missingContracts.join("\n"));
+  process.exit(1);
+}
+for (const schemaFile of [
+  "decision-request.schema.json",
+  "decision-result.schema.json",
+  "experience.schema.json",
+  "outcome-event.schema.json",
+  "preference-delta.schema.json",
+  "agent-body.schema.json",
+  "agent-organization.schema.json",
+  "experience-plan.schema.json",
+]) {
+  if (!fs.existsSync(path.join(contractsPkg, "schemas", schemaFile))) {
+    console.error("Missing generated schema: packages/contracts/schemas/" + schemaFile);
+    process.exit(1);
+  }
+}
+if (!fs.existsSync(path.join(root, "pnpm-lock.yaml"))) {
+  console.error("Missing frozen lockfile: pnpm-lock.yaml");
+  process.exit(1);
+}
+console.log("CONTRACT-001 toolchain freeze: PASS (contracts + schemas + lockfile)");

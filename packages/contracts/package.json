@@ -1,0 +1,26 @@
+{
+  "name": "@reckon/contracts",
+  "version": "0.1.0",
+  "description": "Reckon canonical public contracts — versioned schemas, deterministic serialization and digests. FROZEN by CONTRACT-001; changes require a TL3 Architecture Change Record.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "schemas"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "generate:schemas": "tsx src/export-json-schemas.ts"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}
