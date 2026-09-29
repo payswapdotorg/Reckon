@@ -14,4 +14,4 @@
 export * from "./errors.js";
 export * from "./rng.js";
 export * from "./offline.js";
-// W1-008 (bandit.ts) is exported once implemented below in this wave.
+export * from "./bandit.js";
