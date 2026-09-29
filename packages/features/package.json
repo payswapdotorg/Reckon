@@ -1,13 +1,13 @@
 {
   "name": "@reckon/features",
   "version": "0.1.0",
-  "description": "Feature assembly (W1 lane)",
+  "description": "Feature assembly \u2014 seven deterministic families, no-future-leakage, digest (W1-004)",
   "type": "module",
   "private": true,
   "main": "./src/index.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json --noEmit || true",
-    "test": "vitest run --passWithNoTests"
+    "build": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@reckon/contracts": "workspace:*"
