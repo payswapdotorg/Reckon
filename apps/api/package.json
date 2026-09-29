@@ -1,15 +1,17 @@
 {
   "name": "@reckon/api",
   "version": "0.1.0",
-  "description": "HTTP API + auth/tenant boundary (W3 lane)",
+  "description": "HTTP API + auth/tenant boundary (W3 lane): fastify composition root with contract-validated routes, static bearer key auth, tenant/scope enforcement, typed error envelope and idempotent POST replay.",
   "type": "module",
   "private": true,
   "main": "./src/index.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json --noEmit || true",
-    "test": "vitest run --passWithNoTests"
+    "build": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "start": "pnpm dlx tsx src/main.ts"
   },
   "dependencies": {
-    "@reckon/contracts": "workspace:*"
+    "@reckon/contracts": "workspace:*",
+    "fastify": "^5.12.5"
   }
 }
