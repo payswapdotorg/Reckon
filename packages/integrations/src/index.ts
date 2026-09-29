@@ -19,5 +19,6 @@
 export * from "./errors.js";
 export * from "./declaration.js";
 export * from "./webflix.js";
+export * from "./media.js";
 
 export const LANE = "@reckon/integrations";
