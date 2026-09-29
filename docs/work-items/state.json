@@ -94,7 +94,7 @@
       "dependsOn": [
         "CONTRACT-001"
       ],
-      "status": "dispatched"
+      "status": "done"
     },
     {
       "id": "W1-002",
@@ -102,7 +102,7 @@
       "dependsOn": [
         "CONTRACT-001"
       ],
-      "status": "dispatched"
+      "status": "done"
     },
     {
       "id": "W1-003",
@@ -110,7 +110,7 @@
       "dependsOn": [
         "CONTRACT-001"
       ],
-      "status": "dispatched"
+      "status": "done"
     },
     {
       "id": "W1-004",
@@ -118,7 +118,7 @@
       "dependsOn": [
         "CONTRACT-001"
       ],
-      "status": "dispatched"
+      "status": "done"
     },
     {
       "id": "W1-005",
@@ -176,7 +176,7 @@
       "dependsOn": [
         "CONTRACT-001"
       ],
-      "status": "dispatched"
+      "status": "done"
     },
     {
       "id": "W2-002",
@@ -192,7 +192,7 @@
       "dependsOn": [
         "W2-001"
       ],
-      "status": "dispatched"
+      "status": "done"
     },
     {
       "id": "W2-004",
@@ -200,7 +200,7 @@
       "dependsOn": [
         "W2-001"
       ],
-      "status": "dispatched"
+      "status": "done"
     },
     {
       "id": "W2-005",
@@ -225,7 +225,7 @@
       "dependsOn": [
         "CONTRACT-001"
       ],
-      "status": "dispatched"
+      "status": "done"
     },
     {
       "id": "W2-008",
@@ -250,7 +250,7 @@
       "dependsOn": [
         "CONTRACT-001"
       ],
-      "status": "dispatched"
+      "status": "done"
     },
     {
       "id": "W3-002",
