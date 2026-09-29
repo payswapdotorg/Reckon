@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "contracts-frozen-first-wave-dispatched",
+  "status": "second-wave-w1-w3-merged-w2-pending",
   "implementationComplete": false,
   "dispatchBaseSha": "b217fdafcc8d5580409663128f6d1a329fd4ea0e",
   "workers": [
@@ -126,7 +126,7 @@
       "dependsOn": [
         "W1-004"
       ],
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "W1-006",
@@ -134,7 +134,7 @@
       "dependsOn": [
         "W1-005"
       ],
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "W1-007",
@@ -142,7 +142,7 @@
       "dependsOn": [
         "W1-006"
       ],
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "W1-008",
@@ -150,7 +150,7 @@
       "dependsOn": [
         "W1-007"
       ],
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "W1-009",
@@ -159,7 +159,7 @@
         "W1-006",
         "W1-008"
       ],
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "W1-010",
@@ -258,7 +258,7 @@
       "dependsOn": [
         "W3-001"
       ],
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "W3-003",
@@ -266,7 +266,7 @@
       "dependsOn": [
         "W3-001"
       ],
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "W3-004",
@@ -274,7 +274,7 @@
       "dependsOn": [
         "W3-001"
       ],
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "W3-005",
