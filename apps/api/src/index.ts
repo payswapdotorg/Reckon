@@ -36,3 +36,8 @@ export type {
 } from "./ports.js";
 export { ReplanRequestSchema, ResolveRequestSchema, ResolveResponseSchema } from "./envelopes.js";
 export type { ReplanRequest, ResolveRequest, ResolveResponse } from "./envelopes.js";
+export { transportBackedOutcomeIngest, wireOutcomeTransport } from "./outcome-transport.js";
+export type {
+  OutcomeTransportWiring,
+  OutcomeTransportWiringOptions,
+} from "./outcome-transport.js";
