@@ -1,8 +1,8 @@
 # @reckon/decision
 
-Decision kernel (Worker 2 lane). First wave (W2-001) implements
-**candidate normalization** and declares the **policy-engine port**
-(W2-002 — later wave, port only).
+Decision kernel (Worker 2 lane). Wave 1 (W2-001) implemented
+**candidate normalization** and declared the **policy-engine port**.
+Wave 2 (W2-002) implements the **policy engine**.
 
 ## What is here
 
@@ -10,7 +10,10 @@ Decision kernel (Worker 2 lane). First wave (W2-001) implements
   provider-neutral normalization of host candidate references into
   `NormalizedCandidate` records for the experience expander (W2-003)
   and the policy engine (W2-002).
-- `PolicyEngine` port (declared seam, NOT implemented in this wave).
+- `PolicyEngine` port + implementation (`createPolicyEngine`, and the
+  richer `evaluatePolicy` detail API) — pure, deterministic, LLM-free
+  scoring of eligible experiences against the declared objective and
+  (optionally) a versioned reward spec.
 
 ## Laws enforced
 
@@ -24,6 +27,17 @@ Decision kernel (Worker 2 lane). First wave (W2-001) implements
 - **Purity and totality**: no environment reads, no async, no
   exceptions on valid input; invalid input (e.g. empty candidates)
   returns a typed `INVALID_INPUT` error result — never a raw throw.
+- **CONSTRAINT/REWARD SEPARATION** (lock #21): hard constraints gate
+  eligibility (constraint-failing experiences are never scored); reward
+  terms only shape preference among eligible experiences.
+- **NO DEFAULT ENGAGEMENT REWARD** (lock #22): with no declared
+  `RewardSpec`, scores use declared objective-fit evidence only
+  (`rewardApplied: false` on the evaluation detail). Engagement is
+  never implicitly rewarded.
+- **HONEST UNCERTAINTY**: `Uncertainty.confidence` is the real
+  evidence-sparsity ratio (present/total evidence channels), never a
+  fabricated number; `spread`/`disagreement`/`oodScore` are omitted
+  because a single deterministic scorer cannot quantify them.
 
 ## Documented deterministic semantics
 
@@ -48,8 +62,40 @@ Decision kernel (Worker 2 lane). First wave (W2-001) implements
 - **Labels**: from the catalog item, deduped and sorted; `[]` when the
   item is absent.
 
-## The policy-engine port (W2-002 seam)
+## The policy engine (W2-002)
 
-`PolicyEngine.score(input)` is frozen here so downstream composition
-depends on the seam, not an implementation. `ScoredExperience` is the
-canonical scored-experience type consumed by the scheduler (W2-004).
+`PolicyEngine.score(input)` is the frozen seam (scheduler/composition
+roots depend on it). `createPolicyEngine()` implements it;
+`evaluatePolicy(input)` additionally returns the evaluation detail:
+excluded experiences with typed reasons, `rewardApplied`, policy
+selector echo (composition — the seam is unchanged).
+
+Documented scoring semantics:
+
+- **objectiveFit(E)** = `0` when the experience declares a different
+  `objectiveFit.objective.objectiveId` than the request objective;
+  `fitScore` (clamped to [0,1]) when declared; `0` otherwise (absent
+  evidence is never fabricated and lowers uncertainty confidence).
+- **rewardScore(E)** = `Σᵢ wᵢ·vᵢ(E) / Σᵢ |wᵢ|` over the terms EVALUATED
+  for the experience. Term values come ONLY from declared reward
+  params: `params.values` (per-experience map) or `params.value`
+  (constant), clamped to [0,1]; unevaluated terms are ignored (never
+  guessed) and disclosed via uncertainty. Zero when no term is
+  evaluated or the evaluated weight magnitude sum is zero.
+- **score(E)** = `objectiveFit(E)` with no reward spec; `½·objectiveFit
+  + ½·rewardScore` with a declared reward spec (equal-footing mix).
+- **Ordering**: score descending, then `experienceId` ascending
+  (UTF-16) — deterministic stable tie-breaking; the output is
+  permutation-invariant (digest-verified in tests). Duplicate
+  experience ids are a typed `INVALID_INPUT` (tie-breaks require
+  unique ids).
+- **Defense in depth**: request-level `constraints` AND each
+  experience's own `constraints` are re-applied (the same
+  kernel-evaluable kinds as W2-003, same fail-closed semantics:
+  `min-duration`, `max-duration`, `format-required`,
+  `format-forbidden`, `locale-required`, `device-class-required`;
+  request-scoped/opaque kinds pass through). Constraint-failing
+  experiences are excluded with typed reason codes and messages.
+- **Uncertainty**: `confidence` = present evidence channels / total
+  channels (1 fit channel + 1 per reward term), `method
+  = "policy-engine.evidence-sparsity.v1"`.
