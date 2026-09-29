@@ -25,12 +25,20 @@
  * - playing:
  *     interruptRequested → INTERRUPT (host-driven);
  *     switch input present → SwitchEvaluator verdict:
- *        SWITCH → SWITCH(to the evaluated candidate),
- *        SUGGEST → SUGGEST(the evaluated candidate),
+ *        SWITCH → SWITCH(to the evaluated candidate) — UNLESS a
+ *                 caller-supplied opportunity evaluation says there is
+ *                 no interruption opportunity right now (W2-005): the
+ *                 verdict is gated to CONTINUE (a bad moment is not
+ *                 worth a net-positive switch);
+ *        SUGGEST → SUGGEST(the evaluated candidate) — never gated
+ *                  (suggestions are non-binding, they never interrupt);
  *        HOLD   → CONTINUE (keep the current experience);
  *     no switch input → CONTINUE;
  * - interrupted:
- *     switch verdict SWITCH → SWITCH(to the candidate);
+ *     switch verdict SWITCH (not gated) → SWITCH(to the candidate);
+ *     switch verdict SWITCH (gated) → the resume/hold path (returning
+ *                 the subject to their own interrupted experience beats
+ *                 switching at a bad moment);
  *     otherwise resumable checkpoint → RESUME;
  *     otherwise → HOLD;
  * - idle/queued:
@@ -64,9 +72,14 @@ import {
   type PlanState,
   type PlanStatus,
 } from "./state.js";
-import { evaluateSwitch, type SwitchEvaluationInput } from "./switch-evaluator.js";
+import {
+  evaluateSwitch,
+  type SwitchEvaluationInput,
+} from "./switch-evaluator.js";
+import type { InterruptionOpportunityResult } from "./interruption-policy.js";
 
 export type { ScoredExperience };
+export type { InterruptionOpportunityResult };
 
 export interface SchedulerInput {
   /** Observed plan state (caller-supplied). */
@@ -81,6 +94,18 @@ export interface SchedulerInput {
    * The candidate must be present in `scored`.
    */
   switch?: SwitchEvaluationInput;
+  /**
+   * Caller-supplied interruption-opportunity evaluation (W2-005,
+   * composition — the frozen contract schemas are unchanged). Present
+   * with `opportunity: false` ⇒ SWITCH verdicts are gated: the moment
+   * is not suitable for interrupting (CONTINUE from `playing`, the
+   * resume/hold path from `interrupted`). SUGGEST is never gated (a
+   * suggestion is non-binding and does not interrupt). Absent ⇒ the
+   * W2-004 behavior is unchanged. The switch numbers remain
+   * caller-supplied (SEPARATION LAW) — the scheduler never derives
+   * them from the opportunity.
+   */
+  opportunity?: InterruptionOpportunityResult;
   /** Caller-supplied resume tokens by experienceId (never invented). */
   resumeTokens?: Record<string, string>;
   /** Host explicitly requests ending the plan (drives END). */
@@ -284,6 +309,40 @@ export function decide(input: SchedulerInput): Result<SchedulerDecision> {
     }
   }
 
+  // 5b. Validate the optional caller-supplied opportunity evaluation
+  // (W2-005 composition; the scheduler never fabricates one).
+  if (input.opportunity !== undefined) {
+    const opportunity = input.opportunity;
+    if (
+      opportunity === null ||
+      typeof opportunity !== "object" ||
+      typeof opportunity.opportunity !== "boolean"
+    ) {
+      return invalidInput("decide: opportunity must be { opportunity: boolean, reasons, urgency }");
+    }
+    if (
+      typeof opportunity.urgency !== "number" ||
+      !Number.isFinite(opportunity.urgency) ||
+      opportunity.urgency < 0 ||
+      opportunity.urgency > 1
+    ) {
+      return invalidInput("decide: opportunity.urgency must be a finite number in [0, 1]", [
+        { path: "opportunity.urgency", message: `got ${String(opportunity.urgency)}` },
+      ]);
+    }
+    if (
+      !Array.isArray(opportunity.reasons) ||
+      opportunity.reasons.some(
+        (r) => r === null || typeof r !== "object" || typeof r.code !== "string" || typeof r.message !== "string",
+      )
+    ) {
+      return invalidInput("decide: opportunity.reasons must be an array of { code, message }");
+    }
+    // A gated moment with no switch evaluation (and no host request) is
+    // informational only: the core policy below has nothing to gate, so
+    // the decision is unchanged.
+  }
+
   // 6. Terminal state: no legal actions exist from `ended`.
   if (state.status === "ended") {
     return illegalTransition(
@@ -320,13 +379,39 @@ export function decide(input: SchedulerInput): Result<SchedulerDecision> {
       const target = scored.find(
         (s) => s.experience.experienceId === switchInput.candidateExperienceId,
       ) as ScoredExperience;
-      if (evaluation.value.verdict === "SWITCH") {
+      const suppliedOpportunity = input.opportunity;
+      const gated = suppliedOpportunity !== undefined && suppliedOpportunity.opportunity === false;
+      if (evaluation.value.verdict === "SWITCH" && gated) {
+        // W2-005: no interruption opportunity — a net-positive switch is
+        // NOT worth a bad moment; keep the current experience. (The
+        // switch numbers remain caller-supplied; only the moment is
+        // gated here.)
+        chosen = { action: "CONTINUE" };
+        reasons.push({
+          code: "switch-gated-no-opportunity",
+          message: "switch verdict SWITCH gated: the interruption-opportunity policy reports no opportunity right now",
+        });
+        reasons.push(
+          ...(suppliedOpportunity as InterruptionOpportunityResult).reasons.map((r) => ({
+            code: `opportunity-${r.code}`,
+            message: r.message,
+          })),
+        );
+      } else if (evaluation.value.verdict === "SWITCH") {
         chosen = { action: "SWITCH", target };
         reasons.push({
           code: "switch-net-positive",
           message: `net ${evaluation.value.netValue} > switchThreshold ${evaluation.value.thresholds.switchThreshold}`,
         });
+        if (suppliedOpportunity !== undefined && suppliedOpportunity.opportunity) {
+          reasons.push({
+            code: "interruption-opportunity",
+            message: `interruption opportunity present (urgency ${suppliedOpportunity.urgency})`,
+          });
+        }
       } else if (evaluation.value.verdict === "SUGGEST") {
+        // SUGGEST is never gated: a suggestion is non-binding and does
+        // not interrupt the current experience.
         chosen = { action: "SUGGEST", target };
         reasons.push({
           code: "switch-suggest-band",
@@ -349,7 +434,9 @@ export function decide(input: SchedulerInput): Result<SchedulerDecision> {
     if (switchInput) {
       const evaluation = evaluateSwitch(switchInput);
       if (!evaluation.ok) return evaluation;
-      if (evaluation.value.verdict === "SWITCH") {
+      const suppliedOpportunity = input.opportunity;
+      const gated = suppliedOpportunity !== undefined && suppliedOpportunity.opportunity === false;
+      if (evaluation.value.verdict === "SWITCH" && !gated) {
         const target = scored.find(
           (s) => s.experience.experienceId === switchInput.candidateExperienceId,
         ) as ScoredExperience;
@@ -358,6 +445,20 @@ export function decide(input: SchedulerInput): Result<SchedulerDecision> {
           code: "switch-net-positive",
           message: `net ${evaluation.value.netValue} > switchThreshold ${evaluation.value.thresholds.switchThreshold}`,
         });
+      } else if (evaluation.value.verdict === "SWITCH" && gated) {
+        // W2-005: no opportunity — prefer returning the subject to their
+        // own interrupted experience over switching at a bad moment.
+        chosen = resumeOrHold(state, reasons);
+        reasons.push({
+          code: "switch-gated-no-opportunity",
+          message: "switch verdict SWITCH gated: the interruption-opportunity policy reports no opportunity right now",
+        });
+        reasons.push(
+          ...(suppliedOpportunity as InterruptionOpportunityResult).reasons.map((r) => ({
+            code: `opportunity-${r.code}`,
+            message: r.message,
+          })),
+        );
       } else {
         chosen = resumeOrHold(state, reasons);
       }
