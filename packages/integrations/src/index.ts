@@ -10,15 +10,29 @@
  * proof with completely different host vocabulary, demonstrating that
  * the frozen contracts are media-domain-neutral (no WebFlix naming).
  *
+ * W3-007: the commerce reference adapter — product/offer-shaped host
+ * data → the same frozen contracts, proving the commerce vertical
+ * (product → offer/realization → experience → decision → schedule →
+ * outcome) with cart/checkout-shaped realization surfaces.
+ *
+ * W3-008: the advertising reference adapter — creative/placement-
+ * shaped host data → the same frozen contracts, proving the
+ * advertising vertical (creative → placement/format → experience →
+ * show/defer/interrupt → outcome) through the EXISTING scheduler
+ * actions (no parallel scheduling path).
+ *
  * Every adapter is a pure deterministic mapper with a typed declaration
  * (capabilities, authorization requirements, limits, fixture-only live
  * verification, provenance, failure semantics). Host systems remain
- * authoritative for identity, consent, catalog, rights, delivery and
- * payment. Fixture evidence never proves a live provider integration.
+ * authoritative for identity, consent, catalog, rights, provider
+ * access, delivery, campaign policy and payment. Fixture evidence
+ * never proves a live provider integration.
  */
 export * from "./errors.js";
 export * from "./declaration.js";
 export * from "./webflix.js";
 export * from "./media.js";
+export * from "./commerce.js";
+export * from "./advertising.js";
 
 export const LANE = "@reckon/integrations";
