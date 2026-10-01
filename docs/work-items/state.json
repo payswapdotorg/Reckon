@@ -1,6 +1,6 @@
 {
  "schemaVersion": 1,
- "status": "final-adapters-merged-33-of-36",
+ "status": "e2e-perf-merged-35-of-36",
  "implementationComplete": false,
  "dispatchBaseSha": "b217fdafcc8d5580409663128f6d1a329fd4ea0e",
  "workers": [
@@ -321,7 +321,7 @@
     "W3-007",
     "W3-008"
    ],
-   "status": "queued"
+   "status": "done"
   },
   {
    "id": "W3-010",
@@ -329,7 +329,7 @@
    "dependsOn": [
     "W3-009"
    ],
-   "status": "queued"
+   "status": "done"
   },
   {
    "id": "W3-011",
