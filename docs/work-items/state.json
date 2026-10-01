@@ -1,6 +1,6 @@
 {
  "schemaVersion": 1,
- "status": "w3-media-adapters-merged-30-of-36",
+ "status": "final-adapters-merged-33-of-36",
  "implementationComplete": false,
  "dispatchBaseSha": "b217fdafcc8d5580409663128f6d1a329fd4ea0e",
  "workers": [
@@ -242,7 +242,7 @@
     "W1-009",
     "W2-008"
    ],
-   "status": "queued"
+   "status": "done"
   },
   {
    "id": "W3-001",
@@ -301,7 +301,7 @@
     "W2-002",
     "W2-003"
    ],
-   "status": "queued"
+   "status": "done"
   },
   {
    "id": "W3-008",
@@ -310,7 +310,7 @@
     "W2-002",
     "W2-003"
    ],
-   "status": "queued"
+   "status": "done"
   },
   {
    "id": "W3-009",
