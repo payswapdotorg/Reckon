@@ -27,6 +27,8 @@ import type {
   OutcomeEvent,
   PreferenceDelta,
   Realization,
+  SubjectReference,
+  TenantScope,
 } from "@reckon/contracts";
 import type { PlanState } from "../../scheduler/src/index.js";
 import type { FormatKind, ObjectiveFitFn } from "../../experience/src/index.js";
@@ -86,16 +88,55 @@ export const CONFORMANCE_SWITCH_NUMBERS = {
   suggestThreshold: 0.2,
 } as const;
 
+/** Caller-supplied switch numbers shared by every binding that land in
+ *  the SUGGEST band (net ≈ 0.25 ∈ (suggestThreshold 0.2, switchThreshold
+ *  0.5) ⇒ SUGGEST — a suggestion is non-binding and never interrupts;
+ *  the numbers avoid the exact band edges so floating-point arithmetic
+ *  can never flip the verdict). Consumed by the W3-009 cross-domain E2E
+ *  interleaved scenario. */
+export const CONFORMANCE_SUGGEST_NUMBERS = {
+  expectedImprovement: 0.5,
+  interruptionCost: 0.1,
+  uncertaintyPenalty: 0.1,
+  resumeLoss: 0.05,
+  switchThreshold: 0.5,
+  suggestThreshold: 0.2,
+} as const;
+
 // ---------------------------------------------------------------------------
 // The conformance binding (one per reference adapter)
 // ---------------------------------------------------------------------------
 
-/** A completion-shaped observation the binding maps to an OutcomeEvent. */
+/**
+ * A completion-shaped observation the binding maps to an OutcomeEvent.
+ *
+ * W3-009 extension: `reportId`, `event`, `at`, `tenant`, `subject` and
+ * the optionality of `experienceId`/`decisionId` let the cross-domain
+ * E2E emit MULTIPLE distinct observations per adapter (distinct report
+ * ids keep the adapter-derived idempotency keys distinct) including
+ * honestly UNLINKED observations (no decisionId). Every default keeps
+ * the historical conformance behavior byte-identical.
+ */
 export interface ConformanceObservation {
   /** The item the observation is about (adapter's own id vocabulary). */
   itemId: string;
-  experienceId: string;
-  decisionId: string;
+  /** The experience the observation is about (absent for observations
+   *  that did not come from a Reckon experience). */
+  experienceId?: string;
+  /** The decision the observation is evidence for (absent for
+   *  observations that no decision caused — honest unlinkage). */
+  decisionId?: string;
+  /** Host observation/report id (default: the historical fixture id). */
+  reportId?: string;
+  /** Host observation kind in the ADAPTER's own vocabulary (default:
+   *  the completion-shaped event of the binding). */
+  event?: string;
+  /** Caller-supplied occurrence time (default: T3). */
+  at?: number;
+  /** Tenant scope of the outcome (default: the conformance tenant). */
+  tenant?: TenantScope;
+  /** Subject of the outcome (default: the conformance subject). */
+  subject?: SubjectReference;
 }
 
 /**
@@ -144,6 +185,20 @@ export interface ConformanceBinding {
   hostStart: (experienceId: string, state: PlanState) => AdapterResult<HostSchedulerIntents>;
   /** Host "switch" action carrying the shared conformance numbers. */
   hostSwitch: (fromExperienceId: string, toExperienceId: string, state: PlanState) => AdapterResult<HostSchedulerIntents>;
+  /**
+   * Host "switch" action whose shared numbers land in the SUGGEST band
+   *   (W3-009: net 0.2 ∈ [suggestThreshold, switchThreshold) ⇒ SUGGEST —
+   *   non-binding, never interrupts).
+   */
+  hostSuggest: (fromExperienceId: string, toExperienceId: string, state: PlanState) => AdapterResult<HostSchedulerIntents>;
+  /**
+   * Host "interrupt" action (W3-009: pause/suspend/cut), optionally
+   * carrying a caller-supplied resume token for the interrupted
+   * experience (tokens are never invented).
+   */
+  hostInterrupt: (experienceId: string, state: PlanState, resumeToken?: string) => AdapterResult<HostSchedulerIntents>;
+  /** Host "end" action (W3-009: stop/abandon/wrap — host-driven END). */
+  hostEnd: (state: PlanState) => AdapterResult<HostSchedulerIntents>;
   /** Caller-supplied resume token for the switch checkpoint. */
   resumeToken: string;
 
@@ -574,20 +629,36 @@ function buildWebFlixBinding(): ConformanceBinding {
         { kind: "switch", numbers: { fromExperienceId, toExperienceId, ...CONFORMANCE_SWITCH_NUMBERS } } as WebFlixHostAction,
         state,
       ),
+    hostSuggest: (fromExperienceId, toExperienceId, state) =>
+      webflix.toSchedulerIntents(
+        { kind: "switch", numbers: { fromExperienceId, toExperienceId, ...CONFORMANCE_SUGGEST_NUMBERS } } as WebFlixHostAction,
+        state,
+      ),
+    hostInterrupt: (experienceId, state, resumeToken) =>
+      webflix.toSchedulerIntents(
+        { kind: "interrupt", experienceId, ...(resumeToken !== undefined ? { resumeToken } : {}) } as WebFlixHostAction,
+        state,
+      ),
+    hostEnd: (state) => webflix.toSchedulerIntents({ kind: "end" } as WebFlixHostAction, state),
     resumeToken: "cf-resume-wf-1",
     toOutcomeEvent: (observation) =>
       webflix.toOutcomeEvent(
         {
-          playbackId: "cf-pb-1",
-          at: T3,
+          playbackId: observation.reportId ?? "cf-pb-1",
+          at: observation.at ?? T3,
           mediaId: observation.itemId,
-          experienceId: observation.experienceId,
-          decisionId: observation.decisionId,
-          event: "completed",
+          ...(observation.experienceId !== undefined ? { experienceId: observation.experienceId } : {}),
+          ...(observation.decisionId !== undefined ? { decisionId: observation.decisionId } : {}),
+          event: (observation.event ?? "completed") as WebFlixPlaybackReport["event"],
           positionSeconds: 1500,
           totalSeconds: 1500,
         } as WebFlixPlaybackReport,
-        { tenant: CONFORMANCE_TENANT, subject: CONFORMANCE_SUBJECT, evidenceClass: "controlled-local", contextId: context.contextId },
+        {
+          tenant: observation.tenant ?? CONFORMANCE_TENANT,
+          subject: observation.subject ?? CONFORMANCE_SUBJECT,
+          evidenceClass: "controlled-local",
+          contextId: context.contextId,
+        },
       ),
     toPreferenceDeltas: (outcome, item) => webflix.toPreferenceDeltas(outcome, item),
     deltaDimensionPrefix: "webflix.genre-affinity",
@@ -625,20 +696,36 @@ function buildMediaBinding(): ConformanceBinding {
         { kind: "flip", numbers: { fromExperienceId, toExperienceId, ...CONFORMANCE_SWITCH_NUMBERS } } as MediaHostAction,
         state,
       ),
+    hostSuggest: (fromExperienceId, toExperienceId, state) =>
+      media.toSchedulerIntents(
+        { kind: "flip", numbers: { fromExperienceId, toExperienceId, ...CONFORMANCE_SUGGEST_NUMBERS } } as MediaHostAction,
+        state,
+      ),
+    hostInterrupt: (experienceId, state, resumeToken) =>
+      media.toSchedulerIntents(
+        { kind: "pause", experienceId, ...(resumeToken !== undefined ? { resumeToken } : {}) } as MediaHostAction,
+        state,
+      ),
+    hostEnd: (state) => media.toSchedulerIntents({ kind: "stop" } as MediaHostAction, state),
     resumeToken: "cf-resume-gm-1",
     toOutcomeEvent: (observation) =>
       media.toOutcomeEvent(
         {
-          playoutId: "cf-pl-1",
-          at: T3,
+          playoutId: observation.reportId ?? "cf-pl-1",
+          at: observation.at ?? T3,
           programId: observation.itemId,
-          experienceId: observation.experienceId,
-          decisionId: observation.decisionId,
-          event: "finished",
+          ...(observation.experienceId !== undefined ? { experienceId: observation.experienceId } : {}),
+          ...(observation.decisionId !== undefined ? { decisionId: observation.decisionId } : {}),
+          event: (observation.event ?? "finished") as PlayoutReport["event"],
           positionSeconds: 1500,
           totalSeconds: 1500,
         } as PlayoutReport,
-        { tenant: CONFORMANCE_TENANT, subject: CONFORMANCE_SUBJECT, evidenceClass: "controlled-local", contextId: context.contextId },
+        {
+          tenant: observation.tenant ?? CONFORMANCE_TENANT,
+          subject: observation.subject ?? CONFORMANCE_SUBJECT,
+          evidenceClass: "controlled-local",
+          contextId: context.contextId,
+        },
       ),
     toPreferenceDeltas: (outcome, item) => media.toPreferenceDeltas(outcome, item),
     deltaDimensionPrefix: "generic-media.topic-affinity",
@@ -692,21 +779,37 @@ function buildCommerceBinding(): ConformanceBinding {
         { kind: "swap", numbers: { fromExperienceId, toExperienceId, ...CONFORMANCE_SWITCH_NUMBERS } } as CommerceHostAction,
         state,
       ),
+    hostSuggest: (fromExperienceId, toExperienceId, state) =>
+      commerce.toSchedulerIntents(
+        { kind: "swap", numbers: { fromExperienceId, toExperienceId, ...CONFORMANCE_SUGGEST_NUMBERS } } as CommerceHostAction,
+        state,
+      ),
+    hostInterrupt: (experienceId, state, resumeToken) =>
+      commerce.toSchedulerIntents(
+        { kind: "suspend", experienceId, ...(resumeToken !== undefined ? { resumeToken } : {}) } as CommerceHostAction,
+        state,
+      ),
+    hostEnd: (state) => commerce.toSchedulerIntents({ kind: "abandon" } as CommerceHostAction, state),
     resumeToken: "cf-resume-co-1",
     toOutcomeEvent: (observation) =>
       commerce.toOutcomeEvent(
         {
-          purchaseId: "cf-purchase-1",
-          at: T3,
+          purchaseId: observation.reportId ?? "cf-purchase-1",
+          at: observation.at ?? T3,
           productId: observation.itemId,
-          experienceId: observation.experienceId,
-          decisionId: observation.decisionId,
-          event: "order-completed",
+          ...(observation.experienceId !== undefined ? { experienceId: observation.experienceId } : {}),
+          ...(observation.decisionId !== undefined ? { decisionId: observation.decisionId } : {}),
+          event: (observation.event ?? "order-completed") as CommercePurchaseReport["event"],
           cartValue: 104,
           orderValue: 89,
           quantity: 1,
         } as CommercePurchaseReport,
-        { tenant: CONFORMANCE_TENANT, subject: CONFORMANCE_SUBJECT, evidenceClass: "controlled-local", contextId: context.contextId },
+        {
+          tenant: observation.tenant ?? CONFORMANCE_TENANT,
+          subject: observation.subject ?? CONFORMANCE_SUBJECT,
+          evidenceClass: "controlled-local",
+          contextId: context.contextId,
+        },
       ),
     toPreferenceDeltas: (outcome, item) => commerce.toPreferenceDeltas(outcome, item),
     deltaDimensionPrefix: "commerce.category-affinity",
@@ -761,20 +864,36 @@ function buildAdvertisingBinding(): ConformanceBinding {
         { kind: "rotate", numbers: { fromExperienceId, toExperienceId, ...CONFORMANCE_SWITCH_NUMBERS } } as AdHostAction,
         state,
       ),
+    hostSuggest: (fromExperienceId, toExperienceId, state) =>
+      advertising.toSchedulerIntents(
+        { kind: "rotate", numbers: { fromExperienceId, toExperienceId, ...CONFORMANCE_SUGGEST_NUMBERS } } as AdHostAction,
+        state,
+      ),
+    hostInterrupt: (experienceId, state, resumeToken) =>
+      advertising.toSchedulerIntents(
+        { kind: "cut", experienceId, ...(resumeToken !== undefined ? { resumeToken } : {}) } as AdHostAction,
+        state,
+      ),
+    hostEnd: (state) => advertising.toSchedulerIntents({ kind: "wrap" } as AdHostAction, state),
     resumeToken: "cf-resume-ad-1",
     toOutcomeEvent: (observation) =>
       advertising.toOutcomeEvent(
         {
-          impressionId: "cf-imp-1",
-          at: T3,
+          impressionId: observation.reportId ?? "cf-imp-1",
+          at: observation.at ?? T3,
           creativeId: observation.itemId,
-          experienceId: observation.experienceId,
-          decisionId: observation.decisionId,
-          event: "viewed-through",
+          ...(observation.experienceId !== undefined ? { experienceId: observation.experienceId } : {}),
+          ...(observation.decisionId !== undefined ? { decisionId: observation.decisionId } : {}),
+          event: (observation.event ?? "viewed-through") as AdServingReport["event"],
           viewSeconds: 5,
           totalSeconds: 5,
         } as AdServingReport,
-        { tenant: CONFORMANCE_TENANT, subject: CONFORMANCE_SUBJECT, evidenceClass: "controlled-local", contextId: context.contextId },
+        {
+          tenant: observation.tenant ?? CONFORMANCE_TENANT,
+          subject: observation.subject ?? CONFORMANCE_SUBJECT,
+          evidenceClass: "controlled-local",
+          contextId: context.contextId,
+        },
       ),
     toPreferenceDeltas: (outcome, item) => advertising.toPreferenceDeltas(outcome, item),
     deltaDimensionPrefix: "advertising.topic-affinity",
