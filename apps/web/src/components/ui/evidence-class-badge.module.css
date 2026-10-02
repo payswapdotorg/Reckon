@@ -1,0 +1,64 @@
+/* EvidenceClassBadge — five visually-distinct treatments (Gate Q).
+ *
+ * Hue + border-style + icon triple-differentiation; hues derive from the
+ * reference chart palette (§3): chart-1 green, chart-4 teal, chart-2 amber,
+ * chart-5 gray, chart-3 salmon. Border style carries meaning:
+ * solid = grounded, dashed = generated/estimated.
+ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.icon {
+  flex: none;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+/* observed — the real runtime (chart-1 green family) */
+.observed {
+  color: #00795a;
+  background-color: #e7f4ee;
+  border: 1px solid color-mix(in srgb, var(--chart-1) 38%, transparent);
+}
+
+/* controlled-local — real code, synthetic inputs (chart-4 teal family) */
+.controlledLocal {
+  color: #00776c;
+  background-color: #e6f4f3;
+  border: 1px solid color-mix(in srgb, var(--chart-4) 38%, transparent);
+}
+
+/* fixture — static fixed data (chart-2 amber family) */
+.fixture {
+  color: #96590a;
+  background-color: #fbf1e0;
+  border: 1px solid color-mix(in srgb, var(--chart-2) 45%, transparent);
+}
+
+/* simulated — model output, dashed = generated (chart-5 gray family) */
+.simulated {
+  color: #4b4b55;
+  background-color: #ececf1;
+  border: 1px dashed #a9a9b3;
+}
+
+/* counterfactual — a branch that never ran, dashed = estimated (chart-3 salmon family) */
+.counterfactual {
+  color: #a03d38;
+  background-color: #fcedec;
+  border: 1px dashed color-mix(in srgb, var(--chart-3) 55%, transparent);
+}

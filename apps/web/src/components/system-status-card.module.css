@@ -1,0 +1,122 @@
+/* SystemStatusCard — small status surface (§5 card language, flat). */
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rowKey {
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.rowValue {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--foreground);
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 18px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  overflow-wrap: anywhere;
+}
+
+.probeDetail {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dotOk,
+.dotDown {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.dotOk {
+  background-color: var(--primary);
+}
+
+.dotDown {
+  background-color: var(--destructive);
+}
+
+.evidenceSection {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.evidenceHeading {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.evidenceNote {
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+  max-width: 620px;
+}
+
+.evidenceList {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.evidenceItem {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.evidenceItem > :global(span:first-child) {
+  flex: none;
+}
+
+.evidenceDescription {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+  min-width: 220px;
+  flex: 1 1 260px;
+}

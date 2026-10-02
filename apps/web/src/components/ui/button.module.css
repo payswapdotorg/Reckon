@@ -1,0 +1,73 @@
+/* Button — reference §5: primary solid green (the one accent), secondary
+ * ghost outline, 8px radius, 13px/500. */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  border-radius: var(--radius-control);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color var(--transition),
+    border-color var(--transition),
+    color var(--transition);
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.button svg {
+  flex: none;
+}
+
+/* sizes: compact base (6px 8px) per reference §5, larger for CTA */
+.small {
+  padding: 6px 8px;
+}
+
+.medium {
+  padding: 8px 14px;
+}
+
+/* primary — the ONLY high-saturation color moment (§3 color discipline) */
+.primary {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.primary:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--primary) 86%, black);
+}
+
+/* secondary — white/outline ghost with gray border */
+.secondary {
+  background-color: var(--card);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+.secondary:hover:not(:disabled) {
+  background-color: var(--background);
+  border-color: var(--muted-foreground);
+}
+
+/* ghost — borderless quiet action */
+.ghost {
+  background-color: transparent;
+  color: var(--foreground);
+}
+
+.ghost:hover:not(:disabled) {
+  background-color: var(--accent);
+}

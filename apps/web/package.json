@@ -1,0 +1,27 @@
+{
+  "name": "@reckon/web",
+  "version": "0.1.0",
+  "description": "Reckon Studio — the product UI over @reckon/sdk (UI-001/UI-002): Next.js App Router shell in the You-Platform design language, honest-degradation states, evidence-class visibility prep. A consumer of Reckon — never a second source of domain truth.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "pnpm --filter @reckon/contracts build && next build --webpack",
+    "start": "next start",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@reckon/contracts": "workspace:*",
+    "@reckon/sdk": "workspace:*",
+    "lucide-react": "^1.50.0",
+    "next": "16.3.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0"
+  }
+}

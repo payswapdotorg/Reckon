@@ -1,0 +1,67 @@
+/* Card — reference §5: border-driven, flat, generous padding. */
+
+.card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card); /* 14px — observed 12–16px */
+  color: var(--card-foreground);
+}
+
+/* §7 honest-degradation treatment: light red tint + soft red border. */
+.degraded {
+  background-color: var(--destructive-tint);
+  border-color: var(--destructive-border-soft);
+}
+
+.paddingNone {
+  padding: 0;
+}
+
+.paddingDefault {
+  padding: 24px;
+}
+
+.paddingGenerous {
+  padding: 40px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.header + * {
+  margin-top: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+
+.description {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--muted-foreground);
+}
+
+.content {
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.content + .footer {
+  margin-top: 20px;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}

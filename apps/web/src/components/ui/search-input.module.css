@@ -1,0 +1,64 @@
+/* SearchInput — reference §5 + §8 (icon-only collapse on mobile). */
+
+.searchInput {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 220px;
+  height: 34px;
+  padding: 0 8px 0 10px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--input);
+  background-color: var(--secondary); /* light-gray fill */
+  color: var(--muted-foreground);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    border-color var(--transition),
+    background-color var(--transition);
+}
+
+.searchInput:hover {
+  border-color: var(--muted-foreground);
+}
+
+.icon {
+  flex: none;
+  color: var(--muted-foreground);
+}
+
+.placeholder {
+  flex: 1 1 auto;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* kbd badge — pill, monospaced, light gray (reference §5) */
+.kbd {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background-color: var(--card);
+  color: var(--muted-foreground);
+  font-size: 11px;
+  line-height: 15px;
+}
+
+/* §8 mobile: search collapses to a touch-sized icon button */
+@media (max-width: 767px) {
+  .searchInput {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .placeholder,
+  .kbd {
+    display: none;
+  }
+}

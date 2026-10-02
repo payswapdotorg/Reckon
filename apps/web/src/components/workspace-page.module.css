@@ -1,0 +1,45 @@
+/* WorkspacePage — title → subtitle → blocks, 24–32px gaps (§2). */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--block-gap);
+  width: 100%;
+}
+
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 680px;
+}
+
+/* Reference §4: H1 24px/600 token, renders larger in hero contexts —
+ * the workspace hero renders 30px with the token's tight tracking. */
+.title {
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+  color: var(--foreground);
+}
+
+.subtitle {
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--muted-foreground);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--block-gap);
+}
+
+/* §8 mobile: state cards center-aligned, content edge-to-edge. */
+@media (max-width: 767px) {
+  .title {
+    font-size: 26px;
+    line-height: 32px;
+  }
+}
