@@ -1,0 +1,159 @@
+/*
+ * Reckon Studio — global styles + design tokens.
+ *
+ * Token source of truth: docs/ux/you-platform-reference.md §3 (live
+ * inspection 2026-10-02) and docs/ux/assets/you-platform-tokens-raw.json.
+ * The typed mirror of this palette lives in src/lib/design-tokens.ts and
+ * is asserted against this file by test/design-tokens.test.ts.
+ *
+ * Design language laws (reference §10):
+ *  - dark rail + light canvas; hairline borders over shadows;
+ *  - ONE accent (emerald #009768) for primary CTA + brand moments only;
+ *  - system font stack, sentence case; UPPERCASE only for sidebar groups;
+ *  - airy rhythm (32–48px content padding, 24–32px block gaps);
+ *  - 10px base radius (8px controls), pill badges, ⌘K kbd hints;
+ *  - honest states (§7): precise failure reasons, never fabricated data.
+ */
+
+:root {
+  /* ---- palette (reference §3 — extracted verbatim) -------------------- */
+  --background: #fbfbfa;               /* warm off-white main surface */
+  --foreground: #17171a;               /* near-black text */
+  --card: #fff;                        /* pure white cards */
+  --card-foreground: #17171a;
+  --popover: #fff;
+  --popover-foreground: #17171a;
+  --primary: #009768;                  /* emerald — the ONLY high-saturation color */
+  --primary-foreground: #fafaf9;
+  --secondary: #f4f4f9;                /* muted surface */
+  --secondary-foreground: #28282c;
+  --muted: #f4f4f9;
+  --muted-foreground: #71717b;         /* secondary text */
+  --accent: #efeff5;
+  --accent-foreground: #28282c;
+  --destructive: #e40015;
+  --destructive-foreground: #fafaf9;
+  --border: #e5e5ea;                   /* hairline borders — primary separation device */
+  --input: #e5e5ea;
+  --ring: #009768;
+  --chart-1: #009768;
+  --chart-2: #dc8b18;
+  --chart-3: #e15753;
+  --chart-4: #009789;
+  --chart-5: #62626c;
+  --sidebar: #121215;                  /* near-black sidebar */
+  --sidebar-foreground: #d0d0d5;
+  --sidebar-accent: #26262a;           /* hover/active fill in sidebar */
+  --sidebar-accent-foreground: #f5f5f4;
+  --sidebar-border: #28262c;
+  --sidebar-primary: #25a777;          /* brand green variant inside sidebar */
+  --sidebar-primary-foreground: #fafaf9;
+  --sidebar-ring: #25a777;
+
+  /* ---- radius (reference §3/§5) ---------------------------------------- */
+  --radius: 0.625rem;                  /* 10px base */
+  --radius-control: 8px;               /* buttons + controls */
+  --radius-card: 14px;                 /* cards observed 12–16px (§5) */
+
+  /* ---- typography (reference §4 — system stack, no webfont) ------------ */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  /* ---- derived treatments (documented Reckon extensions) ---------------- */
+  /* §7 honest-degradation card: light red tint + soft red border */
+  --destructive-tint: #fef2f2;
+  --destructive-border-soft: #fecaca;
+  /* on-dark dimmed text (sidebar tagline / group labels) */
+  --sidebar-muted: #8f8f97;
+
+  /* ---- layout rhythm (reference §2) ------------------------------------- */
+  --header-height: 64px;
+  --sidebar-width: 250px;              /* ~240–260px */
+  --sidebar-width-tablet: 230px;       /* tablet retains a narrower rail (§8) */
+  --content-padding: 40px;             /* ~32–48px */
+  --content-padding-mobile: 20px;      /* 16–20px edge-to-edge at 390px (§8) */
+  --block-gap: 28px;                   /* 24–32px between content blocks */
+
+  /* ---- motion (reference §9 — restrained) ------------------------------- */
+  --transition: 150ms ease-out;
+  --transition-slow: 250ms ease-out;   /* drawer slide, overlay fades */
+}
+
+/* ------------------------------------------------------------------ *
+ * Base                                                                 *
+ * ------------------------------------------------------------------ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  letter-spacing: normal;
+  color: var(--foreground);
+  background-color: var(--background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background-color: color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+kbd {
+  font-family: var(--font-mono);
+}
+
+/* Restrained motion only (§9) — and none at all when the user asks for it. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,62 @@
+/* EmptyState — reference §7 honest-degradation card. */
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 640px;
+  padding-top: 56px;
+  padding-bottom: 56px;
+  text-align: center;
+}
+
+.icon {
+  color: var(--destructive);
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+
+.reason {
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--muted-foreground);
+  max-width: 460px;
+}
+
+.card > :global(button) {
+  margin-top: 16px;
+}
+
+/* Explanatory line BELOW the card (§7). */
+.note {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+  text-align: center;
+  max-width: 560px;
+}
+
+/* §8 mobile: state cards center-aligned, touch-optimized button. */
+@media (max-width: 767px) {
+  .card {
+    padding: 40px 20px;
+  }
+}

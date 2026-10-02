@@ -1,0 +1,213 @@
+/* Sidebar — dark fixed rail (§2/§6), off-canvas drawer below tablet (§8). */
+
+.skipLink {
+  position: absolute;
+  left: 16px;
+  top: -48px;
+  z-index: 100;
+  padding: 8px 14px;
+  border-radius: var(--radius-control);
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 13px;
+  font-weight: 500;
+  transition: top var(--transition);
+}
+
+.skipLink:focus {
+  top: 12px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  background-color: rgba(18, 18, 21, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-slow);
+}
+
+.overlayVisible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Mobile-first: off-canvas, translated out of view. */
+.sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  width: min(var(--sidebar-width), 84vw);
+  background-color: var(--sidebar);
+  color: var(--sidebar-foreground);
+  transform: translateX(-100%);
+  transition: transform var(--transition-slow); /* drawer slide ~250ms (§9) */
+}
+
+.sidebarOpen {
+  transform: translateX(0);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.35); /* drawer lift over content */
+}
+
+/* Brand block (reference sidebar top): mark + wordmark + tiny tagline. */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 16px 14px;
+}
+
+.brandMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background-color: var(--sidebar-primary);
+  color: var(--sidebar-primary-foreground);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.brandWordmark {
+  font-size: 15px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--sidebar-accent-foreground);
+}
+
+.brandTagline {
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sidebar-muted);
+  white-space: nowrap;
+}
+
+.navScroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 4px 12px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sidebar-border) transparent;
+}
+
+.navScroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.navScroll::-webkit-scrollbar-thumb {
+  background-color: var(--sidebar-border);
+  border-radius: 3px;
+}
+
+/* Footer — hairline-separated from the nav (§5 dividers). */
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--sidebar-border);
+}
+
+.workspace {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.workspaceAvatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background-color: var(--sidebar-accent);
+  color: var(--sidebar-accent-foreground);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.workspaceText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.workspaceName {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  color: var(--sidebar-accent-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workspaceSub {
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--sidebar-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.apiLabel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--sidebar-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tablet and up (≥768px): persistent rail, no overlay. */
+@media (min-width: 768px) {
+  .overlay {
+    display: none !important;
+    pointer-events: none;
+  }
+
+  .sidebar {
+    transform: none;
+    width: var(--sidebar-width-tablet);
+    box-shadow: none;
+  }
+}
+
+/* Desktop (≥1024px): full-width rail. */
+@media (min-width: 1024px) {
+  .sidebar {
+    width: var(--sidebar-width);
+  }
+}

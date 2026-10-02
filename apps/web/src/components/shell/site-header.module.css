@@ -1,0 +1,110 @@
+/* SiteHeader — sticky top bar (§2): breadcrumb · search · primary CTA. */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--header-height);
+  padding: 12px var(--content-padding-mobile);
+  background-color: var(--background);
+  border-bottom: 1px solid var(--border);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Hamburger — mobile only (§8). */
+.menuButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border: none;
+  border-radius: var(--radius-control);
+  background-color: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background-color var(--transition);
+}
+
+.menuButton:hover {
+  background-color: var(--accent);
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.breadcrumbRoot {
+  color: var(--foreground);
+  font-weight: 500;
+  transition: color var(--transition);
+}
+
+.breadcrumbRoot:hover {
+  color: var(--primary);
+}
+
+.breadcrumbSeparator {
+  flex: none;
+  color: var(--muted-foreground);
+}
+
+.breadcrumbCurrent {
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* CTA label: long on wide viewports, short on mobile (§8). */
+.ctaShort {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .header {
+    padding: 12px 32px;
+  }
+
+  .menuButton {
+    display: none;
+  }
+
+  .ctaLong {
+    display: inline;
+  }
+}
+
+@media (max-width: 767px) {
+  .ctaLong {
+    display: none;
+  }
+
+  .ctaShort {
+    display: inline;
+  }
+}

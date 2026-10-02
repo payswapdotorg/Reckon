@@ -1,0 +1,174 @@
+/* CommandPalette — overlay dialog, flat border-driven panel (§5 elevation). */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 16px 16px;
+  background-color: rgba(18, 18, 21, 0.4);
+  animation: palette-fade var(--transition-slow) ease-out;
+}
+
+@keyframes palette-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.palette {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  max-height: 60vh;
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  animation: palette-pop var(--transition) ease-out;
+}
+
+@keyframes palette-pop {
+  from {
+    transform: translateY(-6px);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.inputIcon {
+  flex: none;
+  color: var(--muted-foreground);
+}
+
+.input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--foreground);
+}
+
+.input::placeholder {
+  color: var(--muted-foreground);
+}
+
+.resultList {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+.result {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "group title" "group hint";
+  column-gap: 10px;
+  row-gap: 1px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-control);
+  background-color: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background-color var(--transition);
+}
+
+.resultActive {
+  background-color: var(--accent);
+}
+
+.resultGroup {
+  grid-area: group;
+  align-self: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background-color: var(--secondary);
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.resultTitle {
+  grid-area: title;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.resultHint {
+  grid-area: hint;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.empty {
+  padding: 24px 16px;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  background-color: var(--background);
+}
+
+.footerHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--muted-foreground);
+}
+
+.footerKbd {
+  padding: 0 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background-color: var(--card);
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--muted-foreground);
+}
