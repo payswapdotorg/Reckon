@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "ui-007-merged-47-of-53-done-ui-008-009-remain",
+  "status": "ui-008-merged-48-of-53-done-ui-009-then-deploy",
   "implementationComplete": false,
   "dispatchBaseSha": "b217fdafcc8d5580409663128f6d1a329fd4ea0e",
   "workers": [
@@ -463,7 +463,7 @@
         "UI-002"
       ],
       "title": "Research workspace (learning ladder, evidence-class differentiation)",
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "UI-009",
