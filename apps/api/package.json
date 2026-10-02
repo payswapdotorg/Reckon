@@ -19,7 +19,8 @@
     "@reckon/experience": "workspace:*",
     "@reckon/scheduler": "workspace:*",
     "@reckon/persistence": "workspace:*",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "@reckon/integrations": "workspace:*"
   },
   "devDependencies": {
     "@reckon/sdk": "workspace:*"

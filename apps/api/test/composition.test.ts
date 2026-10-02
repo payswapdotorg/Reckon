@@ -35,12 +35,12 @@ beforeAll(async () => {
       {
         apiKey: "prod-key-a",
         tenantId: "prod-tenant-a",
-        scopes: ["decisions", "outcomes", "plans", "catalog", "research", "agents"] as never,
+        scopes: ["decisions", "outcomes", "plans", "catalog", "research", "agents", "integrations"] as never,
       },
       {
         apiKey: "prod-key-b",
         tenantId: "prod-tenant-b",
-        scopes: ["decisions", "outcomes", "plans", "catalog", "research", "agents"] as never,
+        scopes: ["decisions", "outcomes", "plans", "catalog", "research", "agents", "integrations"] as never,
       },
     ],
     apiVersion: "p1-002-production",
@@ -410,6 +410,20 @@ describe("P1-002 production composition — the ten /v1 endpoints over real pers
     expect(queuedOnly.map((job) => job.jobId)).toEqual(["prod-rj-2"]);
     const otherTenant = await tenantB.research.listJobs({ limit: 10 });
     expect(otherTenant).toHaveProperty("length", 0);
+  });
+
+  it("integrations (UI-009): adapter declarations served with fixture-only honesty", async () => {
+    const adapters = await tenantA.integrations.listAdapters();
+    expect(adapters.length).toBeGreaterThanOrEqual(4);
+    const webflix = adapters.find((a) => a.adapterId === "webflix-reference-adapter");
+    expect(webflix).toBeDefined();
+    expect(webflix?.domain).toBe("media");
+    expect(webflix?.supportedCapabilities.length).toBeGreaterThan(0);
+    // §14 honesty law is structural: fixture-only until a real provider path is verified
+    for (const adapter of adapters) {
+      expect(adapter.liveVerification.status).toBe("fixture-only");
+      expect(adapter.liveVerification.evidenceClass).toBe("fixture");
+    }
   });
 
   it("candidates: validated echo (candidate sets enter decisions, not state)", async () => {

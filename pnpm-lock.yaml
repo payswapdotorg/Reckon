@@ -32,6 +32,9 @@ importers:
       '@reckon/experience':
         specifier: workspace:*
         version: link:../../packages/experience
+      '@reckon/integrations':
+        specifier: workspace:*
+        version: link:../../packages/integrations
       '@reckon/observability':
         specifier: workspace:*
         version: link:../../packages/observability

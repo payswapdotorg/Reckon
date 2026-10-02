@@ -14,6 +14,7 @@ import { registerCandidateRoutes } from "./routes/candidates.js";
 import { registerCatalogRoutes } from "./routes/catalog.js";
 import { registerDecisionRoutes } from "./routes/decisions.js";
 import { registerExperienceRoutes } from "./routes/experiences.js";
+import { registerIntegrationRoutes } from "./routes/integrations.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerOutcomeRoutes } from "./routes/outcomes.js";
 import { registerPlanRoutes } from "./routes/plans.js";
@@ -149,6 +150,7 @@ export function buildServer(config: ApiConfig): FastifyInstance {
   registerExperienceRoutes(app, deps);
   registerAgentRoutes(app, deps);
   registerResearchRoutes(app, deps);
+  registerIntegrationRoutes(app, deps);
 
   return app;
 }
