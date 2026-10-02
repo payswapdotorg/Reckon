@@ -23,15 +23,31 @@ importers:
       '@reckon/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@reckon/decision':
+        specifier: workspace:*
+        version: link:../../packages/decision
       '@reckon/events':
         specifier: workspace:*
         version: link:../../packages/events
+      '@reckon/experience':
+        specifier: workspace:*
+        version: link:../../packages/experience
       '@reckon/observability':
         specifier: workspace:*
         version: link:../../packages/observability
+      '@reckon/persistence':
+        specifier: workspace:*
+        version: link:../../packages/persistence
+      '@reckon/scheduler':
+        specifier: workspace:*
+        version: link:../../packages/scheduler
       fastify:
         specifier: ^5.12.5
         version: 5.12.5
+    devDependencies:
+      '@reckon/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
 
   packages/agents:
     dependencies:

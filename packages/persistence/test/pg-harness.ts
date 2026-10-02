@@ -37,6 +37,65 @@ interface RunningServer {
 
 let running: RunningServer | undefined;
 
+/**
+ * The test port (55433) is DEDICATED to this harness. A previous run
+ * killed by a timeout/reaper can leave an orphaned postgres holding it
+ * (its data dir may even be deleted). Before booting, evict any stale
+ * holder — found by port, not by name (pgrep -f proved unreliable for
+ * the spawned postgres cmdline). SIGKILL: postgres smart-shutdown
+ * (SIGTERM) can stall behind dead clients from a killed worker.
+ */
+async function evictStalePortHolder(): Promise<void> {
+  const { execFileSync } = await import("node:child_process");
+  const readFileSync = (await import("node:fs")).readFileSync;
+  const portHolders = (): number[] => {
+    try {
+      const out = execFileSync("ss", ["-tlnp"], { encoding: "utf8", timeout: 5000 });
+      const pids = new Set<number>();
+      for (const line of out.split("\n")) {
+        if (!line.includes(`:${TEST_PORT} `)) continue;
+        for (const match of line.matchAll(/pid=(\d+)/g)) pids.add(Number(match[1]));
+      }
+      return [...pids];
+    } catch {
+      return [];
+    }
+  };
+  for (let round = 0; round < 10; round += 1) {
+    const holders = portHolders();
+    if (holders.length === 0) {
+      // No holder: remove any stale socket/lock files a SIGKILLed server
+      // could not clean up itself (postgres refuses to start otherwise).
+      for (const suffix of ["", ".lock"]) {
+        const stale = `/tmp/.s.PGSQL.${TEST_PORT}${suffix}`;
+        try {
+          (await import("node:fs")).rmSync(stale, { force: true });
+        } catch {
+          // Ignore.
+        }
+      }
+      return;
+    }
+    for (const pid of holders) {
+      try {
+        const cmdline = readFileSync(`/proc/${pid}/cmdline`, "utf8");
+        if (!cmdline.includes("postgres")) continue; // never kill non-postgres
+        process.stderr.write(`[pg-harness] evicting stale port holder pid ${pid} (round ${round + 1})\n`);
+        process.kill(pid, "SIGKILL");
+      } catch {
+        // Process vanished or not readable — ignore.
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+  const stuck = portHolders();
+  if (stuck.length > 0) {
+    throw new Error(
+      `[pg-harness] port ${TEST_PORT} still held by ${stuck.join(",")} after eviction — refusing to boot into a dead bind`,
+    );
+  }
+}
+
 async function bootServer(dataDir: string, fresh: boolean): Promise<InstanceType<typeof EmbeddedPostgres>> {
   const pg = new EmbeddedPostgres({
     databaseDir: join(dataDir, "db"),
@@ -63,6 +122,7 @@ export async function startTestPostgres(): Promise<TestPostgres> {
   if (running !== undefined) {
     throw new Error("pg-harness: a test server is already running (one per suite)");
   }
+  await evictStalePortHolder();
   const dataDir = mkdtempSync(join(tmpdir(), "reckon-pg-"));
   const pg = await bootServer(dataDir, true);
   running = { pg, dataDir };

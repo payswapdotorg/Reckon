@@ -44,3 +44,16 @@ export type {
 export { observedDecisionHandler, observedOutcomeIngest, recordRouteErrorSafely } from "./observability.js";
 export type { ObservationDeps } from "./observability.js";
 export type { ObservabilityConfig } from "./config.js";
+export {
+  buildProductionServer,
+  createRuntimeDecisionHandler,
+  createRuntimeExperienceResolver,
+  createRuntimePlanHandler,
+  CompositionError,
+} from "./composition.js";
+export type {
+  ProductionComposition,
+  ProductionCompositionOptions,
+  CompositionClock,
+} from "./composition.js";
+export { PgObservabilitySink } from "./pg-observability.js";

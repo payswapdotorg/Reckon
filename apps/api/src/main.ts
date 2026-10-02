@@ -1,17 +1,18 @@
-import { pathToFileURL } from "node:url";
-import { loadConfigFromEnv } from "./config.js";
-import { buildServer } from "./server.js";
-
 /**
- * The app file: wires REAL config (environment) and the NotWired defaults.
- * This is the only place a server instance is created for deployment; the
- * key map comes from RECKON_API_KEYS (or RECKON_API_KEYS_FILE) in the
- * format `key1:tenant1:scope1,scope2;key2:tenant2:...`.
+ * The app file (P1-002): wires REAL config (environment) and the PRODUCTION
+ * composition — real W2 kernel handlers over real PostgreSQL persistence —
+ * when DATABASE_URL is present. Without DATABASE_URL the server refuses to
+ * boot as "production" (ADR-001: no hidden in-memory production authority);
+ * tests and local embedding use buildServer directly with their own wiring.
  *
  * Run (requires tsx or any TS runner; Node type-stripping does not resolve
  * .js specifiers to .ts sources):
- *   pnpm --filter @reckon/api start
+ *   DATABASE_URL=postgres://... RECKON_API_KEYS='key:tenant:decisions,outcomes,...' pnpm --filter @reckon/api start
  */
+import { pathToFileURL } from "node:url";
+import { loadConfigFromEnv } from "./config.js";
+import { buildProductionServer } from "./composition.js";
+
 async function main(): Promise<void> {
   const config = loadConfigFromEnv(process.env);
   if (config.keys === undefined || config.keys.length === 0) {
@@ -19,14 +20,30 @@ async function main(): Promise<void> {
       "reckon-api: RECKON_API_KEYS is not set — no API keys configured; every authenticated route will return 401\n",
     );
   }
-  const app = buildServer(config);
+  const databaseUrl = process.env.DATABASE_URL;
+  if (databaseUrl === undefined || databaseUrl === "") {
+    process.stderr.write(
+      "reckon-api: DATABASE_URL is not set — the production composition requires real PostgreSQL persistence (ADR-001: no hidden in-memory production authority)\n",
+    );
+    process.exit(1);
+  }
+
+  const composition = await buildProductionServer({
+    connectionString: databaseUrl,
+    keys: config.keys,
+    apiVersion: config.apiVersion,
+    logger: config.logger,
+  });
   const port = Number(process.env.RECKON_PORT ?? 8080);
   const host = process.env.RECKON_HOST ?? "127.0.0.1";
-  await app.listen({ port, host });
+  await composition.app.listen({ port, host });
+  process.stderr.write(
+    `reckon-api: production composition live on ${host}:${port} (PostgreSQL persistence, real W2 kernels)\n`,
+  );
 
   const shutdown = async (signal: string): Promise<void> => {
     process.stderr.write(`reckon-api: received ${signal}, closing\n`);
-    await app.close();
+    await composition.close();
     process.exit(0);
   };
   process.once("SIGINT", () => void shutdown("SIGINT"));

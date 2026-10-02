@@ -1,7 +1,7 @@
 {
   "name": "@reckon/api",
   "version": "0.1.0",
-  "description": "HTTP API + auth/tenant boundary (W3 lane): fastify composition root with contract-validated routes, static bearer key auth, tenant/scope enforcement, typed error envelope and idempotent POST replay.",
+  "description": "HTTP API + auth/tenant boundary (W3 lane): fastify composition root with contract-validated routes, static bearer key auth, tenant/scope enforcement, typed error envelope and idempotent POST replay. P1-002: production composition (real W2 kernel handlers over real PostgreSQL persistence).",
   "type": "module",
   "private": true,
   "main": "./src/index.ts",
@@ -14,6 +14,13 @@
     "@reckon/contracts": "workspace:*",
     "@reckon/events": "workspace:*",
     "@reckon/observability": "workspace:*",
-    "fastify": "^5.12.5"
+    "fastify": "^5.12.5",
+    "@reckon/decision": "workspace:*",
+    "@reckon/experience": "workspace:*",
+    "@reckon/scheduler": "workspace:*",
+    "@reckon/persistence": "workspace:*"
+  },
+  "devDependencies": {
+    "@reckon/sdk": "workspace:*"
   }
 }
