@@ -30,7 +30,7 @@ export type Parsed<S> = S extends Validator<infer T> ? T : never;
  * skeleton requires it yet, but the scope exists so key provisioning can
  * already express it.
  */
-export const ROUTE_SCOPES = ["decisions", "outcomes", "plans", "catalog", "research"] as const;
+export const ROUTE_SCOPES = ["decisions", "outcomes", "plans", "catalog", "research", "agents"] as const;
 export type Scope = (typeof ROUTE_SCOPES)[number];
 
 /**

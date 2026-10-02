@@ -22,6 +22,8 @@ import {
   ExperiencePlanSchema,
   FORMAT_KINDS,
   contentDigest,
+  type AgentBody,
+  type AgentOrganization,
   type CatalogItem,
   type ContextSnapshot,
   type DecisionRequest,
@@ -41,6 +43,7 @@ import {
   PgEventSink,
   PgIdempotencyStore,
   PgOutboxTransport,
+  PgAgentStore,
   PgPlanStore,
   PgPreferenceStore,
   PgPoolExecutor,
@@ -412,6 +415,7 @@ export async function buildProductionServer(
   const catalog = new PgCatalogStore(executor);
   const contexts = new PgContextStore(executor);
   const plans = new PgPlanStore(executor);
+  const agents = new PgAgentStore(executor);
   const decisions = new PgDecisionStore(executor);
   const preferences = new PgPreferenceStore(executor);
   const events = new PgEventQueries(executor);
@@ -465,6 +469,26 @@ export async function buildProductionServer(
         await preferences.append(delta);
         return delta;
       },
+    },
+    agentHandler: {
+      createBody: async (body, auth) => {
+        await agents.putBody(authTenantScope(auth), body);
+        return body;
+      },
+      getBody: async (bodyId, auth) =>
+        (await agents.getBody(authTenantScope(auth), bodyId))?.body ?? null,
+      listBodies: async (auth, limit) =>
+        (await agents.listBodies(authTenantScope(auth), limit)).map((entry) => entry.body),
+      createOrganization: async (organization, auth) => {
+        await agents.putOrganization(authTenantScope(auth), organization);
+        return organization;
+      },
+      getOrganization: async (organizationId, auth) =>
+        (await agents.getOrganization(authTenantScope(auth), organizationId))?.organization ?? null,
+      listOrganizations: async (auth, limit) =>
+        (await agents.listOrganizations(authTenantScope(auth), limit)).map(
+          (entry) => entry.organization,
+        ),
     },
     planHandler: createRuntimePlanHandler({ plans, catalog, clock }),
     catalogItemIngest: {

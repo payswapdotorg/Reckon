@@ -35,12 +35,12 @@ beforeAll(async () => {
       {
         apiKey: "prod-key-a",
         tenantId: "prod-tenant-a",
-        scopes: ["decisions", "outcomes", "plans", "catalog", "research"] as never,
+        scopes: ["decisions", "outcomes", "plans", "catalog", "research", "agents"] as never,
       },
       {
         apiKey: "prod-key-b",
         tenantId: "prod-tenant-b",
-        scopes: ["decisions", "outcomes", "plans", "catalog", "research"] as never,
+        scopes: ["decisions", "outcomes", "plans", "catalog", "research", "agents"] as never,
       },
     ],
     apiVersion: "p1-002-production",
@@ -281,6 +281,101 @@ describe("P1-002 production composition — the ten /v1 endpoints over real pers
     await expect(tenantA.plans.get("no-such-plan")).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
+  });
+
+  it("agents (UI-007): bodies + organizations round-trip, versioned append, tenant isolation", async () => {
+    const body = await tenantA.agents.createBody({
+      schema: "reckon.agent-body",
+      schemaVersion: "0.1.0",
+      bodyId: "prod-body-gen",
+      version: "1",
+      role: { roleId: "generalist", description: "Root of delegation." },
+      observations: [],
+      tools: [],
+      permissions: [],
+      memoryInterfaces: [],
+      actions: [],
+      budgets: [],
+    });
+    expect(body.bodyId).toBe("prod-body-gen");
+
+    const fetched = await tenantA.agents.getBody("prod-body-gen");
+    expect(fetched?.role.roleId).toBe("generalist");
+
+    // version-append: same body id, new version
+    await tenantA.agents.createBody({
+      schema: "reckon.agent-body",
+      schemaVersion: "0.1.0",
+      bodyId: "prod-body-gen",
+      version: "2",
+      role: { roleId: "generalist", description: "Root of delegation, v2 scope." },
+      observations: [],
+      tools: [],
+      permissions: [],
+      memoryInterfaces: [],
+      actions: [],
+      budgets: [],
+    });
+    expect((await tenantA.agents.getBody("prod-body-gen"))?.version).toBe("2");
+
+    const org = await tenantA.agents.createOrganization({
+      schema: "reckon.agent-organization",
+      schemaVersion: "0.1.0",
+      organizationId: "prod-org-1",
+      version: "1",
+      bodies: [
+        {
+          schema: "reckon.agent-body",
+          schemaVersion: "0.1.0",
+          bodyId: "prod-body-gen",
+          version: "2",
+          role: { roleId: "generalist", description: "Root of delegation, v2 scope." },
+          observations: [],
+          tools: [],
+          permissions: [],
+          memoryInterfaces: [],
+          actions: [],
+          budgets: [],
+        },
+        {
+          schema: "reckon.agent-body",
+          schemaVersion: "0.1.0",
+          bodyId: "prod-body-res",
+          version: "1",
+          role: { roleId: "researcher", description: "Finds candidate evidence." },
+          observations: [],
+          tools: [],
+          permissions: [],
+          memoryInterfaces: [],
+          actions: [],
+          budgets: [],
+        },
+      ],
+      edges: [
+        { edgeId: "e-1", fromBodyId: "prod-body-gen", toBodyId: "prod-body-res", kind: "delegate" },
+      ],
+      memoryTopology: { sharedMemories: [], privateMemories: [] },
+      modelAssignments: [
+        { bodyId: "prod-body-gen", modelAdapterId: "router-1", modelId: "m-base" },
+      ],
+      budgets: [],
+      terminationRules: [{ kind: "task-complete" }],
+    });
+    expect(org.organizationId).toBe("prod-org-1");
+    const orgFetched = await tenantA.agents.getOrganization("prod-org-1");
+    expect(orgFetched?.bodies).toHaveLength(2);
+    expect(orgFetched?.edges[0]?.kind).toBe("delegate");
+
+    // recent lists (latest version each)
+    const bodies = await tenantA.agents.listBodies({ limit: 10 });
+    expect(bodies.some((b) => b.bodyId === "prod-body-gen" && b.version === "2")).toBe(true);
+    const orgs = await tenantA.agents.listOrganizations({ limit: 10 });
+    expect(orgs.some((o) => o.organizationId === "prod-org-1")).toBe(true);
+
+    // tenant isolation + 404 honesty
+    await expect(tenantB.agents.getBody("prod-body-gen")).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(tenantB.agents.listBodies({ limit: 10 })).resolves.toHaveProperty("length", 0);
+    await expect(tenantA.agents.getBody("no-such-body")).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   it("candidates: validated echo (candidate sets enter decisions, not state)", async () => {
