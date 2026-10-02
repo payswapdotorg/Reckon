@@ -1,0 +1,34 @@
+/* DecisionIdleState — neutral honest-empty default (§7 reserves red for
+ * failures); config warning row when the demo key is absent. */
+
+.warningRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.warningIcon {
+  flex: none;
+  color: var(--chart-2);
+}
+
+.warningText {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--muted-foreground);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.inlineCode {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  overflow-wrap: anywhere;
+}

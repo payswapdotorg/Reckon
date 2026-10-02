@@ -1,0 +1,7 @@
+/* DecisionWorkspace — card stack at the workspace block gap (§2). */
+
+.workspace {
+  display: flex;
+  flex-direction: column;
+  gap: var(--block-gap);
+}

@@ -1,0 +1,131 @@
+/* AlternativesCard — considered vs filtered groups, per-alternative rows. */
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.counts {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--muted-foreground);
+}
+
+.filteredCount {
+  color: #96590a;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.group + .group {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.groupHeading {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--card);
+}
+
+/* filtered rows carry the amber fixture-family hint tone (chart-2), used
+ * here purely as a semantic marker for exclusion, not an evidence class */
+.itemFiltered {
+  border-color: color-mix(in srgb, var(--chart-2) 45%, transparent);
+  background-color: #fbf7ee;
+}
+
+.itemHead {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.excludedByBadge {
+  color: #96590a;
+}
+
+.itemRows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.itemRow {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.itemKey {
+  flex: none;
+  width: 92px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.itemValue {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--foreground);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.uncertainty,
+.reason {
+  font-size: 12px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767px) {
+  .itemRow {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .itemKey {
+    width: auto;
+  }
+}
