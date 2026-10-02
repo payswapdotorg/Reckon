@@ -59,6 +59,26 @@ export interface PlanHandler {
   listRecent(auth: AuthContext, limit?: number): Promise<readonly ExperiencePlan[]>;
 }
 
+/** Research job surface (UI-008): the durable FIFO queue (ADR-004 runtime research). */
+export interface ResearchJobView {
+  readonly jobId: string;
+  readonly kind: string;
+  readonly state: "queued" | "leased" | "done" | "failed";
+  readonly payload: unknown;
+  readonly resultRef: string | null;
+  readonly createdAt: number;
+  readonly updatedAt: number;
+}
+
+export interface ResearchHandler {
+  /** Enqueue a research job (tenant from auth; FIFO lease semantics). */
+  enqueue(job: { jobId: string; kind: string; payload?: unknown }, auth: AuthContext): Promise<ResearchJobView>;
+  /** One job by id (tenant-checked); null when unknown. */
+  get(jobId: string, auth: AuthContext): Promise<ResearchJobView | null>;
+  /** Recent jobs for the tenant, newest first (bounded, optional state filter). */
+  list(auth: AuthContext, limit?: number, state?: "queued" | "leased" | "done" | "failed"): Promise<readonly ResearchJobView[]>;
+}
+
 /** Agent declaration surface (UI-007): bodies + organizations, tenant from AUTH (catalog pattern — the frozen contracts carry no tenant field). */
 export interface AgentHandler {
   createBody(body: AgentBody, auth: AuthContext): Promise<AgentBody>;
@@ -87,6 +107,7 @@ export interface ExperienceResolveHandler {
 
 export interface HandlerPorts {
   agentHandler: AgentHandler;
+  researchHandler: ResearchHandler;
   decisionHandler: DecisionHandler;
   decisionStore: DecisionStore;
   outcomeIngest: OutcomeIngestHandler;
@@ -103,6 +124,11 @@ export type PartialHandlerPorts = Partial<HandlerPorts>;
 /** Deterministic NotWired defaults: every port answers 501 NOT_WIRED. */
 export function notWiredDefaults(): HandlerPorts {
   return {
+    researchHandler: {
+      enqueue: async () => notWired("ResearchHandler", "enqueue"),
+      get: async () => notWired("ResearchHandler", "get"),
+      list: async () => notWired("ResearchHandler", "list"),
+    },
     agentHandler: {
       createBody: async () => notWired("AgentHandler", "createBody"),
       getBody: async () => notWired("AgentHandler", "getBody"),

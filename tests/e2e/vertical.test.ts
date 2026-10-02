@@ -235,7 +235,7 @@ describe("W3 e2e vertical — SDK → API → transport → store, with observab
       //    injected clock) + scheduler-action + outcome-linkage records,
       //    digest-verified on read.
       const records = new JsonlFileObservabilitySink(observabilityPath).readAll();
-      expect(records.filter((r) => r.kind === "integration-capability")).toHaveLength(10);
+      expect(records.filter((r) => r.kind === "integration-capability")).toHaveLength(11);
       const decisionRecord = records.find((r) => r.kind === "decision");
       expect(decisionRecord).toMatchObject({
         decisionId: decision.decisionId,

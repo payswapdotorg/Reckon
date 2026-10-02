@@ -45,12 +45,13 @@ import {
   PgOutboxTransport,
   PgAgentStore,
   PgPlanStore,
+  PgResearchJobStore,
   PgPreferenceStore,
   PgPoolExecutor,
   applyMigrations,
   type SqlExecutor,
 } from "@reckon/persistence";
-import type { PartialHandlerPorts, StoredPlanVersionView } from "./ports.js";
+import type { PartialHandlerPorts, ResearchJobView, StoredPlanVersionView } from "./ports.js";
 import { buildServer } from "./server.js";
 import type { ApiConfig } from "./config.js";
 import type { ReplanRequest, ResolveRequest, ResolveResponse } from "./envelopes.js";
@@ -86,6 +87,8 @@ export interface ProductionComposition {
     readonly contexts: PgContextStore;
     readonly events: PgEventQueries;
     readonly idempotency: PgIdempotencyStore;
+    readonly agents: PgAgentStore;
+    readonly researchJobs: PgResearchJobStore;
   };
   close(): Promise<void>;
 }
@@ -101,6 +104,26 @@ export class CompositionError extends Error {
 }
 
 /** TenantScope from the authenticated request context (tenant law: auth-derived). */
+function toResearchJobView(stored: {
+  jobId: string;
+  kind: string;
+  state: "queued" | "leased" | "done" | "failed";
+  payload: unknown;
+  resultRef: string | null;
+  createdAt: number;
+  updatedAt: number;
+}): ResearchJobView {
+  return {
+    jobId: stored.jobId,
+    kind: stored.kind,
+    state: stored.state,
+    payload: stored.payload,
+    resultRef: stored.resultRef,
+    createdAt: stored.createdAt,
+    updatedAt: stored.updatedAt,
+  };
+}
+
 function authTenantScope(auth: AuthContext): TenantScope {
   return {
     tenantId: auth.tenantId,
@@ -416,6 +439,7 @@ export async function buildProductionServer(
   const contexts = new PgContextStore(executor);
   const plans = new PgPlanStore(executor);
   const agents = new PgAgentStore(executor);
+  const researchJobs = new PgResearchJobStore(executor, { now: clock.now });
   const decisions = new PgDecisionStore(executor);
   const preferences = new PgPreferenceStore(executor);
   const events = new PgEventQueries(executor);
@@ -468,6 +492,27 @@ export async function buildProductionServer(
       ingest: async (delta) => {
         await preferences.append(delta);
         return delta;
+      },
+    },
+    researchHandler: {
+      enqueue: async (job, auth) => {
+        const stored = await researchJobs.enqueue({
+          jobId: job.jobId,
+          tenant: authTenantScope(auth),
+          kind: job.kind,
+          payload: job.payload ?? null,
+        });
+        return toResearchJobView(stored);
+      },
+      get: async (jobId, auth) => {
+        const stored = await researchJobs.get(jobId);
+        if (stored === undefined) return null;
+        if (stored.tenant.tenantId !== auth.tenantId) return null;
+        return toResearchJobView(stored);
+      },
+      list: async (auth, limit, state) => {
+        const stored = await researchJobs.listRecent(authTenantScope(auth), limit, state);
+        return stored.map(toResearchJobView);
       },
     },
     agentHandler: {
@@ -531,7 +576,7 @@ export async function buildProductionServer(
     executor,
     transport,
     observability,
-    stores: { decisions, plans, catalog, preferences, contexts, events, idempotency },
+    stores: { decisions, plans, catalog, preferences, contexts, events, idempotency, agents, researchJobs },
     async close() {
       await app.close();
       await observability.close();

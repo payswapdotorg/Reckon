@@ -80,6 +80,28 @@ export type OutcomeEventInput = z.input<typeof OutcomeEventSchema>;
 export type PreferenceDeltaInput = z.input<typeof PreferenceDeltaSchema>;
 export type ExperiencePlanInput = z.input<typeof ExperiencePlanSchema>;
 export type AgentBodyInput = z.input<typeof AgentBodySchema>;
+
+/** Research job states (API-level envelope over the durable queue). */
+export const RESEARCH_JOB_STATES = ["queued", "leased", "done", "failed"] as const;
+export type ResearchJobState = (typeof RESEARCH_JOB_STATES)[number];
+
+/** POST /v1/research/jobs input (payload opaque to the API). */
+export interface ResearchJobInput {
+  readonly jobId: string;
+  readonly kind: string;
+  readonly payload?: unknown;
+}
+
+/** Research job view (GET surface). */
+export interface ResearchJobView {
+  readonly jobId: string;
+  readonly kind: string;
+  readonly state: ResearchJobState;
+  readonly payload: unknown;
+  readonly resultRef: string | null;
+  readonly createdAt: number;
+  readonly updatedAt: number;
+}
 export type AgentOrganizationInput = z.input<typeof AgentOrganizationSchema>;
 export type CatalogItemInput = z.input<typeof CatalogItemSchema>;
 export type RealizationInput = z.input<typeof RealizationSchema>;
@@ -98,6 +120,19 @@ export const ReplanRequestSchema = NoTenant.extend({
   candidates: CandidateSetSchema.optional(),
 });
 export type ReplanRequestInput = z.input<typeof ReplanRequestSchema>;
+
+const ResearchJobViewSchema = z.object({
+  jobId: IdSchema,
+  kind: IdSchema,
+  state: z.enum(RESEARCH_JOB_STATES),
+  payload: z.unknown(),
+  resultRef: z.string().nullable(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
+/** Response wrapper for the research-jobs collection route. */
+const ResearchJobListSchema = z.object({ jobs: z.array(ResearchJobViewSchema) });
 
 /** Response wrapper for the agent-body collection route. */
 const AgentBodyListSchema = z.object({ bodies: z.array(AgentBodySchema) });
@@ -211,6 +246,14 @@ export interface ReckonClient {
     history(planId: string, options?: CallOptions): Promise<readonly PlanVersionEntry[]>;
     /** GET /v1/plans?limit=N — recent plans (latest version each, newest first). */
     listRecent(options?: CallOptions & { readonly limit?: number }): Promise<readonly ExperiencePlan[]>;
+  };
+  readonly research: {
+    /** POST /v1/research/jobs — enqueue a research job (FIFO lease semantics). */
+    enqueueJob(job: ResearchJobInput, options?: CallOptions): Promise<ResearchJobView>;
+    /** GET /v1/research/jobs/{jobId} — one job (404 when unknown). */
+    getJob(jobId: string, options?: CallOptions): Promise<ResearchJobView>;
+    /** GET /v1/research/jobs?limit&state — recent jobs, newest first. */
+    listJobs(options?: CallOptions & { readonly limit?: number; readonly state?: ResearchJobState }): Promise<readonly ResearchJobView[]>;
   };
   readonly agents: {
     /** POST /v1/agents/bodies — create or version-append an Agent Body declaration. */
@@ -461,6 +504,42 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
           responseContract: "reckon.experience-plan (recent plans)",
           headers: { ...(callOptions?.headers ?? {}) },
         })).plans,
+    },
+    research: {
+      enqueueJob: async (job, callOptions) =>
+        request<ResearchJobInput, ResearchJobView>({
+          method: "POST",
+          path: "/v1/research/jobs",
+          requestSchema: z.object({ jobId: IdSchema, kind: IdSchema, payload: z.unknown().optional() }) as never,
+          requestBody: job,
+          responseSchema: ResearchJobViewSchema,
+          responseContract: "reckon.api.research-job",
+          headers: {
+            "idempotency-key": headerIdempotencyKey(callOptions?.idempotencyKey),
+            ...(callOptions?.headers ?? {}),
+          },
+        }),
+      getJob: async (jobId, callOptions) =>
+        request<unknown, ResearchJobView>({
+          method: "GET",
+          path: `/v1/research/jobs/${encodeURIComponent(jobId)}`,
+          responseSchema: ResearchJobViewSchema,
+          responseContract: "reckon.api.research-job",
+          headers: { ...(callOptions?.headers ?? {}) },
+        }),
+      listJobs: async (callOptions) => {
+        const params = new URLSearchParams();
+        if (callOptions?.limit !== undefined) params.set("limit", String(callOptions.limit));
+        if (callOptions?.state !== undefined) params.set("state", callOptions.state);
+        const qs = params.toString();
+        return (await request<unknown, { jobs: ResearchJobView[] }>({
+          method: "GET",
+          path: `/v1/research/jobs${qs ? `?${qs}` : ""}`,
+          responseSchema: ResearchJobListSchema,
+          responseContract: "reckon.api.research-job (recent jobs)",
+          headers: { ...(callOptions?.headers ?? {}) },
+        })).jobs;
+      },
     },
     agents: {
       createBody: async (body, callOptions) =>

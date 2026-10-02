@@ -86,6 +86,19 @@ export function newHarnessState(): HarnessState {
 export function deterministicHandlers(state: HarnessState): HandlerPorts {
   const plansById = new Map<string, ExperiencePlan>();
   return {
+    researchHandler: {
+      enqueue: async (job) => ({
+        jobId: job.jobId,
+        kind: job.kind,
+        state: "queued" as const,
+        payload: job.payload ?? null,
+        resultRef: null,
+        createdAt: 0,
+        updatedAt: 0,
+      }),
+      get: async () => null,
+      list: async () => [],
+    },
     agentHandler: {
       createBody: async (body) => body,
       getBody: async () => null,
