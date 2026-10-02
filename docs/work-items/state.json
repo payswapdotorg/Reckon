@@ -482,7 +482,8 @@
         "UI-009"
       ],
       "title": "Free-tier public deployment (Vercel + Neon + Upstash + R2, optional Apify)",
-      "status": "queued"
+      "status": "in-progress",
+      "notes": "IN PROGRESS 2026-10-02T22:51Z: Neon production project PROVISIONED (reckon-production / lingering-sun-14227532, aws-us-east-1, PG16, free tier 0.25CU) and ALL 4 MIGRATIONS APPLIED over the real wire (deployed-infrastructure evidence, Gate L). Vercel BLOCKED: both composio vercel tokens 403 on the personal scope (re-auth required \u2014 operator link issued)."
     },
     {
       "id": "DEPLOY-002",
