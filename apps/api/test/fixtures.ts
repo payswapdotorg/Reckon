@@ -178,6 +178,7 @@ export interface StubState {
 }
 
 export function stubHandlers(state: StubState): HandlerPorts {
+  const plansById = new Map<string, ExperiencePlan>();
   return {
     decisionHandler: {
       decide: async (request: DecisionRequest, auth) => {
@@ -212,8 +213,15 @@ export function stubHandlers(state: StubState): HandlerPorts {
     planHandler: {
       create: async (plan: ExperiencePlan) => {
         state.planCreateCalls += 1;
+        plansById.set(plan.planId, plan);
         return plan;
       },
+      get: async (planId: string) => plansById.get(planId) ?? null,
+      history: async (planId: string) => {
+        const plan = plansById.get(planId);
+        return plan === undefined ? [] : [{ plan, version: plan.version, reason: null }];
+      },
+      listRecent: async (_auth, limit) => [...plansById.values()].slice(0, limit ?? 20),
       replan: async (planId: string, request: { trigger: string }, auth) => {
         state.replanCalls += 1;
         return ExperiencePlanSchema.parse({

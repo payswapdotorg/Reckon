@@ -230,6 +230,59 @@ describe("P1-002 production composition — the ten /v1 endpoints over real pers
     expect(history[1]?.reason).toBe("replan:outcome-observed");
   });
 
+  it("plans read surface (UI-005): get by id, history with reasons, listRecent newest-first", async () => {
+    const mk = (planId: string, createdAt: number): ExperiencePlan => ({
+      schema: "reckon.experience-plan",
+      schemaVersion: "0.1.0",
+      planId,
+      version: 0,
+      tenant: { tenantId: "prod-tenant-a" },
+      subject: { kind: "user", ref: "user-42" },
+      objective: { objectiveId: "obj-relax", version: "1", kind: "relax", params: {} },
+      attentionPolicy: { policyId: "att-balanced", version: "1", style: "balanced", params: {} },
+      queuedExperiences: [],
+      replanTriggers: [],
+      resumeCheckpoints: [],
+      createdAt,
+      updatedAt: createdAt,
+    });
+    await tenantA.plans.create(mk("prod-plan-r1", 60_000));
+    await tenantA.plans.create(mk("prod-plan-r2", 61_000));
+
+    // get by id → the version-coherent latest (create normalizes to v1;
+    // a replan bumps to v2 — plan JSON and row version agree)
+    const before = await tenantA.plans.get("prod-plan-r1");
+    expect(before?.planId).toBe("prod-plan-r1");
+    expect(before?.version).toBe(1);
+    await tenantA.plans.replan("prod-plan-r1", { trigger: "host-request" } as never);
+    const after = await tenantA.plans.get("prod-plan-r1");
+    expect(after?.version).toBe(2);
+
+    // history → full chain with row versions and recorded reasons
+    const chain = await tenantA.plans.history("prod-plan-r1");
+    expect(chain.map((entry) => entry.version)).toEqual([1, 2]);
+    expect(chain.map((entry) => entry.plan.version)).toEqual([1, 2]);
+    expect(chain[1]?.reason).toBe("replan:host-request");
+
+    // listRecent → latest version each, newest first, tenant-scoped
+    const recent = await tenantA.plans.listRecent({ limit: 10 });
+    const ids = recent.map((plan) => plan.planId);
+    expect(ids).toContain("prod-plan-r1");
+    expect(ids).toContain("prod-plan-r2");
+    expect(recent.find((plan) => plan.planId === "prod-plan-r1")?.version).toBe(2);
+    const newestFirst = [...recent].sort((a, b) => b.updatedAt - a.updatedAt);
+    expect(recent.map((plan) => plan.planId)).toEqual(newestFirst.map((plan) => plan.planId));
+
+    // tenant isolation: tenant B sees none of tenant A's plans
+    const otherTenant = await tenantB.plans.listRecent({ limit: 10 });
+    expect(otherTenant.some((plan) => plan.planId.startsWith("prod-plan-r"))).toBe(false);
+
+    // 404 honesty for an unknown id
+    await expect(tenantA.plans.get("no-such-plan")).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+  });
+
   it("candidates: validated echo (candidate sets enter decisions, not state)", async () => {
     const set = await tenantA.candidates.submit({
       setId: "cs-echo",

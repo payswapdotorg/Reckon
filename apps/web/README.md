@@ -6,8 +6,13 @@ second source of domain truth (FINAL TL HANDOFF §29).
 
 The first wave (UI-001 + UI-002) delivered the **foundation**: app shell,
 design system, the seven workspace routes with honest empty states, and the
-evidence-class badge vocabulary (Gate Q prep). UI-004 (Decisions) is the
-first live workspace on that foundation; UI-003 and UI-005..UI-009 follow.
+evidence-class badge vocabulary (Gate Q prep). UI-003 (Overview), UI-004
+(Decisions) and UI-005 (Plans) are live workspaces on that foundation;
+UI-006..UI-009 follow.
+
+UI-005 note: the plans workspace consumes the plan READ surface
+(`GET /v1/plans/{id}`, `/history`, `GET /v1/plans`) that shipped with it —
+the SDK previously exposed plan writes only.
 
 ## Laws (violations void the delivery)
 

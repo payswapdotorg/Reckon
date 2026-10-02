@@ -1,0 +1,114 @@
+/* RecentPlansCard — the no-id default listing. Rows deep-link into the
+ * plan view; mono ids, hairline separation, quiet metadata. */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.item + .item {
+  border-top: 1px solid var(--border);
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 8px;
+  border-radius: var(--radius-control);
+  text-decoration: none;
+  color: inherit;
+  transition: background-color var(--transition);
+}
+
+.link:hover,
+.link:focus-visible {
+  background-color: var(--secondary);
+  outline: none;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.planId {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: none;
+}
+
+.when {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+}
+
+.queue {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--muted-foreground);
+  max-width: 640px;
+}
+
+.warnRow {
+  margin: 0 0 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--chart-2);
+  border-radius: var(--radius-control);
+  background-color: var(--secondary);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+}
+
+.warnIcon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--chart-2);
+}
+
+.inlineCode {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767px) {
+  .link {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}

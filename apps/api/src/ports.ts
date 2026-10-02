@@ -39,9 +39,22 @@ export interface PreferenceIngestHandler {
   ingest(delta: PreferenceDelta, auth: AuthContext): Promise<PreferenceDelta>;
 }
 
+/** One replan-history entry: the plan, the authoritative row version and the recorded replan reason. */
+export interface StoredPlanVersionView {
+  readonly plan: ExperiencePlan;
+  readonly version: number;
+  readonly reason: string | null;
+}
+
 export interface PlanHandler {
   create(plan: ExperiencePlan, auth: AuthContext): Promise<ExperiencePlan>;
   replan(planId: string, request: ReplanRequest, auth: AuthContext): Promise<ExperiencePlan>;
+  /** Latest version of one plan, or null when unknown (P1/UI-005 read surface). */
+  get(planId: string, auth: AuthContext): Promise<ExperiencePlan | null>;
+  /** Full version chain of one plan (asc) — the replan history (with reasons). */
+  history(planId: string, auth: AuthContext): Promise<readonly StoredPlanVersionView[]>;
+  /** Latest version of each plan, newest first (bounded). */
+  listRecent(auth: AuthContext, limit?: number): Promise<readonly ExperiencePlan[]>;
 }
 
 export interface CatalogItemIngestHandler {
@@ -84,6 +97,9 @@ export function notWiredDefaults(): HandlerPorts {
     planHandler: {
       create: async () => notWired("PlanHandler", "create"),
       replan: async () => notWired("PlanHandler", "replan"),
+      get: async () => notWired("PlanHandler", "get"),
+      history: async () => notWired("PlanHandler", "history"),
+      listRecent: async () => notWired("PlanHandler", "listRecent"),
     },
     catalogItemIngest: { ingest: async () => notWired("CatalogItemIngestHandler", "ingest") },
     realizationIngest: { ingest: async () => notWired("RealizationIngestHandler", "ingest") },

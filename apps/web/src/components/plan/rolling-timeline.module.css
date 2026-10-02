@@ -1,0 +1,205 @@
+/* RollingTimeline — the §10 rail. Horizontal on desktop (the roll reads
+ * left-to-right), vertical on mobile. Hairline separation + muted stage
+ * labels per the reference language; one emerald accent on CURRENT. */
+
+.rail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(180px, 1fr);
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background-color: var(--secondary);
+}
+
+.origin {
+  background-color: var(--muted);
+}
+
+.stageHead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stageId {
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.origin .stageId {
+  color: var(--foreground);
+}
+
+/* CURRENT carries the single accent moment of the rail. */
+.stage[data-stage="CURRENT"] {
+  border-color: var(--primary);
+}
+
+.stage[data-stage="CURRENT"] .stageId {
+  color: var(--primary);
+}
+
+.stageHeadline {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.stageDetail {
+  margin: 0;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.experiences {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.experience {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+}
+
+.experienceHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.positionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+  flex: none;
+}
+
+.experienceId {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.experienceMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.duration {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+}
+
+.absentNote {
+  margin: 0;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+  border-left: 2px solid var(--border);
+  padding-left: 10px;
+}
+
+/* ---- boundaries --------------------------------------------------------- */
+
+.boundaries {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.boundariesTitle {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.boundariesText {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--foreground);
+}
+
+.checkpoints {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.checkpoint {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.inlineCode {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  overflow-wrap: anywhere;
+}
+
+/* §8 mobile: the rail becomes vertical reading order. */
+@media (max-width: 767px) {
+  .rail {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    overflow-x: visible;
+  }
+
+  .stage {
+    padding: 14px;
+  }
+}

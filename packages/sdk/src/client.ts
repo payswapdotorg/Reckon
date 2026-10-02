@@ -89,6 +89,27 @@ export const ReplanRequestSchema = NoTenant.extend({
 });
 export type ReplanRequestInput = z.input<typeof ReplanRequestSchema>;
 
+/** Response wrapper for the plans read collection routes ({plans: [...]}). */
+const PlanCollectionSchema = z.object({ plans: z.array(ExperiencePlanSchema) });
+
+/** One replan-history entry (GET /v1/plans/{id}/history): the plan, its authoritative row version and the recorded replan reason. */
+export interface PlanVersionEntry {
+  readonly plan: ExperiencePlan;
+  readonly version: number;
+  readonly reason: string | null;
+}
+
+/** Response wrapper for the version-chain route. */
+const PlanHistorySchema = z.object({
+  versions: z.array(
+    z.object({
+      plan: ExperiencePlanSchema,
+      version: z.number().int().nonnegative(),
+      reason: z.string().nullable(),
+    }),
+  ),
+});
+
 export const ResolveRequestSchema = NoTenant.extend({
   items: CatalogItemSchema.array().min(1),
   realizations: RealizationSchema.array(),
@@ -168,6 +189,12 @@ export interface ReckonClient {
     create(plan: ExperiencePlanInput, options?: CallOptions): Promise<ExperiencePlan>;
     /** POST /v1/plans/{planId}/replan — replan an existing plan. */
     replan(planId: string, request: ReplanRequestInput, options?: CallOptions): Promise<ExperiencePlan>;
+    /** GET /v1/plans/{planId} — latest version of one plan (404 when unknown). */
+    get(planId: string, options?: CallOptions): Promise<ExperiencePlan>;
+    /** GET /v1/plans/{planId}/history — full version chain (asc) with replan reasons. */
+    history(planId: string, options?: CallOptions): Promise<readonly PlanVersionEntry[]>;
+    /** GET /v1/plans?limit=N — recent plans (latest version each, newest first). */
+    listRecent(options?: CallOptions & { readonly limit?: number }): Promise<readonly ExperiencePlan[]>;
   };
   readonly catalog: {
     /** POST /v1/catalog/items — upsert a host catalog item. */
@@ -380,6 +407,30 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
             ...(callOptions?.headers ?? {}),
           },
         }),
+      get: async (planId, callOptions) =>
+        request<unknown, ExperiencePlan>({
+          method: "GET",
+          path: `/v1/plans/${encodeURIComponent(planId)}`,
+          responseSchema: ExperiencePlanSchema,
+          responseContract: "reckon.experience-plan",
+          headers: { ...(callOptions?.headers ?? {}) },
+        }),
+      history: async (planId, callOptions) =>
+        (await request<unknown, { versions: PlanVersionEntry[] }>({
+          method: "GET",
+          path: `/v1/plans/${encodeURIComponent(planId)}/history`,
+          responseSchema: PlanHistorySchema,
+          responseContract: "reckon.experience-plan (version chain)",
+          headers: { ...(callOptions?.headers ?? {}) },
+        })).versions,
+      listRecent: async (callOptions) =>
+        (await request<unknown, { plans: ExperiencePlan[] }>({
+          method: "GET",
+          path: `/v1/plans${callOptions?.limit !== undefined ? `?limit=${encodeURIComponent(String(callOptions.limit))}` : ""}`,
+          responseSchema: PlanCollectionSchema,
+          responseContract: "reckon.experience-plan (recent plans)",
+          headers: { ...(callOptions?.headers ?? {}) },
+        })).plans,
     },
     catalog: {
       upsertItem: async (item, callOptions) =>

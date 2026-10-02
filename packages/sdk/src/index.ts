@@ -41,6 +41,7 @@ export type {
   CatalogItemInput,
   DecisionRequestInput,
   ExperiencePlanInput,
+  PlanVersionEntry,
   FetchLike,
   FetchRequestInit,
   OutcomeEventInput,
