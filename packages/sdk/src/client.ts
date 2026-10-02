@@ -81,6 +81,29 @@ export type PreferenceDeltaInput = z.input<typeof PreferenceDeltaSchema>;
 export type ExperiencePlanInput = z.input<typeof ExperiencePlanSchema>;
 export type AgentBodyInput = z.input<typeof AgentBodySchema>;
 
+/** Adapter declaration view (GET /v1/integrations/adapters) — the §14 capability cards' data. */
+export interface AdapterDeclarationView {
+  readonly adapterId: string;
+  readonly domain: string;
+  readonly contractVersion: string;
+  readonly supportedCapabilities: readonly string[];
+  readonly unsupportedCapabilities: readonly string[];
+  readonly authorizationRequirements: readonly {
+    resource: string;
+    requirement: string;
+    enforcedBy: string;
+  }[];
+  readonly limits: {
+    maxItemsPerImport: number;
+    maxRealizationsPerItem: number;
+    maxCandidatesPerSet: number;
+    mappingLatencyBudgetMs: number;
+  };
+  readonly liveVerification: { status: string; evidenceClass: string; note: string };
+  readonly provenance: Record<string, string>;
+  readonly failureSemantics: Record<string, string>;
+}
+
 /** Research job states (API-level envelope over the durable queue). */
 export const RESEARCH_JOB_STATES = ["queued", "leased", "done", "failed"] as const;
 export type ResearchJobState = (typeof RESEARCH_JOB_STATES)[number];
@@ -120,6 +143,32 @@ export const ReplanRequestSchema = NoTenant.extend({
   candidates: CandidateSetSchema.optional(),
 });
 export type ReplanRequestInput = z.input<typeof ReplanRequestSchema>;
+
+const AdapterDeclarationViewSchema = z.object({
+  adapterId: IdSchema,
+  domain: z.string(),
+  contractVersion: z.string(),
+  supportedCapabilities: z.array(z.string()),
+  unsupportedCapabilities: z.array(z.string()),
+  authorizationRequirements: z.array(
+    z.object({ resource: z.string(), requirement: z.string(), enforcedBy: z.string() }),
+  ),
+  limits: z.object({
+    maxItemsPerImport: z.number(),
+    maxRealizationsPerItem: z.number(),
+    maxCandidatesPerSet: z.number(),
+    mappingLatencyBudgetMs: z.number(),
+  }),
+  liveVerification: z.object({
+    status: z.string(),
+    evidenceClass: z.string(),
+    note: z.string(),
+  }),
+  provenance: z.record(z.string(), z.string()),
+  failureSemantics: z.record(z.string(), z.string()),
+});
+
+const AdapterListSchema = z.object({ adapters: z.array(AdapterDeclarationViewSchema) });
 
 const ResearchJobViewSchema = z.object({
   jobId: IdSchema,
@@ -246,6 +295,10 @@ export interface ReckonClient {
     history(planId: string, options?: CallOptions): Promise<readonly PlanVersionEntry[]>;
     /** GET /v1/plans?limit=N — recent plans (latest version each, newest first). */
     listRecent(options?: CallOptions & { readonly limit?: number }): Promise<readonly ExperiencePlan[]>;
+  };
+  readonly integrations: {
+    /** GET /v1/integrations/adapters — the adapter declarations (static product truth). */
+    listAdapters(options?: CallOptions): Promise<readonly AdapterDeclarationView[]>;
   };
   readonly research: {
     /** POST /v1/research/jobs — enqueue a research job (FIFO lease semantics). */
@@ -504,6 +557,16 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
           responseContract: "reckon.experience-plan (recent plans)",
           headers: { ...(callOptions?.headers ?? {}) },
         })).plans,
+    },
+    integrations: {
+      listAdapters: async (callOptions) =>
+        (await request<unknown, { adapters: AdapterDeclarationView[] }>({
+          method: "GET",
+          path: "/v1/integrations/adapters",
+          responseSchema: AdapterListSchema,
+          responseContract: "reckon.api.adapter-declaration (static product truth)",
+          headers: { ...(callOptions?.headers ?? {}) },
+        })).adapters,
     },
     research: {
       enqueueJob: async (job, callOptions) =>

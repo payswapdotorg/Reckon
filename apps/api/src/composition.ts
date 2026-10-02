@@ -51,7 +51,12 @@ import {
   applyMigrations,
   type SqlExecutor,
 } from "@reckon/persistence";
-import type { PartialHandlerPorts, ResearchJobView, StoredPlanVersionView } from "./ports.js";
+import type {
+  AdapterDeclarationView,
+  PartialHandlerPorts,
+  ResearchJobView,
+  StoredPlanVersionView,
+} from "./ports.js";
 import { buildServer } from "./server.js";
 import type { ApiConfig } from "./config.js";
 import type { ReplanRequest, ResolveRequest, ResolveResponse } from "./envelopes.js";
@@ -104,6 +109,39 @@ export class CompositionError extends Error {
 }
 
 /** TenantScope from the authenticated request context (tenant law: auth-derived). */
+function toAdapterView(declaration: AdapterDeclaration): AdapterDeclarationView {
+  return {
+    adapterId: declaration.adapterId,
+    domain: declaration.domain,
+    contractVersion: declaration.contractVersion,
+    supportedCapabilities: [...declaration.supportedCapabilities],
+    unsupportedCapabilities: [...declaration.unsupportedCapabilities],
+    authorizationRequirements: declaration.authorizationRequirements.map((req) => ({
+      resource: req.resource,
+      requirement: req.requirement,
+      enforcedBy: req.enforcedBy,
+    })),
+    limits: { ...declaration.limits },
+    liveVerification: { ...declaration.liveVerification },
+    provenance: { ...declaration.provenance },
+    failureSemantics: { ...declaration.failureSemantics },
+  };
+}
+
+import {
+  ADVERTISING_ADAPTER_DECLARATION,
+  COMMERCE_ADAPTER_DECLARATION,
+  GENERIC_MEDIA_ADAPTER_DECLARATION,
+  WEBFLIX_ADAPTER_DECLARATION,
+} from "@reckon/integrations";
+import type { AdapterDeclaration } from "@reckon/integrations";
+const ADAPTER_DECLARATIONS = [
+  WEBFLIX_ADAPTER_DECLARATION,
+  GENERIC_MEDIA_ADAPTER_DECLARATION,
+  COMMERCE_ADAPTER_DECLARATION,
+  ADVERTISING_ADAPTER_DECLARATION,
+] as const;
+
 function toResearchJobView(stored: {
   jobId: string;
   kind: string;
@@ -493,6 +531,9 @@ export async function buildProductionServer(
         await preferences.append(delta);
         return delta;
       },
+    },
+    integrationHandler: {
+      listAdapters: async () => ADAPTER_DECLARATIONS.map((declaration) => toAdapterView(declaration)),
     },
     researchHandler: {
       enqueue: async (job, auth) => {

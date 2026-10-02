@@ -36,6 +36,7 @@ export {
   ReplanRequestSchema,
 } from "./client.js";
 export type {
+  AdapterDeclarationView,
   AgentBody,
   AgentBodyInput,
   ResearchJobInput,

@@ -59,6 +59,35 @@ export interface PlanHandler {
   listRecent(auth: AuthContext, limit?: number): Promise<readonly ExperiencePlan[]>;
 }
 
+/** Integration declaration surface (UI-009): the adapter declarations from @reckon/integrations — static product truth, no tenant data. */
+export interface IntegrationHandler {
+  /** Every declared adapter (id, domain, capabilities, limits, verification status, provenance, failure semantics). */
+  listAdapters(): Promise<readonly AdapterDeclarationView[]>;
+}
+
+/** API-level view of an AdapterDeclaration (JSON-safe, contract-stable fields). */
+export interface AdapterDeclarationView {
+  readonly adapterId: string;
+  readonly domain: string;
+  readonly contractVersion: string;
+  readonly supportedCapabilities: readonly string[];
+  readonly unsupportedCapabilities: readonly string[];
+  readonly authorizationRequirements: readonly {
+    resource: string;
+    requirement: string;
+    enforcedBy: string;
+  }[];
+  readonly limits: {
+    maxItemsPerImport: number;
+    maxRealizationsPerItem: number;
+    maxCandidatesPerSet: number;
+    mappingLatencyBudgetMs: number;
+  };
+  readonly liveVerification: { status: string; evidenceClass: string; note: string };
+  readonly provenance: Record<string, string>;
+  readonly failureSemantics: Record<string, string>;
+}
+
 /** Research job surface (UI-008): the durable FIFO queue (ADR-004 runtime research). */
 export interface ResearchJobView {
   readonly jobId: string;
@@ -108,6 +137,7 @@ export interface ExperienceResolveHandler {
 export interface HandlerPorts {
   agentHandler: AgentHandler;
   researchHandler: ResearchHandler;
+  integrationHandler: IntegrationHandler;
   decisionHandler: DecisionHandler;
   decisionStore: DecisionStore;
   outcomeIngest: OutcomeIngestHandler;
@@ -124,6 +154,9 @@ export type PartialHandlerPorts = Partial<HandlerPorts>;
 /** Deterministic NotWired defaults: every port answers 501 NOT_WIRED. */
 export function notWiredDefaults(): HandlerPorts {
   return {
+    integrationHandler: {
+      listAdapters: async () => notWired("IntegrationHandler", "listAdapters"),
+    },
     researchHandler: {
       enqueue: async () => notWired("ResearchHandler", "enqueue"),
       get: async () => notWired("ResearchHandler", "get"),

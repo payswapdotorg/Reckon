@@ -1,0 +1,161 @@
+/* AdapterCapabilityCard — the §14 card. The verification strip is the
+ * honesty centerpiece: fixture-only renders in the amber treatment. */
+
+.verification {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--chart-2);
+  border-radius: var(--radius-control);
+  background-color: var(--secondary);
+  margin-bottom: 6px;
+}
+
+.verificationLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.fixtureBadge {
+  border-color: var(--chart-2);
+  color: var(--chart-2);
+}
+
+.evidenceClass {
+  font-size: 12px;
+  color: var(--foreground);
+}
+
+.note {
+  flex-basis: 100%;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--muted-foreground);
+}
+
+.sectionTitle {
+  margin: 16px 0 8px;
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.capabilities {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.capability {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background-color: var(--secondary);
+  color: var(--foreground);
+}
+
+.unsupported {
+  border-style: dashed;
+  color: var(--muted-foreground);
+}
+
+.requirements {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.requirement {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.resource {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background-color: var(--secondary);
+}
+
+.requirement span:nth-child(2) {
+  color: var(--foreground);
+  min-width: 200px;
+  flex: 1;
+}
+
+.limits,
+.semantics {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.limits > div,
+.semantics > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background-color: var(--secondary);
+}
+
+.limits dt,
+.semantics dt {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.limits dd,
+.semantics dd {
+  margin: 0;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.provenanceNote {
+  margin: 16px 0 0;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--muted-foreground);
+}
+
+.id {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  overflow-wrap: anywhere;
+}
