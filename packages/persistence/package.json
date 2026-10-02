@@ -1,13 +1,14 @@
 {
   "name": "@reckon/persistence",
   "version": "0.1.0",
-  "description": "Production PostgreSQL persistence adapters per ADR-001 (P1-001): pg Pool executor, migrations, PgEventSink, durable outbox transport, idempotency + authoritative state stores. The in-memory/JSONL adapters in sibling packages remain TEST INFRASTRUCTURE.",
+  "description": "Production PostgreSQL persistence adapters per ADR-001 (P1-001): pg Pool executor, migrations, PgEventSink, durable outbox transport, idempotency + authoritative state stores, reckon-migrate CLI (P1-004). The in-memory/JSONL adapters in sibling packages remain TEST INFRASTRUCTURE.",
   "type": "module",
   "private": true,
   "main": "./src/index.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "migrate": "pnpm dlx tsx src/migrate-cli.ts"
   },
   "dependencies": {
     "@reckon/contracts": "workspace:*",

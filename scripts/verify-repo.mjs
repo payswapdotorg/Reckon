@@ -26,7 +26,12 @@ const required = [
   "docs/decisions/ADR-001-persistence-events.md",
   "docs/decisions/ADR-002-model-adapter.md",
   "docs/decisions/ADR-003-consent-privacy.md",
-  "docs/decisions/ADR-004-runtime-research.md"
+  "docs/decisions/ADR-004-runtime-research.md",
+  "docs/deployment/architecture.md",
+  "docs/deployment/environment.md",
+  "docs/deployment/migrations.md",
+  "docs/deployment/runbook.md",
+  "docs/deployment/free-tier-guardrails.md"
 ];
 
 const missing = required.filter(p => !fs.existsSync(path.join(root, p)));

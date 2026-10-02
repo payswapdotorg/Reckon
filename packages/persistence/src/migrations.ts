@@ -189,11 +189,8 @@ function migrationChecksum(migration: Migration): string {
   return createHash("sha256").update(migration.sql.join("\n;\n")).digest("hex");
 }
 
-/**
- * Apply all not-yet-applied migrations (idempotent). Returns the ids
- * applied by THIS call (empty when the schema is current).
- */
-export async function applyMigrations(executor: SqlExecutor): Promise<readonly string[]> {
+/** Idempotently create the bookkeeping table (shared by apply + status). */
+async function ensureBookkeeping(executor: SqlExecutor): Promise<void> {
   await executor.transaction(async (tx) => {
     await tx.query(
       `CREATE TABLE IF NOT EXISTS reckon_schema_migrations (
@@ -204,6 +201,59 @@ export async function applyMigrations(executor: SqlExecutor): Promise<readonly s
 )`,
     );
   });
+}
+
+/**
+ * Per-migration status for `reckon-migrate status` (P1-004).
+ *
+ * `checksumOk` is `null` for pending migrations and a hard boolean for
+ * applied ones: a `false` means the recorded checksum no longer matches
+ * the migration SQL in the running code (edited-after-apply tampering, or
+ * a partial upgrade) — the CLI exits 2 on any tamper, honestly.
+ */
+export interface MigrationStatusEntry {
+  readonly id: string;
+  readonly name: string;
+  readonly applied: boolean;
+  /** null ⇔ pending; false ⇔ recorded checksum mismatch (tamper). */
+  readonly checksumOk: boolean | null;
+  readonly appliedAt: string | null;
+}
+
+/**
+ * Report the applied/pending state of every known migration, verifying
+ * recorded checksums against the current migration SQL. Safe on a fresh
+ * database (everything reports pending; the bookkeeping table is created
+ * idempotently first). Read-only beyond that creation.
+ */
+export async function migrationStatus(executor: SqlExecutor): Promise<readonly MigrationStatusEntry[]> {
+  await ensureBookkeeping(executor);
+  const rows = await executor.query(`SELECT id, name, applied_at, checksum FROM reckon_schema_migrations`);
+  const recorded = new Map<string, { appliedAt: string; checksum: string }>();
+  for (const row of rows) {
+    recorded.set(String(row.id), { appliedAt: String(row.applied_at), checksum: String(row.checksum) });
+  }
+  return MIGRATIONS.map((migration) => {
+    const row = recorded.get(migration.id);
+    if (row === undefined) {
+      return { id: migration.id, name: migration.name, applied: false, checksumOk: null, appliedAt: null };
+    }
+    return {
+      id: migration.id,
+      name: migration.name,
+      applied: true,
+      checksumOk: row.checksum === migrationChecksum(migration),
+      appliedAt: row.appliedAt,
+    };
+  });
+}
+
+/**
+ * Apply all not-yet-applied migrations (idempotent). Returns the ids
+ * applied by THIS call (empty when the schema is current).
+ */
+export async function applyMigrations(executor: SqlExecutor): Promise<readonly string[]> {
+  await ensureBookkeeping(executor);
 
   const applied: string[] = [];
   for (const migration of MIGRATIONS) {

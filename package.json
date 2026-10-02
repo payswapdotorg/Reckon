@@ -13,7 +13,9 @@
     "build": "tsc -b packages/contracts && pnpm -r --filter './packages/*' --filter './apps/*' run build",
     "test": "vitest run --root .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "generate:schemas": "pnpm --filter @reckon/contracts generate:schemas"
+    "generate:schemas": "pnpm --filter @reckon/contracts generate:schemas",
+    "migrate:apply": "pnpm --filter @reckon/persistence migrate apply",
+    "migrate:status": "pnpm --filter @reckon/persistence migrate status"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

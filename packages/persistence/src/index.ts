@@ -22,8 +22,10 @@
  */
 export { PgPoolExecutor } from "./executor.js";
 export type { SqlExecutor, SqlRow } from "./executor.js";
-export { MIGRATIONS, applyMigrations } from "./migrations.js";
-export type { Migration } from "./migrations.js";
+export { MIGRATIONS, applyMigrations, migrationStatus } from "./migrations.js";
+export type { Migration, MigrationStatusEntry } from "./migrations.js";
+export { runMigrateCli } from "./migrate-cli.js";
+export type { MigrateCliIo } from "./migrate-cli.js";
 export {
   PersistenceError,
   MigrationError,
