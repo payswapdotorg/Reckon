@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "ui-foundation-merged-42-of-53-done-ui-workspaces-next",
+  "status": "ui-wave2-merged-44-of-53-done-ui-005-009-remain",
   "implementationComplete": false,
   "dispatchBaseSha": "b217fdafcc8d5580409663128f6d1a329fd4ea0e",
   "workers": [
@@ -418,7 +418,7 @@
         "UI-002"
       ],
       "title": "Overview / dashboard workspace",
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "UI-004",
@@ -427,7 +427,7 @@
         "UI-002"
       ],
       "title": "Decision workspace (context, candidates, experience, decision, costs)",
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "UI-005",
