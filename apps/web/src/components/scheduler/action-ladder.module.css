@@ -1,0 +1,58 @@
+/* ActionLadder — vertical steps; the chosen action carries the emerald
+ * accent + a leading marker. */
+
+.ladder {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.step {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 9px 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid transparent;
+}
+
+.step + .step {
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 var(--radius-control) var(--radius-control);
+}
+
+.step:first-child {
+  border-radius: var(--radius-control) var(--radius-control) 0 0;
+}
+
+.action {
+  flex: none;
+  min-width: 96px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--muted-foreground);
+}
+
+.meaning {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--foreground);
+  min-width: 0;
+}
+
+.chosen {
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-control);
+  background-color: var(--secondary);
+}
+
+.chosen .action {
+  color: var(--primary);
+}
