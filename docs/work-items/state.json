@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "final-tl-handoff-expanded-35-of-36-roadmap-extended",
+  "status": "p1-wave1-merged-38-of-53-w3-011-awaits-p1-004",
   "implementationComplete": false,
   "dispatchBaseSha": "b217fdafcc8d5580409663128f6d1a329fd4ea0e",
   "workers": [
@@ -363,7 +363,7 @@
         "W3-010"
       ],
       "title": "Production PostgreSQL persistence (Neon) adapters per ADR-001",
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "P1-002",
@@ -372,7 +372,7 @@
         "P1-001"
       ],
       "title": "Production API composition (real runtime handlers + real persistence)",
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "P1-003",
@@ -381,7 +381,7 @@
         "P1-001"
       ],
       "title": "Production idempotency / durable outcome transport",
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "P1-004",
