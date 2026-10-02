@@ -1,0 +1,310 @@
+/* NextActionHero — the WHAT SHOULD HAPPEN NEXT? answer card.
+ * Reference language: generous card padding, hairline separation, one
+ * emerald accent moment (the answer rule), §7 degraded panel for failures. */
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ---- header ------------------------------------------------------------ */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 720px;
+}
+
+.question {
+  margin: 0;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--foreground);
+}
+
+.lede {
+  margin: 0;
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--muted-foreground);
+}
+
+/* ---- loaded answer ------------------------------------------------------ */
+
+.answer {
+  display: flex;
+  gap: 20px;
+}
+
+/* the one accent moment: a 3px emerald rule left of the answer */
+.answerRule {
+  flex: none;
+  width: 3px;
+  border-radius: 2px;
+  background-color: var(--primary);
+}
+
+.answerBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.actionWord {
+  margin: 0;
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+  color: var(--foreground);
+}
+
+.sentence {
+  margin: 0;
+  font-size: 17px;
+  line-height: 25px;
+  color: var(--foreground);
+  max-width: 640px;
+}
+
+.sentenceTarget {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 19px;
+  vertical-align: baseline;
+  overflow-wrap: anywhere;
+}
+
+.targetMeta {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+
+.chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.answerFootnote {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+}
+
+/* ---- calm idle state ---------------------------------------------------- */
+
+.idle {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 640px;
+}
+
+.idleMark {
+  margin: 0;
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+  color: var(--muted-foreground);
+}
+
+.idleText {
+  margin: 0;
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--foreground);
+}
+
+.idleHint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+}
+
+/* ---- degraded panel (reference §7 language) ----------------------------- */
+
+.degraded {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 640px;
+  padding: 20px 24px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--destructive-border-soft);
+  background-color: var(--destructive-tint);
+}
+
+.degradedIcon {
+  color: var(--destructive);
+  margin-bottom: 4px;
+}
+
+.degradedTitle {
+  margin: 0;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+
+.degradedMessage {
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.degradedExtra {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+
+.degraded > :global(button) {
+  margin-top: 8px;
+}
+
+/* ---- by-id lookup form --------------------------------------------------- */
+
+.lookup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* visually hidden label (globals define no .sr-only utility yet) */
+.lookupLabel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.lookupRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.lookupInput {
+  flex: 1 1 280px;
+  min-width: 0;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--input);
+  background-color: var(--card);
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 18px;
+  transition: border-color var(--transition);
+}
+
+.lookupInput::placeholder {
+  color: var(--muted-foreground);
+  font-family: var(--font-sans);
+}
+
+.lookupInput:hover {
+  border-color: var(--muted-foreground);
+}
+
+.lookupSubmit {
+  flex: none;
+}
+
+.lookupClear {
+  flex: none;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--muted-foreground);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--transition);
+}
+
+.lookupClear:hover {
+  color: var(--foreground);
+}
+
+/* ---- footnote ------------------------------------------------------------ */
+
+.note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+  max-width: 680px;
+}
+
+.noteCode {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  overflow-wrap: anywhere;
+}
+
+.inlineCode {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+/* §8 mobile: hero stays single-column, controls stay touch-sized. */
+@media (max-width: 767px) {
+  .answer {
+    gap: 12px;
+  }
+
+  .actionWord {
+    font-size: 24px;
+    line-height: 30px;
+  }
+
+  .sentence {
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  .degraded {
+    padding: 16px;
+  }
+}
