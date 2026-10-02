@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "w3-011-complete-core-program-36-of-36-40-of-53-done-ui-lane-next",
+  "status": "ui-foundation-merged-42-of-53-done-ui-workspaces-next",
   "implementationComplete": false,
   "dispatchBaseSha": "b217fdafcc8d5580409663128f6d1a329fd4ea0e",
   "workers": [
@@ -400,7 +400,7 @@
         "P1-002"
       ],
       "title": "Reckon web application foundation (apps/web, Next.js App Router + TS, SDK consumer)",
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "UI-002",
@@ -409,7 +409,7 @@
         "UI-001"
       ],
       "title": "You-Platform visual system (live-inspected reference, design tokens, component language)",
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "UI-003",
