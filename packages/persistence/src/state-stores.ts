@@ -189,6 +189,28 @@ export class PgPlanStore {
     return this.#rowToVersion(rows[0]!, planId);
   }
 
+  /**
+   * Latest version of each plan for a tenant, newest first (P1/UI-005
+   * read surface: GET /v1/plans). DISTINCT ON keeps one row per plan_id
+   * (highest version); the created_at DESC re-sort + slice happens in JS
+   * because DISTINCT ON's required ORDER BY conflicts with it.
+   */
+  async listRecent(tenant: TenantScope, limit = 20): Promise<readonly StoredPlanVersion[]> {
+    const { tenantId, workspaceId } = tenantColumns(tenant);
+    const rows = await this.#executor.query(
+      `SELECT DISTINCT ON (plan_id) plan_id, version, reason, created_at, plan_json
+       FROM experience_plans
+       WHERE tenant_id = $1 AND workspace_id = $2
+       ORDER BY plan_id, version DESC`,
+      [tenantId, workspaceId],
+    );
+    const versions = rows.map((row) =>
+      this.#rowToVersion(row, String((row as Record<string, unknown>).plan_id)),
+    );
+    versions.sort((a, b) => b.createdAt - a.createdAt);
+    return versions.slice(0, Math.max(1, Math.min(limit, 100)));
+  }
+
   async history(tenant: TenantScope, planId: Id): Promise<readonly StoredPlanVersion[]> {
     const { tenantId, workspaceId } = tenantColumns(tenant);
     const rows = await this.#executor.query(

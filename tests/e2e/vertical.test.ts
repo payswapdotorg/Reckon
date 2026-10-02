@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildServer, wireOutcomeTransport } from "../../apps/api/src/index.js";
 import type { HandlerPorts } from "../../apps/api/src/ports.js";
+import type { ExperiencePlan } from "../../packages/contracts/src/index.js";
 import { createReckonClient, createInjectFetch } from "../../packages/sdk/src/index.js";
 import type { DecisionRequestInput, OutcomeEventInput } from "../../packages/sdk/src/client.js";
 import { InMemoryEventStoreAdapter, JsonlFileJournal, ManualClock } from "../../packages/events/src/index.js";
@@ -145,6 +146,10 @@ describe("W3 e2e vertical — SDK → API → transport → store, with observab
           preferenceIngest: { ingest: async (delta) => delta },
           planHandler: {
             create: async (plan) => plan,
+            get: async () => null,
+            history: async () =>
+              [] as readonly { plan: ExperiencePlan; version: number; reason: string | null }[],
+            listRecent: async () => [],
             replan: async (planId, request) =>
               ExperiencePlanSchema.parse({
                 planId,

@@ -126,6 +126,33 @@ describe("P1-001 PgPlanStore — versioned append-only replan history", () => {
   });
 });
 
+describe("P1-001/UI-005 PgPlanStore.listRecent — latest version per plan, newest first", () => {
+  it("returns the latest version of each plan ordered by recency, bounded by limit", async () => {
+    // Dedicated tenant: sibling describes in this file share the server and
+    // their plans must not leak into this listing assertion.
+    const tenant = { tenantId: "tenant-listrecent" };
+    const store = new PgPlanStore(server.executor);
+    await store.create(makePlan({ planId: "pl-old", tenant, createdAt: 1_000, updatedAt: 1_000 }));
+    await store.create(makePlan({ planId: "pl-new", tenant, createdAt: 2_000, updatedAt: 2_000 }));
+    await store.replan(
+      makePlan({ planId: "pl-new", tenant, version: 3, createdAt: 9_000, updatedAt: 9_000 }),
+      "outcome-observed",
+    );
+    await store.create(makePlan({ planId: "pl-mid", tenant, createdAt: 5_000, updatedAt: 5_000 }));
+
+    const recent = await store.listRecent(tenant);
+    expect(recent.map((entry) => entry.plan.planId)).toEqual(["pl-new", "pl-mid", "pl-old"]);
+    expect(recent[0]?.plan.version).toBe(3); // latest version, not v0
+    expect(recent[0]?.reason).toBe("outcome-observed");
+
+    const bounded = await store.listRecent(tenant, 2);
+    expect(bounded.map((entry) => entry.plan.planId)).toEqual(["pl-new", "pl-mid"]);
+
+    const otherTenant = await store.listRecent({ tenantId: "tenant-b" });
+    expect(otherTenant).toEqual([]);
+  });
+});
+
 describe("P1-001 PgCatalogStore", () => {
   it("round-trips items and realizations, tenant-scoped", async () => {
     const store = new PgCatalogStore(server.executor);

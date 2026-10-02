@@ -47,7 +47,7 @@ import {
   applyMigrations,
   type SqlExecutor,
 } from "@reckon/persistence";
-import type { PartialHandlerPorts } from "./ports.js";
+import type { PartialHandlerPorts, StoredPlanVersionView } from "./ports.js";
 import { buildServer } from "./server.js";
 import type { ApiConfig } from "./config.js";
 import type { ReplanRequest, ResolveRequest, ResolveResponse } from "./envelopes.js";
@@ -317,8 +317,13 @@ export function createRuntimePlanHandler(handlers: {
       if (!parsed.success) {
         throw new CompositionError(`plan failed schema validation: ${parsed.error.message}`);
       }
-      await plans.create(parsed.data);
-      return parsed.data;
+      // Version coherence (UI-005 read surface): the store's first row is
+      // version 1 by law (append-only versioning); the stored plan JSON is
+      // normalized to carry the SAME version so reads never disagree with
+      // the version column.
+      const normalized = ExperiencePlanSchema.parse({ ...parsed.data, version: 1 });
+      await plans.create(normalized);
+      return normalized;
     },
     replan: async (planId: string, request: ReplanRequest, auth: AuthContext): Promise<ExperiencePlan> => {
       const tenant = authTenantScope(auth);
@@ -359,12 +364,32 @@ export function createRuntimePlanHandler(handlers: {
       const now = clock.now();
       const replanned = ExperiencePlanSchema.parse({
         ...current.plan,
+        version: current.version + 1,
         queuedExperiences,
         replanTriggers: [...new Set([...current.plan.replanTriggers, request.trigger])],
         updatedAt: now,
       });
       const stored = await plans.replan(replanned, `replan:${request.trigger}`);
       return stored.plan;
+    },
+    get: async (planId: string, auth: AuthContext): Promise<ExperiencePlan | null> => {
+      const tenant = authTenantScope(auth);
+      const stored = await plans.get(tenant, planId);
+      return stored === null ? null : stored.plan;
+    },
+    history: async (planId: string, auth: AuthContext): Promise<readonly StoredPlanVersionView[]> => {
+      const tenant = authTenantScope(auth);
+      const stored = await plans.history(tenant, planId);
+      return stored.map((entry) => ({
+        plan: entry.plan,
+        reason: entry.reason,
+        version: entry.version,
+      }));
+    },
+    listRecent: async (auth: AuthContext, limit?: number): Promise<readonly ExperiencePlan[]> => {
+      const tenant = authTenantScope(auth);
+      const stored = await plans.listRecent(tenant, limit);
+      return stored.map((entry) => entry.plan);
     },
   };
 }
