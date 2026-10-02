@@ -1,13 +1,13 @@
-# @reckon/web — Reckon Studio (UI-001 + UI-002)
+# @reckon/web — Reckon Studio (UI-001 + UI-002 + UI-004)
 
 The product UI for Reckon: a Next.js (App Router, TypeScript strict) shell
 that consumes **`@reckon/sdk` only** — it is a consumer of Reckon, never a
 second source of domain truth (FINAL TL HANDOFF §29).
 
-This wave (UI-001 + UI-002) delivers the **foundation**: app shell, design
-system, the seven workspace routes with honest empty states, and the
-evidence-class badge vocabulary (Gate Q prep). The workspaces themselves go
-live in UI-003..UI-009.
+The first wave (UI-001 + UI-002) delivered the **foundation**: app shell,
+design system, the seven workspace routes with honest empty states, and the
+evidence-class badge vocabulary (Gate Q prep). UI-004 (Decisions) is the
+first live workspace on that foundation; UI-003 and UI-005..UI-009 follow.
 
 ## Laws (violations void the delivery)
 
@@ -60,12 +60,27 @@ uses.
 
 ## Status / limitations (this wave)
 
-- The seven routes render titled honest empty states
+- **Decisions (UI-004) is live**: the `/decisions` workspace retrieves one
+  decision by id through the SDK seam (`GET /v1/decisions/{id}` —
+  `src/lib/decision-retrieval.ts`, server-only) and renders the full
+  record: the decision (action, confidence exactly as returned, policy
+  identity, reasons trail, provenance), current context (device ·
+  objective · attention · session — with explicit "not provided" for the
+  fields the retrieval surface does not echo), the selected experience by
+  its action role, candidates vs decision (considered vs `excludedBy`
+  filtered), and costs & consequences (uncertainty field-by-field,
+  schedule delta, latency metadata). A plain GET form performs the lookup
+  (`/decisions?id=…` — shareable, JS-optional); the honest-empty default
+  states that the SDK decision surface has no recent-decisions listing.
+  No fake confidence: absent uncertainty renders "not provided", never a
+  computed value (Gate Q).
+- The other six routes render titled honest empty states
   ("No data loaded — connect the API"); the Overview adds a **system
   status** card with a real server-side `/healthz` probe and the
   five-class evidence badge demo.
-- The SDK surface (W3-002) has no list endpoints, so no workspace can load
-  collections yet; `getReckonClient()` is the seam UI-003+ will use.
+- The SDK surface (W3-002) has no list endpoints, so workspaces other
+  than decision lookup cannot load collections yet; `getReckonClient()`
+  is the seam UI-003+ workspaces use.
 - The command palette lists the real workspace routes (no fabricated
   search results).
 - No theme toggle: the captured reference is the light shell with the dark

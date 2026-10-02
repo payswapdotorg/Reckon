@@ -1,0 +1,51 @@
+/* CostsConsequencesCard — sectioned consequences with hairline dividers. */
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.section + .section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.sectionHeading {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.sectionNote {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+  max-width: 640px;
+}
+
+.valueNote {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+
+.valueNote code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}

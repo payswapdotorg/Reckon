@@ -1,0 +1,128 @@
+/* DecisionSummaryCard — the headline action block + rows + reasons trail
+ * (foundation §5 card language, flat, hairline section dividers). */
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.titleRow > :global(h3) {
+  flex: none;
+}
+
+.actionBlock {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--secondary);
+}
+
+.actionWord {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  line-height: 32px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--foreground);
+}
+
+.actionCopy {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--muted-foreground);
+  min-width: 0;
+}
+
+.valueNote {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+
+.valueNote code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.timeValue {
+  display: inline-flex;
+}
+
+.reasonsSection,
+.provenanceSection {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionHeading {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.reasonsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reasonItem {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.reasonItem > :global(code) {
+  flex: none;
+}
+
+.reasonMessage {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--foreground);
+  min-width: 0;
+  flex: 1 1 260px;
+  overflow-wrap: anywhere;
+}
+
+.reasonsNote {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+  max-width: 640px;
+}
+
+@media (max-width: 767px) {
+  .actionBlock {
+    padding: 14px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .actionWord {
+    font-size: 22px;
+    line-height: 28px;
+  }
+}
