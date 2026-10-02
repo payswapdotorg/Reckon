@@ -36,6 +36,10 @@ export {
   ReplanRequestSchema,
 } from "./client.js";
 export type {
+  AgentBody,
+  AgentBodyInput,
+  AgentOrganization,
+  AgentOrganizationInput,
   CallOptions,
   CandidateSetInput,
   CatalogItemInput,

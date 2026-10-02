@@ -18,6 +18,8 @@
  *   fetch/network failures and non-envelope bodies never escape.
  */
 import {
+  AgentBodySchema,
+  AgentOrganizationSchema,
   CandidateSetSchema,
   CatalogItemSchema,
   ContextReferenceSchema,
@@ -42,7 +44,13 @@ import type {
   OutcomeEvent,
   PreferenceDelta,
   Realization,
+  AgentBody,
+  AgentOrganization,
 } from "@reckon/contracts";
+// Re-export the frozen agent contract types so the SDK surface is
+// self-contained for consumers (UI-007).
+export type { AgentBody, AgentOrganization } from "@reckon/contracts";
+
 import { z } from "zod/v4";
 import { ReckonConfigError } from "./errors.js";
 import { ReckonResponseContractError } from "./errors.js";
@@ -71,6 +79,8 @@ export type DecisionRequestInput = z.input<typeof DecisionRequestSchema>;
 export type OutcomeEventInput = z.input<typeof OutcomeEventSchema>;
 export type PreferenceDeltaInput = z.input<typeof PreferenceDeltaSchema>;
 export type ExperiencePlanInput = z.input<typeof ExperiencePlanSchema>;
+export type AgentBodyInput = z.input<typeof AgentBodySchema>;
+export type AgentOrganizationInput = z.input<typeof AgentOrganizationSchema>;
 export type CatalogItemInput = z.input<typeof CatalogItemSchema>;
 export type RealizationInput = z.input<typeof RealizationSchema>;
 export type CandidateSetInput = z.input<typeof CandidateSetSchema>;
@@ -88,6 +98,12 @@ export const ReplanRequestSchema = NoTenant.extend({
   candidates: CandidateSetSchema.optional(),
 });
 export type ReplanRequestInput = z.input<typeof ReplanRequestSchema>;
+
+/** Response wrapper for the agent-body collection route. */
+const AgentBodyListSchema = z.object({ bodies: z.array(AgentBodySchema) });
+
+/** Response wrapper for the agent-organization collection route. */
+const AgentOrganizationListSchema = z.object({ organizations: z.array(AgentOrganizationSchema) });
 
 /** Response wrapper for the plans read collection routes ({plans: [...]}). */
 const PlanCollectionSchema = z.object({ plans: z.array(ExperiencePlanSchema) });
@@ -195,6 +211,20 @@ export interface ReckonClient {
     history(planId: string, options?: CallOptions): Promise<readonly PlanVersionEntry[]>;
     /** GET /v1/plans?limit=N — recent plans (latest version each, newest first). */
     listRecent(options?: CallOptions & { readonly limit?: number }): Promise<readonly ExperiencePlan[]>;
+  };
+  readonly agents: {
+    /** POST /v1/agents/bodies — create or version-append an Agent Body declaration. */
+    createBody(body: AgentBodyInput, options?: CallOptions): Promise<AgentBody>;
+    /** GET /v1/agents/bodies/{bodyId} — latest stored declaration (404 when unknown). */
+    getBody(bodyId: string, options?: CallOptions): Promise<AgentBody>;
+    /** GET /v1/agents/bodies?limit=N — latest declaration per body, newest first. */
+    listBodies(options?: CallOptions & { readonly limit?: number }): Promise<readonly AgentBody[]>;
+    /** POST /v1/agents/organizations — create or version-append an Agent Organization. */
+    createOrganization(organization: AgentOrganizationInput, options?: CallOptions): Promise<AgentOrganization>;
+    /** GET /v1/agents/organizations/{id} — latest stored declaration (404 when unknown). */
+    getOrganization(organizationId: string, options?: CallOptions): Promise<AgentOrganization>;
+    /** GET /v1/agents/organizations?limit=N — latest declaration per organization. */
+    listOrganizations(options?: CallOptions & { readonly limit?: number }): Promise<readonly AgentOrganization[]>;
   };
   readonly catalog: {
     /** POST /v1/catalog/items — upsert a host catalog item. */
@@ -431,6 +461,66 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
           responseContract: "reckon.experience-plan (recent plans)",
           headers: { ...(callOptions?.headers ?? {}) },
         })).plans,
+    },
+    agents: {
+      createBody: async (body, callOptions) =>
+        request<z.output<typeof AgentBodySchema>, AgentBody>({
+          method: "POST",
+          path: "/v1/agents/bodies",
+          requestSchema: AgentBodySchema,
+          requestBody: body,
+          responseSchema: AgentBodySchema,
+          responseContract: "reckon.agent-body",
+          headers: {
+            "idempotency-key": headerIdempotencyKey(callOptions?.idempotencyKey),
+            ...(callOptions?.headers ?? {}),
+          },
+        }),
+      getBody: async (bodyId, callOptions) =>
+        request<unknown, AgentBody>({
+          method: "GET",
+          path: `/v1/agents/bodies/${encodeURIComponent(bodyId)}`,
+          responseSchema: AgentBodySchema,
+          responseContract: "reckon.agent-body",
+          headers: { ...(callOptions?.headers ?? {}) },
+        }),
+      listBodies: async (callOptions) =>
+        (await request<unknown, { bodies: AgentBody[] }>({
+          method: "GET",
+          path: `/v1/agents/bodies${callOptions?.limit !== undefined ? `?limit=${encodeURIComponent(String(callOptions.limit))}` : ""}`,
+          responseSchema: AgentBodyListSchema,
+          responseContract: "reckon.agent-body (recent bodies)",
+          headers: { ...(callOptions?.headers ?? {}) },
+        })).bodies,
+      createOrganization: async (organization, callOptions) =>
+        request<z.output<typeof AgentOrganizationSchema>, AgentOrganization>({
+          method: "POST",
+          path: "/v1/agents/organizations",
+          requestSchema: AgentOrganizationSchema,
+          requestBody: organization,
+          responseSchema: AgentOrganizationSchema,
+          responseContract: "reckon.agent-organization",
+          headers: {
+            "idempotency-key": headerIdempotencyKey(callOptions?.idempotencyKey),
+            ...(callOptions?.headers ?? {}),
+          },
+        }),
+      getOrganization: async (organizationId, callOptions) =>
+        request<unknown, AgentOrganization>({
+          method: "GET",
+          path: `/v1/agents/organizations/${encodeURIComponent(organizationId)}`,
+          responseSchema: AgentOrganizationSchema,
+          responseContract: "reckon.agent-organization",
+          headers: { ...(callOptions?.headers ?? {}) },
+        }),
+      listOrganizations: async (callOptions) =>
+        (await request<unknown, { organizations: AgentOrganization[] }>({
+          method: "GET",
+          path: `/v1/agents/organizations${callOptions?.limit !== undefined ? `?limit=${encodeURIComponent(String(callOptions.limit))}` : ""}`,
+          responseSchema: AgentOrganizationListSchema,
+          responseContract: "reckon.agent-organization (recent organizations)",
+          headers: { ...(callOptions?.headers ?? {}) },
+        })).organizations,
     },
     catalog: {
       upsertItem: async (item, callOptions) =>

@@ -9,6 +9,7 @@ import { InMemoryIdempotencyStore } from "./idempotency.js";
 import { observedDecisionHandler, observedOutcomeIngest, recordRouteErrorSafely } from "./observability.js";
 import { notWiredDefaults } from "./ports.js";
 import type { HandlerPorts, PartialHandlerPorts } from "./ports.js";
+import { registerAgentRoutes } from "./routes/agents.js";
 import { registerCandidateRoutes } from "./routes/candidates.js";
 import { registerCatalogRoutes } from "./routes/catalog.js";
 import { registerDecisionRoutes } from "./routes/decisions.js";
@@ -145,6 +146,7 @@ export function buildServer(config: ApiConfig): FastifyInstance {
   registerCatalogRoutes(app, deps);
   registerCandidateRoutes(app, deps);
   registerExperienceRoutes(app, deps);
+  registerAgentRoutes(app, deps);
 
   return app;
 }

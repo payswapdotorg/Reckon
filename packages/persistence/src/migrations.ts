@@ -183,6 +183,36 @@ export const MIGRATIONS: readonly Migration[] = [
          ON observability_records (tenant_id, sequence)`,
     ],
   },
+  {
+    id: "m004_agents",
+    name: "agent bodies + organizations (tenant-scoped declarations, UI-007)",
+    sql: [
+      `CREATE TABLE IF NOT EXISTS agent_bodies (
+  tenant_id      TEXT NOT NULL,
+  workspace_id   TEXT NOT NULL DEFAULT '',
+  body_id        TEXT NOT NULL,
+  body_version   TEXT NOT NULL,
+  body_json      JSONB NOT NULL,
+  content_digest TEXT NOT NULL,
+  stored_at      BIGINT NOT NULL,
+  PRIMARY KEY (tenant_id, workspace_id, body_id, body_version)
+)`,
+      `CREATE INDEX IF NOT EXISTS agent_bodies_tenant_recent
+         ON agent_bodies (tenant_id, workspace_id, stored_at DESC)`,
+      `CREATE TABLE IF NOT EXISTS agent_organizations (
+  tenant_id       TEXT NOT NULL,
+  workspace_id    TEXT NOT NULL DEFAULT '',
+  organization_id TEXT NOT NULL,
+  org_version     TEXT NOT NULL,
+  org_json        JSONB NOT NULL,
+  content_digest  TEXT NOT NULL,
+  stored_at       BIGINT NOT NULL,
+  PRIMARY KEY (tenant_id, workspace_id, organization_id, org_version)
+)`,
+      `CREATE INDEX IF NOT EXISTS agent_organizations_tenant_recent
+         ON agent_organizations (tenant_id, workspace_id, stored_at DESC)`,
+    ],
+  },
 ];
 
 function migrationChecksum(migration: Migration): string {

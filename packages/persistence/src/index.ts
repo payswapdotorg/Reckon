@@ -39,6 +39,8 @@ export { PgOutboxTransport } from "./outbox-transport.js";
 export type { PgOutboxTransportOptions } from "./outbox-transport.js";
 export { PgIdempotencyStore } from "./idempotency-store.js";
 export type { StoredIdempotent, StoredIdempotentResponse } from "./idempotency-store.js";
+export { PgAgentStore } from "./agent-store.js";
+export type { StoredAgentBody, StoredAgentOrganization } from "./agent-store.js";
 export {
   PgDecisionStore,
   PgPlanStore,

@@ -180,6 +180,14 @@ export interface StubState {
 export function stubHandlers(state: StubState): HandlerPorts {
   const plansById = new Map<string, ExperiencePlan>();
   return {
+    agentHandler: {
+      createBody: async (body) => body,
+      getBody: async () => null,
+      listBodies: async () => [],
+      createOrganization: async (organization) => organization,
+      getOrganization: async () => null,
+      listOrganizations: async () => [],
+    },
     decisionHandler: {
       decide: async (request: DecisionRequest, auth) => {
         state.decisionCalls += 1;

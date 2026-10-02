@@ -1,4 +1,6 @@
 import type {
+  AgentBody,
+  AgentOrganization,
   CandidateSet,
   CatalogItem,
   DecisionRequest,
@@ -57,6 +59,16 @@ export interface PlanHandler {
   listRecent(auth: AuthContext, limit?: number): Promise<readonly ExperiencePlan[]>;
 }
 
+/** Agent declaration surface (UI-007): bodies + organizations, tenant from AUTH (catalog pattern — the frozen contracts carry no tenant field). */
+export interface AgentHandler {
+  createBody(body: AgentBody, auth: AuthContext): Promise<AgentBody>;
+  getBody(bodyId: string, auth: AuthContext): Promise<AgentBody | null>;
+  listBodies(auth: AuthContext, limit?: number): Promise<readonly AgentBody[]>;
+  createOrganization(organization: AgentOrganization, auth: AuthContext): Promise<AgentOrganization>;
+  getOrganization(organizationId: string, auth: AuthContext): Promise<AgentOrganization | null>;
+  listOrganizations(auth: AuthContext, limit?: number): Promise<readonly AgentOrganization[]>;
+}
+
 export interface CatalogItemIngestHandler {
   ingest(item: CatalogItem, auth: AuthContext): Promise<CatalogItem>;
 }
@@ -74,6 +86,7 @@ export interface ExperienceResolveHandler {
 }
 
 export interface HandlerPorts {
+  agentHandler: AgentHandler;
   decisionHandler: DecisionHandler;
   decisionStore: DecisionStore;
   outcomeIngest: OutcomeIngestHandler;
@@ -90,6 +103,14 @@ export type PartialHandlerPorts = Partial<HandlerPorts>;
 /** Deterministic NotWired defaults: every port answers 501 NOT_WIRED. */
 export function notWiredDefaults(): HandlerPorts {
   return {
+    agentHandler: {
+      createBody: async () => notWired("AgentHandler", "createBody"),
+      getBody: async () => notWired("AgentHandler", "getBody"),
+      listBodies: async () => notWired("AgentHandler", "listBodies"),
+      createOrganization: async () => notWired("AgentHandler", "createOrganization"),
+      getOrganization: async () => notWired("AgentHandler", "getOrganization"),
+      listOrganizations: async () => notWired("AgentHandler", "listOrganizations"),
+    },
     decisionHandler: { decide: async () => notWired("DecisionHandler", "decide") },
     decisionStore: { get: async () => notWired("DecisionStore", "get") },
     outcomeIngest: { ingest: async () => notWired("OutcomeIngestHandler", "ingest") },

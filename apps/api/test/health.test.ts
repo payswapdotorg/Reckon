@@ -40,6 +40,7 @@ describe("GET /readyz", () => {
     "realizationIngest",
     "candidatesHandler",
     "experienceResolver",
+    "agentHandler",
   ];
 
   it("default server reports every handler port as not-wired", async () => {

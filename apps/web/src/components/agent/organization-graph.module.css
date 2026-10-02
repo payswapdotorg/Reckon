@@ -1,0 +1,194 @@
+/* OrganizationGraph — pure-SVG interactive graph. Reference language:
+ * hairline edges, neutral nodes, the emerald accent marks selection. */
+
+.scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background-color: var(--secondary);
+}
+
+.svg {
+  display: block;
+  min-width: 100%;
+  height: auto;
+}
+
+.edge path {
+  stroke: var(--muted-foreground);
+  stroke-width: 1.5;
+  stroke-dasharray: none;
+}
+
+.edge polygon {
+  fill: var(--muted-foreground);
+}
+
+.edge text {
+  fill: var(--muted-foreground);
+  font-size: 10px;
+  font-family: var(--font-mono);
+}
+
+.edgeActive path {
+  stroke: var(--primary);
+  stroke-width: 2;
+}
+
+.edgeActive polygon {
+  fill: var(--primary);
+}
+
+.edgeActive text {
+  fill: var(--primary);
+  font-weight: 700;
+}
+
+.node rect {
+  fill: var(--card);
+  stroke: var(--border);
+  stroke-width: 1.5;
+  cursor: pointer;
+  transition: stroke var(--transition);
+}
+
+.node:focus {
+  outline: none;
+}
+
+.node:focus rect {
+  stroke: var(--ring);
+  stroke-width: 2;
+}
+
+.node:hover rect {
+  stroke: var(--muted-foreground);
+}
+
+.nodeActive rect {
+  stroke: var(--primary);
+  stroke-width: 2;
+}
+
+.node text {
+  pointer-events: none;
+}
+
+.nodeRole {
+  fill: var(--foreground);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nodeId {
+  fill: var(--muted-foreground);
+  font-size: 10px;
+  font-family: var(--font-mono);
+}
+
+.nodeModel {
+  fill: var(--primary);
+  font-size: 9px;
+  font-family: var(--font-mono);
+}
+
+.selectedDetail {
+  margin-top: 14px;
+  min-height: 44px;
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.detailRow {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background-color: var(--secondary);
+}
+
+.detailRole {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.detailId {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.detailDesc {
+  font-size: 12px;
+  color: var(--foreground);
+  min-width: 200px;
+  flex: 1;
+}
+
+.detailModel {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+}
+
+.legends {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.legendTitle {
+  margin: 0 0 6px;
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.legendList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.legendItem {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background-color: var(--secondary);
+}
+
+.legendText {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+}
+
+.id {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  overflow-wrap: anywhere;
+}
