@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "ui-008-merged-48-of-53-done-ui-009-then-deploy",
+  "status": "ui-lane-complete-49-of-53-done-deploy-then-release",
   "implementationComplete": false,
   "dispatchBaseSha": "b217fdafcc8d5580409663128f6d1a329fd4ea0e",
   "workers": [
@@ -472,7 +472,7 @@
         "UI-002"
       ],
       "title": "Integration workspace (adapter capability cards, honest verification status)",
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "DEPLOY-001",
