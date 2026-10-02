@@ -1,350 +1,521 @@
 {
- "schemaVersion": 1,
- "status": "e2e-perf-merged-35-of-36",
- "implementationComplete": false,
- "dispatchBaseSha": "b217fdafcc8d5580409663128f6d1a329fd4ea0e",
- "workers": [
-  {
-   "id": "W1",
-   "name": "Data / Context / Simulation",
-   "ownedPaths": [
-    "packages/context/**",
-    "packages/preferences/**",
-    "packages/events/**",
-    "packages/features/**",
-    "packages/simulation/**",
-    "packages/evaluation/**",
-    "packages/learning/**"
-   ]
-  },
-  {
-   "id": "W2",
-   "name": "Decision / Scheduling / Agent Runtime",
-   "ownedPaths": [
-    "packages/decision/**",
-    "packages/experience/**",
-    "packages/scheduler/**",
-    "packages/agents/**",
-    "packages/organization/**"
-   ]
-  },
-  {
-   "id": "W3",
-   "name": "API / SDK / Integrations / Proof",
-   "ownedPaths": [
-    "apps/api/**",
-    "packages/sdk/**",
-    "packages/integrations/**",
-    "packages/observability/**",
-    "tests/e2e/**",
-    "tests/conformance/**"
-   ]
+  "schemaVersion": 1,
+  "status": "final-tl-handoff-expanded-35-of-36-roadmap-extended",
+  "implementationComplete": false,
+  "dispatchBaseSha": "b217fdafcc8d5580409663128f6d1a329fd4ea0e",
+  "workers": [
+    {
+      "id": "W1",
+      "name": "Data / Context / Simulation",
+      "ownedPaths": [
+        "packages/context/**",
+        "packages/preferences/**",
+        "packages/events/**",
+        "packages/features/**",
+        "packages/simulation/**",
+        "packages/evaluation/**",
+        "packages/learning/**"
+      ]
+    },
+    {
+      "id": "W2",
+      "name": "Decision / Scheduling / Agent Runtime",
+      "ownedPaths": [
+        "packages/decision/**",
+        "packages/experience/**",
+        "packages/scheduler/**",
+        "packages/agents/**",
+        "packages/organization/**"
+      ]
+    },
+    {
+      "id": "W3",
+      "name": "API / SDK / Integrations / Proof",
+      "ownedPaths": [
+        "apps/api/**",
+        "packages/sdk/**",
+        "packages/integrations/**",
+        "packages/observability/**",
+        "tests/e2e/**",
+        "tests/conformance/**"
+      ]
+    },
+    {
+      "id": "UI",
+      "name": "Public Web UI (apps/web)",
+      "ownedPaths": [
+        "apps/web/**",
+        "docs/ux/**"
+      ]
+    }
+  ],
+  "workItems": [
+    {
+      "id": "ARCH-001",
+      "owner": "TL3",
+      "dependsOn": [],
+      "status": "done"
+    },
+    {
+      "id": "CONTRACT-001",
+      "owner": "TL3",
+      "dependsOn": [
+        "ARCH-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "ADR-001",
+      "owner": "TL3",
+      "dependsOn": [
+        "ARCH-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "ADR-002",
+      "owner": "TL3",
+      "dependsOn": [
+        "ARCH-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "ADR-003",
+      "owner": "TL3",
+      "dependsOn": [
+        "ARCH-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "ADR-004",
+      "owner": "TL3",
+      "dependsOn": [
+        "ARCH-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W1-001",
+      "owner": "W1",
+      "dependsOn": [
+        "CONTRACT-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W1-002",
+      "owner": "W1",
+      "dependsOn": [
+        "CONTRACT-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W1-003",
+      "owner": "W1",
+      "dependsOn": [
+        "CONTRACT-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W1-004",
+      "owner": "W1",
+      "dependsOn": [
+        "CONTRACT-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W1-005",
+      "owner": "W1",
+      "dependsOn": [
+        "W1-004"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W1-006",
+      "owner": "W1",
+      "dependsOn": [
+        "W1-005"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W1-007",
+      "owner": "W1",
+      "dependsOn": [
+        "W1-006"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W1-008",
+      "owner": "W1",
+      "dependsOn": [
+        "W1-007"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W1-009",
+      "owner": "W1",
+      "dependsOn": [
+        "W1-006",
+        "W1-008"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W1-010",
+      "owner": "W1",
+      "dependsOn": [
+        "W1-009",
+        "W3-003"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W2-001",
+      "owner": "W2",
+      "dependsOn": [
+        "CONTRACT-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W2-002",
+      "owner": "W2",
+      "dependsOn": [
+        "W2-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W2-003",
+      "owner": "W2",
+      "dependsOn": [
+        "W2-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W2-004",
+      "owner": "W2",
+      "dependsOn": [
+        "W2-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W2-005",
+      "owner": "W2",
+      "dependsOn": [
+        "W2-004"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W2-006",
+      "owner": "W2",
+      "dependsOn": [
+        "W1-002",
+        "W1-003"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W2-007",
+      "owner": "W2",
+      "dependsOn": [
+        "CONTRACT-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W2-008",
+      "owner": "W2",
+      "dependsOn": [
+        "W2-007"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W2-009",
+      "owner": "W2",
+      "dependsOn": [
+        "W1-009",
+        "W2-008"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W3-001",
+      "owner": "W3",
+      "dependsOn": [
+        "CONTRACT-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W3-002",
+      "owner": "W3",
+      "dependsOn": [
+        "W3-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W3-003",
+      "owner": "W3",
+      "dependsOn": [
+        "W3-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W3-004",
+      "owner": "W3",
+      "dependsOn": [
+        "W3-001"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W3-005",
+      "owner": "W3",
+      "dependsOn": [
+        "W2-002",
+        "W2-003"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W3-006",
+      "owner": "W3",
+      "dependsOn": [
+        "W2-002",
+        "W2-003"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W3-007",
+      "owner": "W3",
+      "dependsOn": [
+        "W2-002",
+        "W2-003"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W3-008",
+      "owner": "W3",
+      "dependsOn": [
+        "W2-002",
+        "W2-003"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W3-009",
+      "owner": "W3",
+      "dependsOn": [
+        "W3-005",
+        "W3-006",
+        "W3-007",
+        "W3-008"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W3-010",
+      "owner": "W3",
+      "dependsOn": [
+        "W3-009"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "W3-011",
+      "owner": "TL3+W3",
+      "dependsOn": [
+        "W1-010",
+        "W2-009",
+        "W3-010"
+      ],
+      "status": "in-progress",
+      "decomposedInto": [
+        "P1-001",
+        "P1-002",
+        "P1-003",
+        "P1-004"
+      ],
+      "note": "Genuine production-readiness gate per FINAL TL HANDOFF 2026-10-02: persistence, outcome transport, API composition, auth/tenant, observability, deployment, measured behavior. Evidence-pack component delivered via r44w1 lane. implementationComplete stays false until Gates K-R pass."
+    },
+    {
+      "id": "P1-001",
+      "owner": "W3",
+      "dependsOn": [
+        "W3-010"
+      ],
+      "title": "Production PostgreSQL persistence (Neon) adapters per ADR-001",
+      "status": "queued"
+    },
+    {
+      "id": "P1-002",
+      "owner": "W3",
+      "dependsOn": [
+        "P1-001"
+      ],
+      "title": "Production API composition (real runtime handlers + real persistence)",
+      "status": "queued"
+    },
+    {
+      "id": "P1-003",
+      "owner": "W3",
+      "dependsOn": [
+        "P1-001"
+      ],
+      "title": "Production idempotency / durable outcome transport",
+      "status": "queued"
+    },
+    {
+      "id": "P1-004",
+      "owner": "W3",
+      "dependsOn": [
+        "P1-002",
+        "P1-003"
+      ],
+      "title": "Production deployment configuration (env, migrations, free-tier guardrails)",
+      "status": "queued"
+    },
+    {
+      "id": "UI-001",
+      "owner": "UI",
+      "dependsOn": [
+        "P1-002"
+      ],
+      "title": "Reckon web application foundation (apps/web, Next.js App Router + TS, SDK consumer)",
+      "status": "queued"
+    },
+    {
+      "id": "UI-002",
+      "owner": "UI",
+      "dependsOn": [
+        "UI-001"
+      ],
+      "title": "You-Platform visual system (live-inspected reference, design tokens, component language)",
+      "status": "queued"
+    },
+    {
+      "id": "UI-003",
+      "owner": "UI",
+      "dependsOn": [
+        "UI-002"
+      ],
+      "title": "Overview / dashboard workspace",
+      "status": "queued"
+    },
+    {
+      "id": "UI-004",
+      "owner": "UI",
+      "dependsOn": [
+        "UI-002"
+      ],
+      "title": "Decision workspace (context, candidates, experience, decision, costs)",
+      "status": "queued"
+    },
+    {
+      "id": "UI-005",
+      "owner": "UI",
+      "dependsOn": [
+        "UI-002"
+      ],
+      "title": "Experience Plan workspace (rolling timeline)",
+      "status": "queued"
+    },
+    {
+      "id": "UI-006",
+      "owner": "UI",
+      "dependsOn": [
+        "UI-002"
+      ],
+      "title": "Scheduler / interruption workspace (ranking vs switching vs interruption)",
+      "status": "queued"
+    },
+    {
+      "id": "UI-007",
+      "owner": "UI",
+      "dependsOn": [
+        "UI-002"
+      ],
+      "title": "Agent workspace (Agent Body + interactive Organization graph)",
+      "status": "queued"
+    },
+    {
+      "id": "UI-008",
+      "owner": "UI",
+      "dependsOn": [
+        "UI-002"
+      ],
+      "title": "Research workspace (learning ladder, evidence-class differentiation)",
+      "status": "queued"
+    },
+    {
+      "id": "UI-009",
+      "owner": "UI",
+      "dependsOn": [
+        "UI-002"
+      ],
+      "title": "Integration workspace (adapter capability cards, honest verification status)",
+      "status": "queued"
+    },
+    {
+      "id": "DEPLOY-001",
+      "owner": "TL3",
+      "dependsOn": [
+        "P1-004",
+        "UI-009"
+      ],
+      "title": "Free-tier public deployment (Vercel + Neon + Upstash + R2, optional Apify)",
+      "status": "queued"
+    },
+    {
+      "id": "DEPLOY-002",
+      "owner": "TL3",
+      "dependsOn": [
+        "DEPLOY-001"
+      ],
+      "title": "Public demo tenant (explicitly labeled demonstration data)",
+      "status": "queued"
+    },
+    {
+      "id": "DEPLOY-003",
+      "owner": "TL3",
+      "dependsOn": [
+        "DEPLOY-002"
+      ],
+      "title": "Post-deploy proof (Gates M/N: public reachability + external smoke test)",
+      "status": "queued"
+    },
+    {
+      "id": "RELEASE-001",
+      "owner": "TL3",
+      "dependsOn": [
+        "DEPLOY-003",
+        "W3-011"
+      ],
+      "title": "Final release (Gates K-R reconciliation, final-release-evidence.md, implementationComplete=true)",
+      "status": "queued"
+    }
+  ],
+  "workerBranches": {
+    "W1": "w1/first-wave",
+    "W2": "w2/first-wave",
+    "W3": "w3/first-wave"
   }
- ],
- "workItems": [
-  {
-   "id": "ARCH-001",
-   "owner": "TL3",
-   "dependsOn": [],
-   "status": "done"
-  },
-  {
-   "id": "CONTRACT-001",
-   "owner": "TL3",
-   "dependsOn": [
-    "ARCH-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "ADR-001",
-   "owner": "TL3",
-   "dependsOn": [
-    "ARCH-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "ADR-002",
-   "owner": "TL3",
-   "dependsOn": [
-    "ARCH-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "ADR-003",
-   "owner": "TL3",
-   "dependsOn": [
-    "ARCH-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "ADR-004",
-   "owner": "TL3",
-   "dependsOn": [
-    "ARCH-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W1-001",
-   "owner": "W1",
-   "dependsOn": [
-    "CONTRACT-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W1-002",
-   "owner": "W1",
-   "dependsOn": [
-    "CONTRACT-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W1-003",
-   "owner": "W1",
-   "dependsOn": [
-    "CONTRACT-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W1-004",
-   "owner": "W1",
-   "dependsOn": [
-    "CONTRACT-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W1-005",
-   "owner": "W1",
-   "dependsOn": [
-    "W1-004"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W1-006",
-   "owner": "W1",
-   "dependsOn": [
-    "W1-005"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W1-007",
-   "owner": "W1",
-   "dependsOn": [
-    "W1-006"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W1-008",
-   "owner": "W1",
-   "dependsOn": [
-    "W1-007"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W1-009",
-   "owner": "W1",
-   "dependsOn": [
-    "W1-006",
-    "W1-008"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W1-010",
-   "owner": "W1",
-   "dependsOn": [
-    "W1-009",
-    "W3-003"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W2-001",
-   "owner": "W2",
-   "dependsOn": [
-    "CONTRACT-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W2-002",
-   "owner": "W2",
-   "dependsOn": [
-    "W2-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W2-003",
-   "owner": "W2",
-   "dependsOn": [
-    "W2-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W2-004",
-   "owner": "W2",
-   "dependsOn": [
-    "W2-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W2-005",
-   "owner": "W2",
-   "dependsOn": [
-    "W2-004"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W2-006",
-   "owner": "W2",
-   "dependsOn": [
-    "W1-002",
-    "W1-003"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W2-007",
-   "owner": "W2",
-   "dependsOn": [
-    "CONTRACT-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W2-008",
-   "owner": "W2",
-   "dependsOn": [
-    "W2-007"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W2-009",
-   "owner": "W2",
-   "dependsOn": [
-    "W1-009",
-    "W2-008"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W3-001",
-   "owner": "W3",
-   "dependsOn": [
-    "CONTRACT-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W3-002",
-   "owner": "W3",
-   "dependsOn": [
-    "W3-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W3-003",
-   "owner": "W3",
-   "dependsOn": [
-    "W3-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W3-004",
-   "owner": "W3",
-   "dependsOn": [
-    "W3-001"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W3-005",
-   "owner": "W3",
-   "dependsOn": [
-    "W2-002",
-    "W2-003"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W3-006",
-   "owner": "W3",
-   "dependsOn": [
-    "W2-002",
-    "W2-003"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W3-007",
-   "owner": "W3",
-   "dependsOn": [
-    "W2-002",
-    "W2-003"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W3-008",
-   "owner": "W3",
-   "dependsOn": [
-    "W2-002",
-    "W2-003"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W3-009",
-   "owner": "W3",
-   "dependsOn": [
-    "W3-005",
-    "W3-006",
-    "W3-007",
-    "W3-008"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W3-010",
-   "owner": "W3",
-   "dependsOn": [
-    "W3-009"
-   ],
-   "status": "done"
-  },
-  {
-   "id": "W3-011",
-   "owner": "TL3+W3",
-   "dependsOn": [
-    "W1-010",
-    "W2-009",
-    "W3-010"
-   ],
-   "status": "queued"
-  }
- ],
- "workerBranches": {
-  "W1": "w1/first-wave",
-  "W2": "w2/first-wave",
-  "W3": "w3/first-wave"
- }
 }

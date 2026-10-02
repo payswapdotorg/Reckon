@@ -62,3 +62,43 @@ Every adapter must declare:
 - actual live verification status;
 - data/right provenance;
 - failure semantics.
+
+## Expanded roadmap (FINAL TL HANDOFF 2026-10-02)
+
+The mission extends beyond the 36-item implementation set into a publicly usable product.
+W3-011 is now a genuine production-readiness gate decomposed into P1 items; the full
+sequence below extends the repository state (see `docs/handoff/FINAL-TL-HANDOFF.md`).
+
+| ID | Owner | Depends on | Parallel? | Acceptance |
+|---|---|---|---|---|
+| P1-001 | W3 | W3-010 | yes | production PostgreSQL (Neon) persistence adapters per ADR-001; in-memory = test infra only |
+| P1-002 | W3 | P1-001 | no | production API composition: 10 real `/v1` endpoints over real persistence |
+| P1-003 | W3 | P1-001 | yes | durable outcome transport: at-least-once, idempotency, append-only, typed failures, replay |
+| P1-004 | W3 | P1-002,P1-003 | no | deployment configuration: env separation, migrations, free-tier guardrails |
+| UI-001 | UI | P1-002 | no | apps/web foundation (Next.js App Router + TS) consuming @reckon/sdk; no domain logic |
+| UI-002 | UI | UI-001 | no | You-Platform visual system from LIVE inspection (reference artifacts committed under docs/ux/) |
+| UI-003 | UI | UI-002 | yes | Overview workspace (what should happen next; full decision loop visible) |
+| UI-004 | UI | UI-002 | yes | Decision workspace (context/candidates/experience/decision; no fake confidence) |
+| UI-005 | UI | UI-002 | yes | Experience Plan workspace (rolling timeline: current/next/queued/opportunity/horizon) |
+| UI-006 | UI | UI-002 | yes | Scheduler/interruption workspace (ranking ≠ permission to interrupt) |
+| UI-007 | UI | UI-002 | yes | Agent workspace (Body + interactive Organization graph) |
+| UI-008 | UI | UI-002 | yes | Research workspace (learning ladder; simulated vs observed visually distinct) |
+| UI-009 | UI | UI-002 | yes | Integration workspace (capability cards; verification honesty) |
+| DEPLOY-001 | TL3 | P1-004,UI-009 | no | free-tier public deployment (Vercel/Neon/Upstash/R2; optional Apify) |
+| DEPLOY-002 | TL3 | DEPLOY-001 | no | public demo tenant with explicitly labeled demonstration data |
+| DEPLOY-003 | TL3 | DEPLOY-002 | no | post-deploy proof (public reachability + external smoke test) |
+| RELEASE-001 | TL3 | DEPLOY-003,W3-011 | no | Gates K-R reconciliation; final release evidence; implementationComplete=true |
+
+## Productization acceptance gates (K–R)
+
+- **Gate K — Product UI**: a user can open Reckon, understand the product, and inspect
+  context → candidates → experience → decision → scheduling → outcomes without raw API tools.
+- **Gate L — Real persistence**: restarting the deployment does not lose authoritative state.
+- **Gate M — Public deployment**: the production URL is publicly reachable.
+- **Gate N — Production smoke test**: an external client can authenticate → submit decision →
+  receive decision → submit outcome → retrieve persistent evidence against the public deployment.
+- **Gate O — UI quality**: visual/behavioral alignment with the You Platform reference at agreed viewports.
+- **Gate P — Free-tier discipline**: documented provider quotas + demo guardrails against runaway consumption.
+- **Gate Q — Operational honesty**: the UI visibly distinguishes observed / controlled-local / fixture /
+  simulated / counterfactual evidence.
+- **Gate R — Release**: only after K–Q may `implementationComplete` become `true`.
