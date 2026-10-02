@@ -1,0 +1,21 @@
+{
+  "name": "@reckon/persistence",
+  "version": "0.1.0",
+  "description": "Production PostgreSQL persistence adapters per ADR-001 (P1-001): pg Pool executor, migrations, PgEventSink, durable outbox transport, idempotency + authoritative state stores. The in-memory/JSONL adapters in sibling packages remain TEST INFRASTRUCTURE.",
+  "type": "module",
+  "private": true,
+  "main": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@reckon/contracts": "workspace:*",
+    "@reckon/events": "workspace:*",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.0",
+    "embedded-postgres": "^18.4.0-beta.17"
+  }
+}
