@@ -477,6 +477,25 @@ export class PgResearchJobStore {
    * `leaseMs` (injected-clock time). Returns undefined when the queue is
    * empty or every job is actively leased.
    */
+  /** Latest jobs for a tenant, newest first (bounded; state filter optional). */
+  async listRecent(
+    tenant: { tenantId: string; workspaceId?: string },
+    limit = 20,
+    state?: "queued" | "leased" | "done" | "failed",
+  ): Promise<readonly ResearchJob[]> {
+    const { tenantId, workspaceId } = tenantColumns(tenant);
+    const rows = await this.#executor.query(
+      `SELECT job_id, kind, state, payload_json, result_ref,
+              lease_owner, lease_expires_at, created_at, updated_at
+       FROM research_jobs
+       WHERE tenant_id = $1 AND workspace_id = $2 AND ($3::text IS NULL OR state = $3)
+       ORDER BY updated_at DESC, job_id ASC
+       LIMIT $4`,
+      [tenantId, workspaceId, state ?? null, Math.max(1, Math.min(limit, 100))],
+    );
+    return rows.map((row) => this.#rowToJob(row));
+  }
+
   async claim(owner: string, leaseMs: number): Promise<ResearchJob | undefined> {
     const now = this.#clock.now();
     const claimed = await this.#executor.transaction(async (tx) => {

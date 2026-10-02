@@ -378,6 +378,40 @@ describe("P1-002 production composition — the ten /v1 endpoints over real pers
     await expect(tenantA.agents.getBody("no-such-body")).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
+  it("research (UI-008): enqueue → lease claim → complete, with list + state filter + 404", async () => {
+    const enqueued = await tenantA.research.enqueueJob({
+      jobId: "prod-rj-1",
+      kind: "calibration-run",
+      payload: { ladderRung: "calibration" },
+    });
+    expect(enqueued).toMatchObject({ jobId: "prod-rj-1", state: "queued", kind: "calibration-run" });
+
+    // idempotent-shaped duplicate is a typed conflict (store law)
+    await expect(
+      tenantA.research.enqueueJob({ jobId: "prod-rj-1", kind: "calibration-run" }),
+    ).rejects.toMatchObject({ code: "INTERNAL" });
+
+    const fetched = await tenantA.research.getJob("prod-rj-1");
+    expect(fetched?.state).toBe("queued");
+    await expect(tenantA.research.getJob("no-such-job")).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+    // lease claim through the store (the worker-side path), then the view
+    const claimed = await composition.stores.researchJobs.claim("worker-ui8", 60_000);
+    expect(claimed?.jobId).toBe("prod-rj-1");
+    await composition.stores.researchJobs.complete("prod-rj-1", "runs/ui8-result");
+    const done = await tenantA.research.getJob("prod-rj-1");
+    expect(done).toMatchObject({ state: "done", resultRef: "runs/ui8-result" });
+
+    // list with state filter + tenant isolation
+    await tenantA.research.enqueueJob({ jobId: "prod-rj-2", kind: "sim-batch" });
+    const all = await tenantA.research.listJobs({ limit: 10 });
+    expect(all.map((job) => job.jobId).sort()).toEqual(["prod-rj-1", "prod-rj-2"]);
+    const queuedOnly = await tenantA.research.listJobs({ limit: 10, state: "queued" });
+    expect(queuedOnly.map((job) => job.jobId)).toEqual(["prod-rj-2"]);
+    const otherTenant = await tenantB.research.listJobs({ limit: 10 });
+    expect(otherTenant).toHaveProperty("length", 0);
+  });
+
   it("candidates: validated echo (candidate sets enter decisions, not state)", async () => {
     const set = await tenantA.candidates.submit({
       setId: "cs-echo",

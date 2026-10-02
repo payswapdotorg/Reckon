@@ -151,7 +151,7 @@ describe("W3-004 apps/api — records flow from the composition root", () => {
 
     const records = sink.records();
     // 9 capability records + decision + scheduler-action + outcome-linkage.
-    expect(records.filter((r) => r.kind === "integration-capability")).toHaveLength(10);
+    expect(records.filter((r) => r.kind === "integration-capability")).toHaveLength(11);
 
     const decision = records.find((r) => r.kind === "decision");
     expect(decision).toMatchObject({
@@ -337,7 +337,7 @@ describe("W3-004 apps/api — records flow from the composition root", () => {
       expect(response.statusCode).toBe(200);
 
       const records: readonly ObservabilityRecord[] = new JsonlFileObservabilitySink(path).readAll();
-      expect(records.filter((r) => r.kind === "integration-capability")).toHaveLength(10);
+      expect(records.filter((r) => r.kind === "integration-capability")).toHaveLength(11);
       expect(records.find((r) => r.kind === "decision")).toMatchObject({ latencyMs: 42, status: "ok" });
       expect(records.find((r) => r.kind === "scheduler-action")).toBeDefined();
     } finally {

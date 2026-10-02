@@ -1,0 +1,128 @@
+/* ResearchQueueCard — state-distinct badges (Gate Q) + quiet table. */
+
+.countRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.stateQueued {
+  border-color: var(--chart-5);
+  color: var(--chart-5);
+}
+
+.stateLeased {
+  border-color: var(--chart-2);
+  color: var(--chart-2);
+}
+
+.stateDone {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.stateFailed {
+  border-color: var(--destructive);
+  color: var(--destructive);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.table th {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.id {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  color: var(--foreground);
+}
+
+.note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--muted-foreground);
+  max-width: 640px;
+}
+
+.warnRow {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  border-left: 2px solid var(--chart-2);
+  padding-left: 10px;
+}
+
+.inlineCode {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767px) {
+  .table,
+  .table tbody,
+  .table tr,
+  .table td,
+  .table th {
+    display: block;
+    width: 100%;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tr {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .table td {
+    border-bottom: none;
+    padding: 2px 0;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    display: inline-block;
+    min-width: 84px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted-foreground);
+  }
+}

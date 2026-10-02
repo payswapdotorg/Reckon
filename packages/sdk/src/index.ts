@@ -38,6 +38,9 @@ export {
 export type {
   AgentBody,
   AgentBodyInput,
+  ResearchJobInput,
+  ResearchJobState,
+  ResearchJobView,
   AgentOrganization,
   AgentOrganizationInput,
   CallOptions,

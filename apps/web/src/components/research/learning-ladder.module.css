@@ -1,0 +1,85 @@
+/* LearningLadder — the §13 spine. Simulated rungs carry the dashed
+ * treatment; observed-class rungs the solid emerald (Gate Q visual law). */
+
+.ladder {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  counter-reset: none;
+}
+
+.rung {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+}
+
+.simulatedRung {
+  border-style: dashed;
+  background-color: var(--secondary);
+}
+
+.observedRung {
+  border-style: solid;
+  border-color: var(--primary);
+  background-color: var(--secondary);
+}
+
+.stage {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background-color: var(--card);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+.observedRung .stage {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.rungBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.description {
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+}
+
+.evidenceTag {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  margin-top: 3px;
+}
+
+.observedRung .evidenceTag {
+  color: var(--primary);
+}
