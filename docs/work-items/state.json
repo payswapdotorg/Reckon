@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "p1-wave1-merged-38-of-53-w3-011-awaits-p1-004",
+  "status": "w3-011-complete-core-program-36-of-36-40-of-53-done-ui-lane-next",
   "implementationComplete": false,
   "dispatchBaseSha": "b217fdafcc8d5580409663128f6d1a329fd4ea0e",
   "workers": [
@@ -347,14 +347,14 @@
         "W2-009",
         "W3-010"
       ],
-      "status": "in-progress",
+      "status": "done",
       "decomposedInto": [
         "P1-001",
         "P1-002",
         "P1-003",
         "P1-004"
       ],
-      "note": "Genuine production-readiness gate per FINAL TL HANDOFF 2026-10-02: persistence, outcome transport, API composition, auth/tenant, observability, deployment, measured behavior. Evidence-pack component delivered via r44w1 lane. implementationComplete stays false until Gates K-R pass."
+      "note": "COMPLETE 2026-10-02: decomposed per FINAL TL HANDOFF into P1-001..004, all merged to main (06d2094, 354fa33) \u2014 real PG persistence, real API composition, durable outcome transport, deployment configuration. Core 36-item program 36/36 done."
     },
     {
       "id": "P1-001",
@@ -391,7 +391,7 @@
         "P1-003"
       ],
       "title": "Production deployment configuration (env, migrations, free-tier guardrails)",
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "UI-001",
