@@ -101,6 +101,35 @@ export function loadConfigFromEnv(env: Record<string, string | undefined>): ApiC
   };
 }
 
+/**
+ * Listen configuration for the production entrypoint (P1-004 env
+ * separation). RECKON_PORT must be an integer 1..65535 when present —
+ * a malformed value fails FAST with a ConfigError instead of surfacing
+ * later as a mysterious `NaN` listen failure inside fastify. RECKON_HOST
+ * defaults to loopback; a public deployment sets 0.0.0.0 (or the
+ * platform's expected bind host) explicitly — never silently.
+ */
+export interface ListenConfig {
+  readonly host: string;
+  readonly port: number;
+}
+
+export function parseListenConfig(env: Record<string, string | undefined>): ListenConfig {
+  const host = env.RECKON_HOST !== undefined && env.RECKON_HOST !== "" ? env.RECKON_HOST : "127.0.0.1";
+  const rawPort = env.RECKON_PORT;
+  if (rawPort === undefined || rawPort === "") {
+    return { host, port: 8080 };
+  }
+  if (!/^[0-9]+$/.test(rawPort)) {
+    throw new ConfigError(`RECKON_PORT must be an integer, got '${rawPort}'`);
+  }
+  const port = Number(rawPort);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new ConfigError(`RECKON_PORT must be within 1..65535, got '${rawPort}'`);
+  }
+  return { host, port };
+}
+
 /** Convenience for embedding tests: a KeyStore straight from a config list. */
 export function keyStoreFrom(keys: readonly StaticKeyConfig[]): KeyStore {
   return new KeyStore(keys);

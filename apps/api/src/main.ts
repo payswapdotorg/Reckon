@@ -10,7 +10,7 @@
  *   DATABASE_URL=postgres://... RECKON_API_KEYS='key:tenant:decisions,outcomes,...' pnpm --filter @reckon/api start
  */
 import { pathToFileURL } from "node:url";
-import { loadConfigFromEnv } from "./config.js";
+import { loadConfigFromEnv, parseListenConfig } from "./config.js";
 import { buildProductionServer } from "./composition.js";
 
 async function main(): Promise<void> {
@@ -28,17 +28,23 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  let listen: { host: string; port: number };
+  try {
+    listen = parseListenConfig(process.env);
+  } catch (error) {
+    process.stderr.write(`reckon-api: ${(error as Error).message}\n`);
+    process.exit(1);
+  }
+
   const composition = await buildProductionServer({
     connectionString: databaseUrl,
     keys: config.keys,
     apiVersion: config.apiVersion,
     logger: config.logger,
   });
-  const port = Number(process.env.RECKON_PORT ?? 8080);
-  const host = process.env.RECKON_HOST ?? "127.0.0.1";
-  await composition.app.listen({ port, host });
+  await composition.app.listen({ port: listen.port, host: listen.host });
   process.stderr.write(
-    `reckon-api: production composition live on ${host}:${port} (PostgreSQL persistence, real W2 kernels)\n`,
+    `reckon-api: production composition live on ${listen.host}:${listen.port} (PostgreSQL persistence, real W2 kernels)\n`,
   );
 
   const shutdown = async (signal: string): Promise<void> => {
