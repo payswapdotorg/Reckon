@@ -1,0 +1,164 @@
+/* DecisionActivityCard — §5 card language: dl rows like the SystemStatusCard,
+ * hairline-separated sections, monospaced ids. */
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rowKey {
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.rowValue {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--foreground);
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 18px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  overflow-wrap: anywhere;
+}
+
+.dim {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+/* ---- sections ------------------------------------------------------------ */
+
+.section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.absent {
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+  max-width: 640px;
+}
+
+/* ---- reasons / alternatives ----------------------------------------------- */
+
+.reasons {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reason {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reasonMessage {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--foreground);
+  flex: 1 1 260px;
+  overflow-wrap: anywhere;
+}
+
+.alternatives {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alternative {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.alternativeMeta {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+
+/* ---- related workspace link ------------------------------------------------ */
+
+.related {
+  margin: 20px 0 0;
+}
+
+.relatedLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  transition: color var(--transition);
+}
+
+.relatedLink:hover {
+  color: var(--foreground);
+}

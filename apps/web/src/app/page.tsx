@@ -1,18 +1,30 @@
 /**
- * Overview — the landing workspace (UI-003 builds the full decision-loop
- * view; this foundation wave renders the honest state plus the system
- * status card that demonstrates the five evidence classes).
+ * Overview — the landing workspace (UI-003): the full decision-loop view
+ * per FINAL TL HANDOFF §8.
  *
- * force-dynamic: the reachability probe runs at request time so the
- * displayed connection state is what was actually observed, never a
- * build-time snapshot.
+ * Composition, top to bottom:
+ *  1. WHAT SHOULD HAPPEN NEXT? — the answer card: a real decision read
+ *     live through the SDK seam by id, or the honest idle/degraded state
+ *     with the by-id lookup affordance;
+ *  2. Decision activity — the contract-validated record behind the answer;
+ *  3. The decision loop / Signals & state — every remaining §8 surface,
+ *     each showing real data where the SDK provides it and a precise
+ *     not-available reason where it does not;
+ *  4. System status — the foundation's real /healthz probe surface.
+ *
+ * force-dynamic: the probe, the SDK read and searchParams resolve at
+ * request time so the page shows what was actually observed — never a
+ * build-time snapshot and never fabricated state (Gate Q).
  */
 import type { Metadata } from "next";
-import { EmptyState } from "@/components/empty-state";
+import { DecisionActivityCard } from "@/components/overview/decision-activity-card";
+import { LoopSignalsCards } from "@/components/overview/loop-signals-card";
+import { NextActionHero } from "@/components/overview/next-action-hero";
 import { SystemStatusCard } from "@/components/system-status-card";
 import { WorkspacePage } from "@/components/workspace-page";
 import { getReckonApiDisplayConfig } from "@/lib/reckon-client";
 import { probeReckonApi } from "@/lib/reckon-status";
+import { loadNextAction, normalizeDecisionId } from "@/lib/overview-data";
 import { requireWorkspaceRoute } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
@@ -24,19 +36,26 @@ export const metadata: Metadata = {
   description: overview.subtitle,
 };
 
-export default async function OverviewPage() {
-  const [config, probe] = await Promise.all([getReckonApiDisplayConfig(), probeReckonApi()]);
-  const reason = probe.reachable
-    ? "connected — the API answers, but no workspace data is exposed through the SDK surface yet; activity appears here as decisions are requested."
-    : overview.emptyStateReason;
+interface OverviewPageProps {
+  readonly searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function OverviewPage({ searchParams }: OverviewPageProps) {
+  const params = await searchParams;
+  const decisionId = normalizeDecisionId(params.decision);
+
+  const [config, probe, result] = await Promise.all([
+    getReckonApiDisplayConfig(),
+    probeReckonApi(),
+    loadNextAction(decisionId),
+  ]);
+
   return (
     <WorkspacePage title={overview.title} subtitle={overview.subtitle}>
+      <NextActionHero result={result} config={config} probe={probe} />
+      <DecisionActivityCard result={result} />
+      <LoopSignalsCards result={result} />
       <SystemStatusCard config={config} probe={probe} />
-      <EmptyState
-        title="No data loaded"
-        reason={reason}
-        note="This workspace shows only real Reckon API state — no demo or fabricated data. Connect the API to populate it."
-      />
     </WorkspacePage>
   );
 }
