@@ -43,7 +43,26 @@ if (missing.length) {
 
 const state = JSON.parse(fs.readFileSync(path.join(root, "docs/work-items/state.json"), "utf8"));
 if (state.schemaVersion !== 1) throw new Error("Unsupported work-item state schema");
-if (state.implementationComplete !== false) throw new Error("Initial scaffold must not claim implementation complete");
+
+// Phase-aware implementationComplete validation.
+// - Implementation phase (implementationComplete === false): expected
+//   scaffold state; a scaffold must not claim implementation complete —
+//   any flag value other than an explicit boolean is rejected below.
+// - Release phase (implementationComplete === true): legitimate terminal
+//   state ONLY IF (a) every work item has status "done" and (b)
+//   docs/handoff/final-release-evidence.md exists (Gate R / RELEASE-001).
+if (state.implementationComplete === true) {
+  const unfinished = state.workItems.filter(x => x.status !== "done");
+  if (unfinished.length > 0) {
+    throw new Error("implementationComplete=true but unfinished items: " + unfinished.map(x => x.id).join(", "));
+  }
+  const releaseEvidence = path.join(root, "docs/handoff/final-release-evidence.md");
+  if (!fs.existsSync(releaseEvidence)) {
+    throw new Error("implementationComplete=true but missing release evidence file: docs/handoff/final-release-evidence.md");
+  }
+} else if (state.implementationComplete !== false) {
+  throw new Error("Invalid implementationComplete flag (" + JSON.stringify(state.implementationComplete) + "): a scaffold must not claim implementation complete — flag must be false (implementation phase) or true (release phase)");
+}
 
 const ids = state.workItems.map(x => x.id);
 if (new Set(ids).size !== ids.length) throw new Error("Duplicate work-item id");
@@ -75,7 +94,7 @@ if (suspicious.length) {
 console.log("Reckon repository governance check: PASS");
 console.log(`Required files: ${required.length}`);
 console.log(`Work items: ${state.workItems.length}`);
-console.log("Implementation-complete flag: false");
+console.log("Implementation-complete flag: " + state.implementationComplete);
 
 // ---- Toolchain freeze checks (CONTRACT-001) ----
 const contractsPkg = path.join(root, "packages/contracts");
