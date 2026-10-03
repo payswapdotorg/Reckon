@@ -15,4 +15,4 @@ tmp/
 artifacts/local/
 research/runs/*.tsbuildinfo
 *.tsbuildinfo
-apps/api/api/
+# apps/api/api/ — bundle is TRACKED: Vercel zero-config function detection scans the source tree (buildCommand regenerates at deploy time)
