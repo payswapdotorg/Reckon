@@ -75,3 +75,55 @@ without-operator-approval rule live in `free-tier-guardrails.md`.
   see guardrails doc).
 - No horizontal API scaling story (single process by design in the current
   phase; scale-up is a deliberate future decision, not an accident).
+
+## 8. Public deployment (Vercel, DEPLOY-001)
+
+Two Vercel Hobby projects, both deployed from this monorepo:
+
+| Project      | Root dir   | Framework | Build                                  | Public path               |
+|--------------|------------|-----------|----------------------------------------|---------------------------|
+| `reckon-api` | `apps/api` | Other     | `pnpm run bundle:vercel` (vercel.json) | `/v1/*`, `/healthz`, `/readyz` |
+| `reckon-web` | `apps/web` | Next.js   | package build script                   | `/` (all workspaces)      |
+
+- **API env:** `DATABASE_URL` (Neon, `sslmode=require`), `RECKON_API_KEYS`
+  (`demoKey:demo:decisions,outcomes,plans,catalog,research,agents,integrations`
+  class entries). `RECKON_PORT`/`RECKON_HOST` are listener-only vars — unused
+  in function mode.
+- **Web env:** `RECKON_API_BASE_URL` (the API project URL),
+  `RECKON_DEMO_API_KEY` (server-only secret), `RECKON_ENV=production`.
+- **The API function** is the self-contained esbuild bundle `api/index.js`
+  of `src/vercel.ts` (`scripts/bundle-vercel.mjs`; `@reckon/contracts`
+  dist is built first by the same script). Cold boot applies pending
+  migrations idempotently; the operator ALSO runs `pnpm migrate:apply`
+  per §1 at release time (both no-op when current).
+- **Rewrites** (vercel.json): `/v1/*`, `/healthz`, `/readyz` → the function;
+  Vercel preserves the original request URL, so the frozen route contracts
+  route exactly as in self-hosted mode.
+
+Local pre-deploy verification (both exit non-zero on failure):
+
+```bash
+cd apps/api
+pnpm run bundle:vercel                                   # produces api/index.js
+DATABASE_URL='postgres://…' RECKON_API_KEYS='k:t:plans' \
+  SMOKE_KEY=k node scripts/vercel-smoke.mjs              # boots the bundle over real PG
+```
+
+Post-deploy verification (Gates M/N, DEPLOY-002 + DEPLOY-003):
+
+```bash
+cd apps/api
+RECKON_API_BASE_URL='https://reckon-api.<scope>.vercel.app' \
+RECKON_DEMO_API_KEY='<demo key>' \
+  pnpm dlx tsx scripts/seed-demo.ts                      # DEPLOY-002 demo tenant
+
+RECKON_API_BASE_URL='https://reckon-api.<scope>.vercel.app' \
+RECKON_API_KEY='<demo key>' \
+RECKON_WEB_BASE_URL='https://reckon-web.<scope>.vercel.app' \
+  pnpm dlx tsx scripts/external-smoke.ts                 # DEPLOY-003 Gate M/N proof
+```
+
+Rollback: the projects are git-connected (deploy per push) — redeploy the
+previous commit; the operator's emergency lever is Vercel's dashboard
+rollback. Database state is forward-only per `migrations.md` (no rollback
+there by design).

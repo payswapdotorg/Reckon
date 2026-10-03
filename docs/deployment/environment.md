@@ -65,3 +65,17 @@ Rules:
   (never a mystery `NaN` listen failure);
 - malformed key entries / unknown scopes → `ConfigError` with entry index;
 - empty keys → loud stderr warning, boot continues (honest degraded mode).
+
+## 5. Deployed (Vercel) variables — DEPLOY-001 shape
+
+Two Vercel Hobby projects, both from this monorepo (see `runbook.md` §8 for
+the full procedure):
+
+| Project     | Root dir   | Variables | Notes |
+|-------------|------------|-----------|-------|
+| `reckon-api`| `apps/api` | `DATABASE_URL` (hard), `RECKON_API_KEYS` (soft) | function entry `src/vercel.ts` — `RECKON_PORT`/`RECKON_HOST` are listener-only vars, unused in function mode; secrets injected via the Vercel env store, never the repo |
+| `reckon-web`| `apps/web` | `RECKON_API_BASE_URL` (the API project URL), `RECKON_DEMO_API_KEY` (server-only secret, consumed by `apps/web/src/lib/reckon-client.ts`), `RECKON_ENV=production` | the web app is an SDK consumer; its key carries the demo tenant's scopes |
+
+The same separation laws apply: one environment = one database; secrets
+never in the repository; the API refuses to boot as "production" without a
+real `DATABASE_URL` in either runtime mode.

@@ -12,7 +12,7 @@ with their verification date. Nothing here is presented as measured fact.
 | Provider | Free allowance (ASSUMED, 2026-10) | Hard risk | Our posture |
 |----------|-----------------------------------|-----------|-------------|
 | Neon (PostgreSQL) | ~0.5 GB storage; limited compute-hours/mo; branch limits; autosuspend after idle | cold-start latency; compute-budget exhaustion | single small tenant volume; pool absorbs cold starts; alerts before budget by usage check |
-| Vercel (Hobby) | limited serverless invocations + bandwidth; no commercial use terms (demo = fine) | function timeout ~10s–60s class | UI is a thin SDK consumer; heavy work stays in the API process |
+| Vercel (Hobby) | limited serverless invocations + bandwidth; no commercial use terms (demo = fine) | function timeout ~10s–60s class | DEPLOY-001 shape = TWO Hobby projects on the same account (`reckon-web` + `reckon-api`) sharing the account-level envelope; the API function is request-light (demo tenant); heavy work stays in the kernel (no LLM, no scans) |
 | Cloudflare R2 | ~10 GB storage; no egress fee | storage growth | only large research artifacts per ADR-001; metadata + digests stay in PG |
 | Upstash (Redis) — OPTIONAL | ~10k commands/day class; small max size | rate-limit 425s | cache-only, NEVER authority (ADR-001); if it throttles, bypass the cache — correctness unaffected |
 

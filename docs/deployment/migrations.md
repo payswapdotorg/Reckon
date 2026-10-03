@@ -50,6 +50,11 @@ or `[TAMPERED]`; pending migrations in `status` are a state report, not an
 error (exit 0). Both commands end with the same verification pass — an
 applied-but-tampered migration is never reported as fine.
 
+In the DEPLOY-001 Vercel shape, the API function (`src/vercel.ts`) boots the
+same production composition and applies pending migrations idempotently on
+cold boot — the operator still runs the CLI per the sequence above at
+release time; both paths no-op when the schema is current.
+
 ## 3. Adding a migration
 
 1. Append an entry to `MIGRATIONS` (`packages/persistence/src/migrations.ts`):

@@ -54,6 +54,9 @@ importers:
       '@reckon/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
+      esbuild:
+        specifier: ^0.28.2
+        version: 0.28.2
 
   apps/web:
     dependencies:

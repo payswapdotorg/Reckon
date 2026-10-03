@@ -5,32 +5,44 @@
 
 ## 1. Topology
 
+The DEPLOY-001 public shape: BOTH apps run as Vercel Hobby projects deployed
+from this monorepo; Neon remains the single authority.
+
 ```text
                     ┌────────────────────────────────────────────┐
                     │                PUBLIC INTERNET             │
                     └───────┬───────────────────────────┬────────┘
                             │ HTTPS                     │ HTTPS
                   ┌─────────▼─────────┐       ┌─────────▼─────────┐
-                  │  Vercel (Hobby)  │       │   API host        │
-                  │  apps/web        │       │   apps/api        │
-                  │  Next.js App     │──────►│  Fastify (tsx)    │
-                  │  Router UI       │  SDK  │  :RECKON_PORT     │
-                  │  (UI-001..009)   │ fetch │  bearer-key auth  │
+                  │  Vercel (Hobby)  │       │  Vercel (Hobby)   │
+                  │  reckon-web      │       │  reckon-api       │
+                  │  apps/web        │──────►│  apps/api         │
+                  │  Next.js App     │  SDK  │  api/index.js     │
+                  │  Router UI       │ fetch │  (esbuild bundle  │
+                  │  (UI-001..009)   │       │   of src/vercel   │
+                  │                  │       │   .ts; rewrites   │
+                  │                  │       │   /v1/* /healthz  │
+                  │                  │       │   /readyz)        │
                   └──────────────────┘       └─────────┬─────────┘
-                                                        │ pg wire (TLS)
-                                              ┌─────────▼─────────┐
-                                              │  Neon PostgreSQL  │
-                                              │  THE authority    │
-                                              │  (ADR-001)        │
-                                              └─────────┬─────────┘
-                                                        │ large artifacts
-                                              ┌─────────▼─────────┐
-                                              │  Cloudflare R2    │
-                                              │  object storage   │
-                                              │  (metadata+lineage│
-                                              │   stays in PG)    │
-                                              └───────────────────┘
+                            │                          │ pg wire (TLS)
+                            │                ┌─────────▼─────────┐
+                            │                │  Neon PostgreSQL  │
+                            │                │  THE authority    │
+                            │                │  (ADR-001)        │
+                            │                └─────────┬─────────┘
+                            │                          │ large artifacts
+                            │                ┌─────────▼─────────┐
+                            │                │  Cloudflare R2    │
+                            │                │  object storage   │
+                            │                │  (metadata+lineage│
+                            │                │   stays in PG)    │
+                            │                └───────────────────┘
 ```
+
+The self-hosted alternative is unchanged and still first-class: a
+long-lived Node process (`apps/api/src/main.ts`, RECKON_HOST/RECKON_PORT).
+The Vercel mode (`apps/api/src/vercel.ts`) runs the SAME production
+composition — only the listener differs.
 
 Optional (NOT authority, cache-only): Upstash Redis — free-tier rate-limit /
 short-cache use, never a source of truth (ADR-001 law: no hidden authority).
@@ -40,7 +52,7 @@ short-cache use, never a source of truth (ADR-001 law: no hidden authority).
 | Component    | Runtime                  | Scale unit          | Notes |
 |--------------|--------------------------|---------------------|-------|
 | `apps/web`   | Vercel serverless/hobby  | per-request         | consumes `@reckon/sdk`; UI lane (UI-001..009); no persistence internals |
-| `apps/api`   | Node process (`pnpm --filter @reckon/api start`) | single process, `pg.Pool` (max 10, idle 30 s) | production composition: real W2 kernel handlers over `@reckon/persistence` |
+| `apps/api`   | Vercel Node function (DEPLOY-001: `api/index.js`, esbuild bundle of `src/vercel.ts`, rewrites `/v1/*` + `/healthz` + `/readyz`) OR long-lived Node process (`main.ts`) | per-request (function) / single process (self-host) | production composition: real W2 kernel handlers over `@reckon/persistence`; `pg.Pool` (max 10, idle 30 s); cold boot applies pending migrations idempotently |
 | PostgreSQL   | Neon (free tier)         | branch per env      | single writer; every authoritative table tenant-scoped |
 | R2           | Cloudflare (free tier)   | object              | research artifacts per ADR-004; lineage + digests in PG |
 

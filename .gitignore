@@ -15,3 +15,4 @@ tmp/
 artifacts/local/
 research/runs/*.tsbuildinfo
 *.tsbuildinfo
+apps/api/api/
