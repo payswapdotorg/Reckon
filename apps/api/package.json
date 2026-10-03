@@ -8,21 +8,23 @@
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "start": "pnpm dlx tsx src/main.ts"
+    "start": "pnpm dlx tsx src/main.ts",
+    "bundle:vercel": "pnpm --filter @reckon/contracts build && node scripts/bundle-vercel.mjs"
   },
   "dependencies": {
     "@reckon/contracts": "workspace:*",
-    "@reckon/events": "workspace:*",
-    "@reckon/observability": "workspace:*",
-    "fastify": "^5.12.5",
     "@reckon/decision": "workspace:*",
+    "@reckon/events": "workspace:*",
     "@reckon/experience": "workspace:*",
-    "@reckon/scheduler": "workspace:*",
+    "@reckon/integrations": "workspace:*",
+    "@reckon/observability": "workspace:*",
     "@reckon/persistence": "workspace:*",
-    "zod": "^3.25.76",
-    "@reckon/integrations": "workspace:*"
+    "@reckon/scheduler": "workspace:*",
+    "fastify": "^5.12.5",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@reckon/sdk": "workspace:*"
+    "@reckon/sdk": "workspace:*",
+    "esbuild": "^0.28.2"
   }
 }
