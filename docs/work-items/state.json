@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "status": "release-complete-53-of-53-implementation-complete",
-  "implementationComplete": true,
-  "dispatchBaseSha": "b217fdafcc8d5580409663128f6d1a329fd4ea0e",
+  "status": "stripe-phase-in-flight-13-new-items-53-done",
+  "implementationComplete": false,
+  "dispatchBaseSha": "199baa2fbb",
   "workers": [
     {
       "id": "W1",
@@ -46,6 +46,31 @@
       "ownedPaths": [
         "apps/web/**",
         "docs/ux/**"
+      ]
+    },
+    {
+      "id": "S1",
+      "name": "Marketing + Docs site",
+      "ownedPaths": [
+        "apps/marketing/**",
+        "apps/docs/**"
+      ]
+    },
+    {
+      "id": "S2",
+      "name": "Developer platform (API/SDK/webhooks)",
+      "ownedPaths": [
+        "apps/api/**",
+        "packages/contracts/**",
+        "packages/sdk/**",
+        "packages/events/**"
+      ]
+    },
+    {
+      "id": "S3",
+      "name": "Dashboard",
+      "ownedPaths": [
+        "apps/web/**"
       ]
     }
   ],
@@ -354,7 +379,7 @@
         "P1-003",
         "P1-004"
       ],
-      "note": "COMPLETE 2026-10-02: decomposed per FINAL TL HANDOFF into P1-001..004, all merged to main (06d2094, 354fa33) — real PG persistence, real API composition, durable outcome transport, deployment configuration. Core 36-item program 36/36 done."
+      "note": "COMPLETE 2026-10-02: decomposed per FINAL TL HANDOFF into P1-001..004, all merged to main (06d2094, 354fa33) \u2014 real PG persistence, real API composition, durable outcome transport, deployment configuration. Core 36-item program 36/36 done."
     },
     {
       "id": "P1-001",
@@ -493,7 +518,7 @@
       ],
       "title": "Public demo tenant (explicitly labeled demonstration data)",
       "status": "done",
-      "notes": "DONE 2026-10-03T01:4xZ: demo tenant seeded over the PUBLIC wire (seed-demo vs https://reckon-api-phi.vercel.app: 7 steps seeded, 6 skipped — idempotent re-run tolerated, rehearsal data durable in Neon). Plans workspace serves live demo data."
+      "notes": "DONE 2026-10-03T01:4xZ: demo tenant seeded over the PUBLIC wire (seed-demo vs https://reckon-api-phi.vercel.app: 7 steps seeded, 6 skipped \u2014 idempotent re-run tolerated, rehearsal data durable in Neon). Plans workspace serves live demo data."
     },
     {
       "id": "DEPLOY-003",
@@ -503,7 +528,7 @@
       ],
       "title": "Post-deploy proof (Gates M/N: public reachability + external smoke test)",
       "status": "done",
-      "notes": "DONE 2026-10-03T01:4xZ: GATE-N PASS over public internet — external-smoke: healthz 200, readyz 12 ports wired, decision QUEUE dec-b9676feb4773be939e2fea86 + durable read-back, outcome smoke-1790991250-ev durable transport accepted, evidence retrieval across requests, web 200 Reckon. Gate M public reachability + Gate N external smoke both green."
+      "notes": "DONE 2026-10-03T01:4xZ: GATE-N PASS over public internet \u2014 external-smoke: healthz 200, readyz 12 ports wired, decision QUEUE dec-b9676feb4773be939e2fea86 + durable read-back, outcome smoke-1790991250-ev durable transport accepted, evidence retrieval across requests, web 200 Reckon. Gate M public reachability + Gate N external smoke both green."
     },
     {
       "id": "RELEASE-001",
@@ -515,6 +540,123 @@
       "title": "Final release (Gates K-R reconciliation, final-release-evidence.md, implementationComplete=true)",
       "status": "done",
       "notes": "DONE 2026-10-03T01:5xZ: Gates K-R reconciled green in docs/handoff/final-release-evidence.md (K product UI live, L Neon persistence durable across redeploys, M public reachability, N GATE-N PASS over public wire, O UX acceptance with honest density divergence documented in docs/ux/acceptance.md + design-system.md + implemented captures at 3 viewports, P free-tier discipline documented, Q operational honesty structural). Full battery this window: 60 files / 1023 tests green, build + typecheck + verify-repo green. Production: https://reckon-api-phi.vercel.app + https://reckon-web-nine.vercel.app. implementationComplete=true set per Gate R."
+    },
+    {
+      "id": "S1-001",
+      "owner": "S1",
+      "dependsOn": [],
+      "status": "in_progress",
+      "title": "Marketing home \u2014 stripe.com-class site shell (apps/marketing): gradient-mesh split hero, live-stat ticker, product grid with outcome-phrased headlines, quantified social proof, dual CTA (Start now / Contact sales), code-first marketing artifacts",
+      "notes": "Survey: docs/surveys/stripe-com-survey.md sections 2 + 5. Quality bar non-negotiable."
+    },
+    {
+      "id": "S1-002",
+      "owner": "S1",
+      "dependsOn": [
+        "S1-001"
+      ],
+      "status": "pending",
+      "title": "Product pages \u2014 Recommendation API / Personalization / Scheduling / Analytics (one page per product, Stripe product-page grammar)"
+    },
+    {
+      "id": "S1-003",
+      "owner": "S1",
+      "dependsOn": [
+        "S1-001"
+      ],
+      "status": "pending",
+      "title": "Pricing page \u2014 per-1k-request tiers + volume calculator + 'everything included' comparison table + enterprise track"
+    },
+    {
+      "id": "S1-004",
+      "owner": "S1",
+      "dependsOn": [],
+      "status": "in_progress",
+      "title": "Docs portal (apps/docs) \u2014 'Serve your first recommendation' quickstart with integration-option tabs (hosted endpoint / SDK / streaming), API reference skeleton (Authentication / Errors / Idempotency / Expand / Pagination / Versioning), webhooks guide, runnable code samples"
+    },
+    {
+      "id": "S2-001",
+      "owner": "S2",
+      "dependsOn": [],
+      "status": "in_progress",
+      "title": "API hardening Stripe-style \u2014 sk_/pk_ key model, versioned API surface, idempotency-key semantics, response expansion, cursor pagination, typed error catalog with stable codes",
+      "notes": "Owned: packages/contracts, apps/api. Public contract changes coordinate with frozen contracts discipline (AGENTS.md)."
+    },
+    {
+      "id": "S2-002",
+      "owner": "S2",
+      "dependsOn": [
+        "S2-001"
+      ],
+      "status": "pending",
+      "title": "Recommendation webhooks \u2014 event catalog (recommendation.delivered, model.drift.detected, schedule.executed\u2026), HMAC signatures, replay endpoint, delivery logs"
+    },
+    {
+      "id": "S2-003",
+      "owner": "S2",
+      "dependsOn": [
+        "S2-001"
+      ],
+      "status": "pending",
+      "title": "Test mode \u2014 test keys, canned scenarios, test/live separation semantics"
+    },
+    {
+      "id": "S2-004",
+      "owner": "S2",
+      "dependsOn": [
+        "S2-001"
+      ],
+      "status": "pending",
+      "title": "Reference SDKs (TypeScript + Python) \u2014 typed client over the hardened API with the docs quickstart runnable through them"
+    },
+    {
+      "id": "S3-001",
+      "owner": "S3",
+      "dependsOn": [
+        "S2-001"
+      ],
+      "status": "pending",
+      "title": "Dashboard shell (apps/web extension) \u2014 nav IA (Home / Recommendations / Models / Data Sources / Analytics / Developers / Settings), API-keys manager, request logs, events console, test/live toggle"
+    },
+    {
+      "id": "S3-002",
+      "owner": "S3",
+      "dependsOn": [
+        "S3-001",
+        "S2-002"
+      ],
+      "status": "pending",
+      "title": "Dashboard analytics views \u2014 CTR lift, latency percentiles, drift indicators, funnels"
+    },
+    {
+      "id": "S4-001",
+      "owner": "TL3",
+      "dependsOn": [
+        "S1-004",
+        "S2-003",
+        "S3-001"
+      ],
+      "status": "pending",
+      "title": "End-to-end journey proof \u2014 signup \u2192 API key \u2192 first recommendation call \u2192 log entry \u2192 analytics entry \u2192 webhook event, demonstrated and captured"
+    },
+    {
+      "id": "S4-002",
+      "owner": "TL3",
+      "dependsOn": [
+        "S1-001",
+        "S1-002",
+        "S1-003",
+        "S1-004",
+        "S2-001",
+        "S2-002",
+        "S2-003",
+        "S2-004",
+        "S3-001",
+        "S3-002",
+        "S4-001"
+      ],
+      "status": "pending",
+      "title": "Final release \u2014 production deploy of all four surfaces, final-release evidence refresh, implementationComplete=true (Stripe phase)"
     }
   ],
   "workerBranches": {
