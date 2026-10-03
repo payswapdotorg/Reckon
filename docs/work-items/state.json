@@ -483,7 +483,7 @@
       ],
       "title": "Free-tier public deployment (Vercel + Neon + Upstash + R2, optional Apify)",
       "status": "in-progress",
-      "notes": "IN PROGRESS 2026-10-02T22:51Z: Neon production project PROVISIONED (reckon-production / lingering-sun-14227532, aws-us-east-1, PG16, free tier 0.25CU) and ALL 4 MIGRATIONS APPLIED over the real wire (deployed-infrastructure evidence, Gate L). Vercel BLOCKED: both composio vercel tokens 403 on the personal scope (re-auth required \u2014 operator link issued)."
+      "notes": "IN PROGRESS 2026-10-03T00:35Z: Neon production LIVE + migrated (Gate L, reckon-production / lingering-sun-14227532). Vercel serverless adapter + bundle pipeline + deploy tooling MERGED AND PUSHED (f8144ec): src/vercel.ts function entry, esbuild api/index.js bundle, vercel.json rewrites, seed-demo/external-smoke scripts, deployment docs updated. FULL dress rehearsal over the real Neon wire PASSED (seed-demo 13/13 steps, Gate N sequence PASS) \u2014 the demo tenant dataset is already seeded in production. REMAINING BLOCKER: operator re-auth of the composio vercel connection (both live tokens 403 on the personal scope); then create reckon-web + reckon-api Vercel projects, set env vars, deploy, verify Gates M/N publicly."
     },
     {
       "id": "DEPLOY-002",
