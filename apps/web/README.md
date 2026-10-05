@@ -1,4 +1,4 @@
-# @reckon/web — Reckon Studio (UI-001 + UI-002 + UI-004 + S3-001)
+# @reckon/web — Reckon Studio (UI-001 + UI-002 + UI-004 + S3-001 + S3-002)
 
 The product UI for Reckon: a Next.js (App Router, TypeScript strict) shell
 that consumes **`@reckon/sdk` only** — it is a consumer of Reckon, never a
@@ -11,6 +11,8 @@ evidence-class badge vocabulary (Gate Q prep). UI-003 (Overview), UI-004
 **S3-001 delivered the dashboard shell** — the operator face of the S2-001
 hardened API: the dashboard nav IA, the Developers surfaces (API keys,
 request logs, events console) and the account-level test/live toggle.
+**S3-002 delivered the analytics views** — CTR lift, latency percentiles,
+drift indicators and the decision-loop funnel on `/analytics`.
 
 ## Information architecture (S3-001)
 
@@ -22,7 +24,7 @@ workspaces below it (same hrefs as UI-001 — no route moved):
 OPERATE     Recommendations           /recommendations   (placeholder — dashboard backend)
             Models                    /models            (placeholder — dashboard backend)
             Data Sources              /data-sources      (placeholder — dashboard backend)
-            Analytics                 /analytics         (placeholder — S3-002)
+            Analytics                 /analytics         (S3-002 views)
 DEVELOPERS  Developers                /developers        (live surface states)
               API keys                /developers/keys   (key manager)
               Request logs            /developers/logs   (cursor pagination)
@@ -97,6 +99,43 @@ The account-level segmented control at the top of the sidebar
   stated in the toggle's caption and the switch confirm; API-side
   test-mode semantics land with S2-003.
 
+## Analytics views (S3-002)
+
+`/analytics` composes four views, each = card + chart/table + evidence
+class, computed by PURE modules over the REAL outcome/decision records the
+API exposes (`src/lib/analytics-{ctr-lift,latency,drift,funnel}.ts` —
+pure, tested, fetch-injectable; `src/lib/analytics-surface.ts` — the
+server-only seam). Charts are CSS primitives — no external chart library
+(dependency discipline holds).
+
+| View | Computes | Data source (pending routes named verbatim until wired) |
+|---|---|---|
+| CTR lift | Exposure-grouped CTR (decision → impression linkage), click-through set (`start`/`conversion`/`purchase`), Wilson 95% CIs, lift sign/magnitude + the confidence caveat rendering model | `GET /v1/decisions`, `GET /v1/outcomes` |
+| Decision latency | Nearest-rank p50/p95/p99 over `POST /v1/decisions` request-log rows, frozen bucket histogram, honest `n=` counts, per-mode evidence from key prefixes | `GET /v1/request-logs` |
+| Drift indicators | Per-model cards from the `model.drift.detected` events feed (the S2-002 thin-event payload), severity mapping (over threshold / approaching ≥ 80% / within), latest evaluation wins | `GET /v1/events` |
+| Decision loop funnel | decisions → linked outcomes → preference-delta stage mapping with subject-level linkage (stated as correlational) | `GET /v1/decisions`, `GET /v1/outcomes`, `GET /v1/preferences/events` |
+
+Honesty laws specific to analytics:
+
+- **Evidence partition (frozen contracts):** research-class outcomes
+  (`fixture`/`simulated`/`counterfactual`) are counted and reported but
+  EXCLUDED from every rate; observed classes
+  (`production-observed`/`staging`/`controlled-local`) are the only
+  production evidence. Unlinked outcomes (no `decisionId`) are likewise
+  counted and excluded.
+- **Nulls, never zeros:** empty groups, zero denominators and missing
+  baselines yield NULL rates rendered as "not computable" — the platform
+  never fabricates significance. Every caveat is a deterministic function
+  of the result (observational comparison, small sample, exclusions).
+- **Mode awareness:** request-log rows carry the key prefix, so test-key
+  traffic (`sk_test_`/`pk_test_`) renders with the TEST chip (test
+  evidence) and live-key traffic with LIVE — per-record mode evidence,
+  labeled as such. The account toggle itself is local/visual (S3-001
+  placeholder); the mode note on `/analytics` states exactly that.
+- A failed surface renders the S3-001 not-wired callout naming its
+  pending route — when the route lands, the same attempt returns `ok`
+  and the view lights up with zero UI changes.
+
 ## Laws (violations void the delivery)
 
 - consumes `@reckon/sdk` + `@reckon/contracts` types ONLY (the one
@@ -158,15 +197,24 @@ uses.
   section (keys/logs/events with honest not-wired states naming the
   pending routes), the test/live toggle with confirm gating, and the Home
   overview (status + quick links + onboarding).
+- **The analytics views (S3-002) are live**: `/analytics` renders the four
+  views (CTR lift, decision latency, drift indicators, decision-loop
+  funnel) computed by pure modules over real trail records; the trail
+  reads (`GET /v1/decisions`, `GET /v1/outcomes`,
+  `GET /v1/preferences/events`, `GET /v1/request-logs`, `GET /v1/events`)
+  are pending on the API side, so today each view shows its honest
+  not-wired state naming the route — they light up with zero UI changes
+  when the routes land.
 - **Decisions (UI-004) is live**: the `/decisions` workspace retrieves one
   decision by id through the SDK seam and renders the full record; a plain
   GET form performs the lookup (shareable, JS-optional).
 - The other foundation routes render titled honest empty states; the
   Overview/Home keeps the system status card with a real server-side
   `/healthz` probe and the five-class evidence badge demo.
-- The dashboard placeholder sections (Recommendations, Models, Data
-  Sources, Analytics, Settings) state precisely what lands next (S3-002
-  and the dashboard backend waves) and link the related live workspaces.
+- The remaining dashboard placeholder sections (Recommendations, Models,
+  Data Sources, Settings) state precisely what lands next (the dashboard
+  backend waves) and link the related live workspaces; Analytics is live
+  as of S3-002.
 - The developer-platform API routes are pending (S2-002/S2-003): the
   surfaces attempt them for real and report the observed state — they will
   light up without UI changes when the routes land.
