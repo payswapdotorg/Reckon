@@ -20,7 +20,7 @@ export function createInjectFetch(app: FastifyInstance): FetchLike {
     const parsed = new URL(url);
     const headers: Record<string, string> = { ...init.headers };
     const response = await app.inject({
-      method: init.method as "GET" | "POST",
+      method: init.method as "GET" | "POST" | "DELETE",
       url: `${parsed.pathname}${parsed.search}`,
       headers,
       payload: init.body,

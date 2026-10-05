@@ -20,6 +20,7 @@
 import {
   AgentBodySchema,
   AgentOrganizationSchema,
+  ApiVersionSchema,
   CandidateSetSchema,
   CatalogItemSchema,
   ContextReferenceSchema,
@@ -30,10 +31,19 @@ import {
   HardConstraintSchema,
   IdSchema,
   OutcomeEventSchema,
+  PaginationMetaSchema,
   PreferenceDeltaSchema,
   RealizationSchema,
+  ReckonEventSchema,
   ReplanTriggerSchema,
   TenantScopeSchema,
+  WebhookDeliveryViewSchema,
+  WebhookEndpointCreateSchema,
+  WebhookEndpointCreatedSchema,
+  WebhookEndpointViewSchema,
+  WebhookReplayResponseSchema,
+  X_RECKON_MODE_HEADER,
+  X_RECKON_VERSION_HEADER,
 } from "@reckon/contracts";
 import type {
   CandidateSet,
@@ -44,12 +54,28 @@ import type {
   OutcomeEvent,
   PreferenceDelta,
   Realization,
+  ReckonEvent,
   AgentBody,
   AgentOrganization,
+  WebhookDeliveryView,
+  WebhookEndpointCreated,
+  WebhookEndpointView,
+  WebhookReplayResponse,
 } from "@reckon/contracts";
 // Re-export the frozen agent contract types so the SDK surface is
 // self-contained for consumers (UI-007).
 export type { AgentBody, AgentOrganization } from "@reckon/contracts";
+// S2-004: the canonical webhook helpers live in ./webhooks.ts (re-exports
+// of the @reckon/contracts reference implementation + the docs-named
+// `verifyWebhook` alias).
+export {
+  verifyWebhook,
+  verifyReckonSignature,
+  signWebhookPayload,
+  WEBHOOK_SIGNATURE_HEADER,
+  WEBHOOK_SIGNATURE_HEADER_CANONICAL,
+  WEBHOOK_SIGNATURE_TOLERANCE_SECONDS,
+} from "./webhooks.js";
 
 import { z } from "zod/v4";
 import { ReckonConfigError } from "./errors.js";
@@ -231,6 +257,88 @@ export interface ResolveResult {
 }
 
 /* ------------------------------------------------------------------ *
+ * S2-004 — hardened-API surface types                                   *
+ * ------------------------------------------------------------------ */
+
+/** POST /v1/webhooks/endpoints input (url, optional description, eventTypes filter; empty filter = every event). */
+export type WebhookEndpointCreateInput = z.input<typeof WebhookEndpointCreateSchema>;
+
+/** Cursor-paginated list options (limit 1..100 default 20; startingAfter is the previous page's next_cursor). */
+export interface ListOptions extends CallOptions {
+  /** Page size — the server clamps to 1..100 (default 20). */
+  readonly limit?: number;
+  /** The previous page's `next_cursor` (an object id); omit for the first page. */
+  readonly startingAfter?: string;
+}
+
+/** Delivery-log list options: pagination + the endpoint_id / event_id filters. */
+export interface WebhookDeliveryListOptions extends ListOptions {
+  /** Only deliveries to this endpoint. */
+  readonly endpointId?: string;
+  /** Only deliveries of this event. */
+  readonly eventId?: string;
+}
+
+/**
+ * Page envelope shared by every cursor-paginated list: the collection
+ * plus the frozen PaginationMeta fields exactly as the wire carries them
+ * (`has_more` + `next_cursor` — feed `next_cursor` back as
+ * `startingAfter`). Composed ONLY from imported frozen schema objects.
+ */
+/** GET /v1/plans page: { plans, has_more, next_cursor }. */
+export const PlanPageSchema = z.object({
+  plans: z.array(ExperiencePlanSchema),
+  ...PaginationMetaSchema.shape,
+});
+export type PlanPage = z.output<typeof PlanPageSchema>;
+
+/** GET /v1/webhooks/endpoints page: { endpoints, has_more, next_cursor }. */
+export const WebhookEndpointPageSchema = z.object({
+  endpoints: z.array(WebhookEndpointViewSchema),
+  ...PaginationMetaSchema.shape,
+});
+export type WebhookEndpointPage = z.output<typeof WebhookEndpointPageSchema>;
+
+/** GET /v1/webhooks/deliveries page: { deliveries, has_more, next_cursor }. */
+export const WebhookDeliveryPageSchema = z.object({
+  deliveries: z.array(WebhookDeliveryViewSchema),
+  ...PaginationMetaSchema.shape,
+});
+export type WebhookDeliveryPage = z.output<typeof WebhookDeliveryPageSchema>;
+
+/** GET /v1/webhooks/events/{id} + GET /v1/decisions/{id} options with `?expand[]` paths. */
+export interface ExpandOptions extends CallOptions {
+  /**
+   * `?expand[]` paths this route's allowlist supports (documented per
+   * route; unknown paths are a typed 400 naming `expand[i]`). Today:
+   * decisions detail — `selectedExperience.item`.
+   */
+  readonly expand?: readonly string[];
+}
+
+/**
+ * The decision detail surface with expansions applied: the frozen
+ * DecisionResult plus the embedded catalog item on the selected
+ * experience (`?expand[]=selectedExperience.item`; the embedded item is
+ * `null` when absent — the honest-absence expansion). Composed from the
+ * frozen ExperienceSchema + CatalogItemSchema, mirroring the API route's
+ * own composition.
+ */
+export const ExpandedDecisionResultSchema = DecisionResultSchema.extend({
+  selectedExperience: ExperienceSchema.extend({
+    item: CatalogItemSchema.nullable().optional(),
+  }).optional(),
+});
+export type ExpandedDecisionResult = z.output<typeof ExpandedDecisionResultSchema>;
+
+/** The shape every auto-paginating iterator pages over (normalized page view). */
+export interface PageOf<T> {
+  readonly items: readonly T[];
+  readonly has_more: boolean;
+  readonly next_cursor: string | null;
+}
+
+/* ------------------------------------------------------------------ *
  * Transport seam                                                      *
  * ------------------------------------------------------------------ */
 
@@ -261,6 +369,13 @@ export interface ReckonClientOptions {
   readonly baseUrl: string;
   /** Bearer API key (tenant identity comes EXCLUSIVELY from the key). */
   readonly apiKey: string;
+  /**
+   * S2-001: pin the API version — sent as X-Reckon-Version on every
+   * request (must be a registered, non-retired version of the target
+   * deployment; the pinned default is used when omitted). Format:
+   * semver (X.Y.Z) or calendar date (YYYY-MM-DD).
+   */
+  readonly apiVersion?: string;
   /** Injectable transport (default: global fetch). */
   readonly fetchImpl?: FetchLike;
   /** Idempotency-Key generator for header-keyed operations (default: crypto.randomUUID). */
@@ -270,11 +385,22 @@ export interface ReckonClientOptions {
 }
 
 export interface ReckonClient {
+  /**
+   * S2-003: the mode (`live` | `test`) of the key that served the most
+   * recent response, from the X-Reckon-Mode header the API sets on
+   * every authenticated response (success or typed error). Undefined
+   * before the first response.
+   */
+  lastResponseMode(): "live" | "test" | undefined;
   readonly decisions: {
     /** POST /v1/decisions — request the next best action/experience. */
     request(request: DecisionRequestInput): Promise<DecisionResult>;
-    /** GET /v1/decisions/{decisionId} — tenant-scoped lookup. */
-    get(decisionId: string): Promise<DecisionResult>;
+    /**
+     * GET /v1/decisions/{decisionId} — tenant-scoped lookup. Supports
+     * `?expand[]` (today: `selectedExperience.item` embeds the catalog
+     * item; the embedded item is null when absent).
+     */
+    get(decisionId: string, options?: ExpandOptions): Promise<ExpandedDecisionResult>;
   };
   readonly outcomes: {
     /** POST /v1/outcomes — append a host-observed outcome event. */
@@ -295,6 +421,16 @@ export interface ReckonClient {
     history(planId: string, options?: CallOptions): Promise<readonly PlanVersionEntry[]>;
     /** GET /v1/plans?limit=N — recent plans (latest version each, newest first). */
     listRecent(options?: CallOptions & { readonly limit?: number }): Promise<readonly ExperiencePlan[]>;
+    /**
+     * S2-004: GET /v1/plans?limit&starting_after — one explicit cursor
+     * page ({plans, has_more, next_cursor}).
+     */
+    listPage(options?: ListOptions): Promise<PlanPage>;
+    /**
+     * S2-004: auto-paginating async iterator over EVERY plan (follows
+     * next_cursor page by page; `for await (const plan of reckon.plans.list())`).
+     */
+    list(options?: ListOptions): AsyncIterable<ExperiencePlan>;
   };
   readonly integrations: {
     /** GET /v1/integrations/adapters — the adapter declarations (static product truth). */
@@ -336,6 +472,40 @@ export interface ReckonClient {
     /** POST /v1/experiences/resolve — expand items/realizations into experiences. */
     resolve(request: ResolveRequestInput, options?: CallOptions): Promise<ResolveResult>;
   };
+  /** S2-002/S2-004: the /v1/webhooks route family (scope: webhooks). */
+  readonly webhookEndpoints: {
+    /**
+     * POST /v1/webhooks/endpoints — register an endpoint. The response
+     * carries the ONE-TIME `whsec_…` signing secret (issued at creation,
+     * never returned again — store it immediately).
+     */
+    create(endpoint: WebhookEndpointCreateInput, options?: CallOptions): Promise<WebhookEndpointCreated>;
+    /** GET /v1/webhooks/endpoints?limit&starting_after — one cursor page. */
+    listPage(options?: ListOptions): Promise<WebhookEndpointPage>;
+    /** Auto-paginating async iterator over every endpoint (follows next_cursor). */
+    list(options?: ListOptions): AsyncIterable<WebhookEndpointView>;
+    /** GET /v1/webhooks/endpoints/{endpointId} — the endpoint view (404 when unknown). */
+    get(endpointId: string, options?: CallOptions): Promise<WebhookEndpointView>;
+    /** DELETE /v1/webhooks/endpoints/{endpointId} — delete; returns the deleted view (404 when unknown). */
+    delete(endpointId: string, options?: CallOptions): Promise<WebhookEndpointView>;
+  };
+  readonly webhookEvents: {
+    /** GET /v1/webhooks/events/{eventId} — a stored thin event (30-day retention; 404 when unknown). */
+    get(eventId: string, options?: CallOptions): Promise<ReckonEvent>;
+    /**
+     * POST /v1/webhooks/events/{eventId}/replay — re-deliver the SAME
+     * event id to every currently-matching endpoint (at-least-once;
+     * receivers dedupe on event.id). Returns the event + the replay
+     * deliveries it created.
+     */
+    replay(eventId: string, options?: CallOptions): Promise<WebhookReplayResponse>;
+  };
+  readonly webhookDeliveries: {
+    /** GET /v1/webhooks/deliveries?limit&starting_after&endpoint_id&event_id — the delivery log, one cursor page. */
+    listPage(options?: WebhookDeliveryListOptions): Promise<WebhookDeliveryPage>;
+    /** Auto-paginating async iterator over every delivery (accepts the endpoint_id/event_id filters). */
+    list(options?: WebhookDeliveryListOptions): AsyncIterable<WebhookDeliveryView>;
+  };
 }
 
 /* ------------------------------------------------------------------ *
@@ -346,7 +516,7 @@ const CONTENT_TYPE_JSON = "application/json";
 
 /** The frozen wire error-envelope shape (apps/api ERROR-MODEL LAW). */
 interface ErrorEnvelopeShape {
-  error?: { code?: unknown; message?: unknown; details?: unknown };
+  error?: { code?: unknown; message?: unknown; details?: unknown; class?: unknown; param?: unknown; doc_url?: unknown };
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -359,6 +529,45 @@ function parseOrIssues<T>(schema: Parseable<T>, input: unknown): { ok: true; dat
   return { ok: false, issues: toSdkValidationIssues(result.error) };
 }
 
+/** Compose the hardened-list query string (limit / starting_after / endpoint_id / event_id / expand[]). */
+function listQueryString(params: {
+  limit?: number;
+  startingAfter?: string;
+  endpointId?: string;
+  eventId?: string;
+  expand?: readonly string[];
+} = {}): string {
+  const query = new URLSearchParams();
+  if (params.limit !== undefined) query.set("limit", String(params.limit));
+  if (params.startingAfter !== undefined) query.set("starting_after", params.startingAfter);
+  if (params.endpointId !== undefined) query.set("endpoint_id", params.endpointId);
+  if (params.eventId !== undefined) query.set("event_id", params.eventId);
+  if (params.expand !== undefined) {
+    for (const path of params.expand) query.append("expand[]", path);
+  }
+  const qs = query.toString();
+  return qs.length > 0 ? `?${qs}` : "";
+}
+
+/**
+ * The auto-paginating iterator core (S2-004): yields every item of every
+ * page, following `next_cursor` until `has_more` is false. Pages are
+ * fetched lazily — one request per page, newest-first stable order.
+ */
+async function* autoPaginate<T>(
+  fetchPage: (startingAfter: string | undefined) => Promise<PageOf<T>>,
+): AsyncGenerator<T, void, void> {
+  let cursor: string | undefined = undefined;
+  for (;;) {
+    const page = await fetchPage(cursor);
+    for (const item of page.items) {
+      yield item;
+    }
+    if (!page.has_more || page.next_cursor === null) return;
+    cursor = page.next_cursor;
+  }
+}
+
 export function createReckonClient(options: ReckonClientOptions): ReckonClient {
   if (!isNonEmptyString(options.baseUrl)) {
     throw new ReckonConfigError("createReckonClient: baseUrl must be a non-empty string");
@@ -366,11 +575,36 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
   if (!isNonEmptyString(options.apiKey)) {
     throw new ReckonConfigError("createReckonClient: apiKey must be a non-empty string");
   }
+  // S2-001: a pinned apiVersion must be well-formed before it is ever
+  // sent (the server rejects unregistered versions with a typed 400 —
+  // the client only guards the format, never the registry).
+  if (options.apiVersion !== undefined) {
+    const parsedVersion = ApiVersionSchema.safeParse(options.apiVersion);
+    if (!parsedVersion.success) {
+      throw new ReckonConfigError(
+        "createReckonClient: apiVersion must be a semver (X.Y.Z) or calendar date (YYYY-MM-DD) string",
+        { issues: toSdkValidationIssues(parsedVersion.error) },
+      );
+    }
+  }
   const baseUrl = options.baseUrl.replace(/\/+$/, "");
   const fetchImpl: FetchLike =
     options.fetchImpl ?? ((url, init) => fetch(url, { method: init.method, headers: init.headers, body: init.body }));
   const idGenerator = options.idGenerator ?? (() => crypto.randomUUID());
   const defaultHeaders = { ...(options.defaultHeaders ?? {}) };
+
+  /** S2-003: mode of the key that served the most recent response (X-Reckon-Mode). */
+  let lastMode: "live" | "test" | undefined;
+
+  /** Record the S2-003 mode marker carried by every authenticated response. */
+  function noteResponseMode(response: Response): "live" | "test" | undefined {
+    const headerMode = response.headers.get(X_RECKON_MODE_HEADER);
+    if (headerMode === "live" || headerMode === "test") {
+      lastMode = headerMode;
+      return headerMode;
+    }
+    return undefined;
+  }
 
   /** Generate (or take) the Idempotency-Key header for header-keyed routes. */
   function headerIdempotencyKey(explicit: string | undefined): string {
@@ -390,7 +624,7 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
    * typed error mapping (never raw failures) → response contract validation.
    */
   async function request<B, R>(spec: {
-    method: "GET" | "POST";
+    method: "GET" | "POST" | "DELETE";
     path: string;
     requestSchema?: Parseable<B>;
     requestBody?: unknown;
@@ -410,9 +644,13 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
     }
 
     const url = `${baseUrl}${spec.path}`;
+    // Content-Type rides only requests that carry a JSON body — a
+    // bodyless GET/DELETE must not claim one (fastify's body parser
+    // rejects an empty body declared as application/json).
     const headers: Record<string, string> = {
       authorization: `Bearer ${options.apiKey}`,
-      "content-type": CONTENT_TYPE_JSON,
+      ...(bodyToSend !== undefined ? { "content-type": CONTENT_TYPE_JSON } : {}),
+      ...(options.apiVersion !== undefined ? { [X_RECKON_VERSION_HEADER]: options.apiVersion } : {}),
       ...defaultHeaders,
       ...(spec.headers ?? {}),
     };
@@ -441,16 +679,32 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
     }
 
     if (!response.ok) {
+      // S2-003: the mode marker rides typed errors too — a failed test-mode
+      // request is still identifiable as test traffic.
+      const mode = noteResponseMode(response);
       const envelope = json as ErrorEnvelopeShape;
       const error = envelope?.error;
       const code = typeof error?.code === "string" ? (error.code as SdkServerErrorCode) : undefined;
       const message = typeof error?.message === "string" && error.message.length > 0 ? error.message : `request to ${spec.path} failed with status ${response.status}`;
+      const retryAfterRaw = response.headers.get("retry-after");
+      const retryAfterSeconds = retryAfterRaw !== null && /^\d+$/.test(retryAfterRaw) ? Number(retryAfterRaw) : undefined;
+      const wireOptions = {
+        statusCode: response.status,
+        details: error?.details,
+        ...(typeof error?.class === "string" ? { errorClass: error.class } : {}),
+        ...(typeof error?.param === "string" ? { param: error.param } : {}),
+        ...(typeof error?.doc_url === "string" ? { docUrl: error.doc_url } : {}),
+        ...(mode !== undefined ? { mode } : {}),
+        ...(retryAfterSeconds !== undefined ? { retryAfterSeconds } : {}),
+        ...(response.headers.get("idempotent-replayed") === "true" ? { idempotentReplayed: true } : {}),
+      };
       if (code === undefined) {
-        throw new ReckonTransportError("SDK_UNEXPECTED_ERROR_SHAPE", `error response from ${spec.path} does not carry the typed error envelope (status ${response.status})`, { statusCode: response.status, details: json });
+        throw new ReckonTransportError("SDK_UNEXPECTED_ERROR_SHAPE", `error response from ${spec.path} does not carry the typed error envelope (status ${response.status})`, wireOptions);
       }
-      throw mapServerError(code, message, { statusCode: response.status, details: error?.details });
+      throw mapServerError(code, message, wireOptions);
     }
 
+    noteResponseMode(response);
     const parsedResponse = parseOrIssues(spec.responseSchema, json);
     if (!parsedResponse.ok) {
       throw new ReckonResponseContractError(
@@ -461,7 +715,8 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
     return parsedResponse.data;
   }
 
-  return {
+  const client: ReckonClient = {
+    lastResponseMode: () => lastMode,
     decisions: {
       request: async (input) =>
         request<z.output<typeof DecisionRequestSchema>, DecisionResult>({
@@ -472,12 +727,15 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
           responseSchema: DecisionResultSchema,
           responseContract: "reckon.decision-request → reckon.decision-result",
         }),
-      get: async (decisionId) =>
-        request<unknown, DecisionResult>({
+      get: async (decisionId, callOptions) =>
+        request<unknown, ExpandedDecisionResult>({
           method: "GET",
-          path: `/v1/decisions/${encodeURIComponent(decisionId)}`,
-          responseSchema: DecisionResultSchema,
-          responseContract: "reckon.decision-result",
+          path: `/v1/decisions/${encodeURIComponent(decisionId)}${listQueryString({ expand: callOptions?.expand })}`,
+          // The expanded surface is a superset of the frozen base contract
+          // (item is optional/nullable) so it validates both responses.
+          responseSchema: ExpandedDecisionResultSchema,
+          responseContract: "reckon.decision-result (+ ?expand[] embeddings)",
+          headers: { ...(callOptions?.headers ?? {}) },
         }),
     },
     outcomes: {
@@ -557,6 +815,20 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
           responseContract: "reckon.experience-plan (recent plans)",
           headers: { ...(callOptions?.headers ?? {}) },
         })).plans,
+      listPage: async (callOptions) =>
+        request<unknown, PlanPage>({
+          method: "GET",
+          path: `/v1/plans${listQueryString(callOptions)}`,
+          responseSchema: PlanPageSchema,
+          responseContract: "reckon.experience-plan (cursor page)",
+          headers: { ...(callOptions?.headers ?? {}) },
+        }),
+      list: (callOptions) =>
+        autoPaginate<ExperiencePlan>((startingAfter) =>
+          client.plans
+            .listPage({ ...callOptions, startingAfter })
+            .then((page) => ({ items: page.plans, has_more: page.has_more, next_cursor: page.next_cursor })),
+        ),
     },
     integrations: {
       listAdapters: async (callOptions) =>
@@ -722,7 +994,94 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
           },
         }).then((parsed) => ({ experiences: parsed.experiences })),
     },
+    webhookEndpoints: {
+      create: async (endpoint, callOptions) =>
+        request<z.output<typeof WebhookEndpointCreateSchema>, WebhookEndpointCreated>({
+          method: "POST",
+          path: "/v1/webhooks/endpoints",
+          requestSchema: WebhookEndpointCreateSchema,
+          requestBody: endpoint,
+          responseSchema: WebhookEndpointCreatedSchema,
+          responseContract: "reckon.api.webhook-endpoint-create → reckon.api.webhook-endpoint (+ one-time secret)",
+          headers: {
+            "idempotency-key": headerIdempotencyKey(callOptions?.idempotencyKey),
+            ...(callOptions?.headers ?? {}),
+          },
+        }),
+      listPage: async (callOptions) =>
+        request<unknown, WebhookEndpointPage>({
+          method: "GET",
+          path: `/v1/webhooks/endpoints${listQueryString(callOptions)}`,
+          responseSchema: WebhookEndpointPageSchema,
+          responseContract: "reckon.api.webhook-endpoint (cursor page)",
+          headers: { ...(callOptions?.headers ?? {}) },
+        }),
+      list: (callOptions) =>
+        autoPaginate<WebhookEndpointView>((startingAfter) =>
+          client.webhookEndpoints
+            .listPage({ ...callOptions, startingAfter })
+            .then((page) => ({ items: page.endpoints, has_more: page.has_more, next_cursor: page.next_cursor })),
+        ),
+      get: async (endpointId, callOptions) =>
+        request<unknown, WebhookEndpointView>({
+          method: "GET",
+          path: `/v1/webhooks/endpoints/${encodeURIComponent(endpointId)}`,
+          responseSchema: WebhookEndpointViewSchema,
+          responseContract: "reckon.api.webhook-endpoint",
+          headers: { ...(callOptions?.headers ?? {}) },
+        }),
+      delete: async (endpointId, callOptions) =>
+        request<unknown, WebhookEndpointView>({
+          method: "DELETE",
+          path: `/v1/webhooks/endpoints/${encodeURIComponent(endpointId)}`,
+          responseSchema: WebhookEndpointViewSchema,
+          responseContract: "reckon.api.webhook-endpoint (deleted view)",
+          headers: { ...(callOptions?.headers ?? {}) },
+        }),
+    },
+    webhookEvents: {
+      get: async (eventId, callOptions) =>
+        request<unknown, ReckonEvent>({
+          method: "GET",
+          path: `/v1/webhooks/events/${encodeURIComponent(eventId)}`,
+          responseSchema: ReckonEventSchema,
+          responseContract: "reckon.api.webhook-event",
+          headers: { ...(callOptions?.headers ?? {}) },
+        }),
+      replay: async (eventId, callOptions) =>
+        request<{ [k: string]: never }, WebhookReplayResponse>({
+          method: "POST",
+          path: `/v1/webhooks/events/${encodeURIComponent(eventId)}/replay`,
+          // The frozen replay body is the empty object (no fields — the
+          // idempotency digest stays deterministic over the route key).
+          requestSchema: z.object({}),
+          requestBody: {},
+          responseSchema: WebhookReplayResponseSchema,
+          responseContract: "reckon.api.webhook-event-replay",
+          headers: {
+            "idempotency-key": headerIdempotencyKey(callOptions?.idempotencyKey),
+            ...(callOptions?.headers ?? {}),
+          },
+        }),
+    },
+    webhookDeliveries: {
+      listPage: async (callOptions) =>
+        request<unknown, WebhookDeliveryPage>({
+          method: "GET",
+          path: `/v1/webhooks/deliveries${listQueryString(callOptions)}`,
+          responseSchema: WebhookDeliveryPageSchema,
+          responseContract: "reckon.api.webhook-delivery (cursor page)",
+          headers: { ...(callOptions?.headers ?? {}) },
+        }),
+      list: (callOptions) =>
+        autoPaginate<WebhookDeliveryView>((startingAfter) =>
+          client.webhookDeliveries
+            .listPage({ ...callOptions, startingAfter })
+            .then((page) => ({ items: page.deliveries, has_more: page.has_more, next_cursor: page.next_cursor })),
+        ),
+    },
   };
+  return client;
 }
 
 /** Type guard for callers that want to discriminate SDK failures by code. */
