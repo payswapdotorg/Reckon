@@ -5,6 +5,11 @@
 > release window from a REAL run of the frozen surface or explicitly labeled
 > with its evidence class. No aspirational prose (the
 > `final-release-evidence.md` law).
+>
+> S5-003 addendum (2026-10-05/06): §9–§12 add the production
+> public-surface verification pass, the production journey gap analysis +
+> runbook, the S5-003 evidence classes, and the extended lockstep. Every
+> S4-001 section above is unchanged.
 
 ## 1. What this proves
 
@@ -230,3 +235,256 @@ journey map exists (or is honestly pending) on the real frozen surface, the
 pending names match the shipped dashboard constants verbatim, and the
 driver's asserted hop order is the documented order (key before decision,
 decision before log row, event before delivery). Doc-drift fails the test.
+
+## 9. Production verification (S5-003)
+
+> Produced 2026-10-05 (21:45 UTC window) per WORK ORDER S5-003, branch
+> `work/s5-003-journey-verify` (base `3748816`, the work head of this
+> section). The four surfaces are LIVE:
+> api `https://reckon-api-phi.vercel.app` ·
+> web `https://reckon-web-nine.vercel.app` ·
+> docs `https://reckon-docs.vercel.app` ·
+> marketing `https://reckon-marketing.vercel.app`. No production key material
+> existed in this window (the Lead controls `RECKON_API_KEYS` on Vercel),
+> so every authenticated hop is either `documented` or honestly absent —
+> never faked (Gate Q law).
+
+### 9.0 Journey parity rerun (local, the drift guard)
+
+The full 6-hop journey was re-run exactly as §2 documents, on this branch's
+head, BEFORE and AFTER the S5-003 driver changes (the parameterization must
+not change the S4-001 path):
+
+```text
+node scripts/e2e-journey.mjs        # 6/6 hops asserted · exit 0 (head 3748816, pre-change)
+node scripts/e2e-journey.mjs        # 6/6 hops asserted · exit 0 (head 43638af, post-change; final battery re-verified at e184280)
+```
+
+Node v24.21.0, `pnpm install && pnpm build` first (the driver loads
+`@reckon/contracts` from its built dist). Evidence class: **observed** —
+6/6 hops at both heads; the canned decision id for the canonical request is
+stable (`dec-test-add3fafbe3fe36454935fb2a`), matching the S4-001 §4
+determinism note. **No drift since `0c55b0c` on the local surface.** The
+drift that DOES exist is production-side — §9.3.
+
+### 9.1 The public-surface pass (what ran)
+
+`scripts/verify-production.mjs` (new in this work order; Node stdlib only,
+`--json` machine capture) probes the four LIVE deployments over the public
+wire with NO key material. 15 packet assertions — exactly the WORK ORDER
+S5-003 task packet — plus an honest drift register whose entries never fail
+the gate and whose absence never silently passes one:
+
+```bash
+node scripts/verify-production.mjs     # exit 1 — 13/15 green (see below)
+node scripts/verify-production.mjs --json   # machine capture
+```
+
+Results (run of 2026-10-05 21:45 UTC, evidence class per row):
+
+| # | Surface | Assertion | Result | Evidence class |
+|---|---|---|---|---|
+| api-1 | api | `GET /healthz` → 200 `{ok:true, version:"0.1.0", contractsVersion:"0.1.0"}` (the frozen liveness envelope) | **PASS** | observed |
+| api-2 | api | `GET /readyz` → 200 + `handlers{…}` map, every value `wired`\|`not-wired` (12 handler ports reported, all `wired`) | **PASS** | observed |
+| api-3 | api | `GET /v1/decisions/{id}` with NO key → typed 401, `error.code="UNAUTHENTICATED"` (the error-catalog code) | **PASS** | observed |
+| api-4 | api | same route with an INVALID key shape (`pk_live_…`, schema-valid publishable shape — a shape probe, never real material) → typed 401 `UNAUTHENTICATED` | **PASS** | observed |
+| api-5 | api | same route with a garbage key → typed 401 `UNAUTHENTICATED` | **PASS** | observed |
+| api-6 | api | same route with unsupported `X-Reckon-Version: 2099-99-99` and no key → typed 401 `UNAUTHENTICATED` — the documented auth order (authenticate precedes version negotiation, `apps/api/src/routes/shared.ts`) | **PASS** | observed |
+| web-1 | web | `GET /` → 200 + dashboard shell markup ("Reckon Studio" wordmark) | **PASS** | observed |
+| web-2 | web | `GET /` → the dashboard nav IA labels (Home / Recommendations / Models / Data Sources / Analytics / Developers / Settings — `apps/web/src/lib/workspace.ts` `navLabel` values) | **FAIL** — all seven labels absent from the served HTML | observed (wire) + machine-verified (frozen surface renders them) |
+| web-3 | web | the dashboard's docs link → resolves (only if rendered unauthenticated) | **not rendered** — recorded as drift, not counted (§9.2 row W3) | observed |
+| docs-1 | docs | `GET /` → 200 + "Reckon Docs" identity (title + "Reckon documentation" eyebrow) | **PASS** | observed |
+| docs-2 | docs | `GET /get-started/quickstart` → 200 + the three integration-option tabs (Hosted endpoint / TypeScript SDK / Streaming) | **PASS** | observed |
+| docs-3 | docs | `GET /api-reference/authentication` → 200 | **PASS** | observed |
+| mkt-1 | marketing | `GET /` → 200 + brand identity ("Recommendation infrastructure") + nav (Product / Docs / Pricing) | **PASS** | observed |
+| mkt-2 | marketing | `GET /pricing` → 200 + the volume-calculator markup (`section#calculator` + "Your rate, at your volume.") | **PASS** | observed |
+| mkt-3 | marketing | `GET /products/recommendation-api` (a product page) → 200 | **PASS** | observed |
+| x-1 | cross | marketing → docs cross-links point at the production docs domain AND resolve 200 | **FAIL** — 4 distinct docs hrefs, all on `docs.reckon.dev`, none resolvable (DNS-dead) | observed |
+
+**13/15 packet assertions green, exit 1 — honestly.** The two failures are
+real production gaps (§9.2/§9.3), not assertion bugs: the same script's
+web/docs/marketing assertions pass, proving the probe machinery works; the
+failing assertions fail because the live deployments do not serve what the
+frozen surface ships.
+
+The version-negotiation 400 (`VALIDATION_ERROR`, `param: "X-Reckon-Version"`)
+for an unsupported version is **documented** on production (it requires an
+authenticated request — auth precedes version resolution on every `/v1`
+route) and **machine-verified** against the frozen surface in
+`apps/api/test/e2e-journey-map.test.ts` (§12 of this document's lockstep:
+the same unsupported header WITH a valid test key answers
+`400 VALIDATION_ERROR` naming the header as `param`).
+
+### 9.2 The drift register (11 observations, each with its evidence class)
+
+| Row | Surface | Observation | Evidence class |
+|---|---|---|---|
+| A1 | api | `/readyz` handlers map carries no `webhookHandler` entry — the production composition registers no webhook system; on a current-surface deployment the `/v1/webhooks` family answers typed 501 `NOT_WIRED` | observed (wire) + machine-verified (`apps/api/src/composition.ts` `buildProductionServer` mounts no `config.webhooks`) |
+| A2 | api | the typed 401 envelope on the wire carries `{code, message}` only — the S2-001 catalog fields (`class`, `param`, `doc_url`) are absent | observed (wire) + machine-verified (the frozen surface's `errorEnvelope` emits `class` + `doc_url` — asserted in the lockstep test) |
+| A3 | api | a `pk_live_`-shaped key is rejected through the generic unknown-key path ("Unknown or invalid API key"), not the dedicated publishable-key rejection message | observed (wire) + machine-verified (`apps/api/src/auth.ts` rejects pk_ keys with the dedicated message on the frozen surface — asserted in the lockstep test) |
+| A4 | api | `GET /v1/webhooks/endpoints` unauthenticated answers **404 Route-not-found** — the deployed function does not register the S2-002 webhook route family at all | observed (wire) + machine-verified (the frozen surface registers the family — asserted in the lockstep test) |
+| W1 | web | the deployed dashboard home does not render the S3-001 nav IA; it serves the pre-stripe-phase shell (title "Overview", the DEPLOY-002-era route set `/decisions` `/plans` `/scheduler` `/agents` `/research` `/integrations`) | observed (wire) + machine-verified (`apps/web/src/lib/workspace.ts` `WORKSPACE_ROUTES` ships the seven-label IA) |
+| W3 | web | the deployed dashboard home renders no docs link — the pre-stripe-phase shell predates the S1-004 onboarding card (current source renders a quickstart link to `RECKON_DOCS_BASE_URL`, default `https://docs.reckon.dev`) | observed |
+| C1 | cross | marketing docs cross-links target the branded domain `docs.reckon.dev` (nav + product-docs-links), which **does not resolve** (DNS failure) — not the production docs deployment `reckon-docs.vercel.app` | observed (wire) + documented (`apps/marketing/src/lib/marketing-content.ts` pins `https://docs.reckon.dev/`) |
+| C2 | cross | the four linked paths (`/`, `/api-reference/authentication`, `/get-started/quickstart`, `/webhooks`) all return **200 on the production docs domain** `reckon-docs.vercel.app` — the paths are right, only the domain is unconfigured | observed |
+
+### 9.3 The headline finding — two of the four live surfaces run pre-stripe-phase code
+
+The wire discriminators (A2, A3, A4 for the API; W1 for the web dashboard)
+each independently place the deployed `reckon-api-phi` function and the
+deployed `reckon-web-nine` dashboard **before stripe-phase wave-1/wave-2**
+(i.e. at the DEPLOY-001/002-era builds of 2026-10-03):
+
+- A2: pre-wave-1 error envelope (`{code,message}` — wave-1 `72fd0b4` added
+  `class`/`doc_url`/`param` via the S2-001 catalog);
+- A3: pre-wave-1 auth path (the publishable-key discriminator is S2-001);
+- A4: pre-wave-2 route surface (the webhook family is S2-002 `efdb03d`);
+- W1: pre-wave-2 dashboard shell (the S3-001 IA is wave-2).
+
+Meanwhile docs and marketing ARE current (RELEASE-002 deploys — all six of
+their assertions green). The Lead's RELEASE-002 closing note
+(`apps/api/README.md`, commit `10889ba`: "this release redeploys
+`reckon-api` unchanged-in-code since the wave-2 merge … the bundle
+regenerated and verified this window") expected wave-2 code live — **the
+wire contradicts it**: the RELEASE-002 API redeploy evidently did not take
+effect on the function serving traffic (the note itself exists only to
+nudge Vercel's rootDirectory change-detection). Evidence classes: the four
+discriminators are observed (wire, this window); the redeploy expectation
+is documented (`apps/api/README.md`); the frozen-surface behaviors they
+diverge from are machine-verified (lockstep test, §12).
+
+**Consequence for this work order:** the production journey cannot run at
+parity today even WITH Lead key material — hop 3's canned test engine
+(S2-003) is absent on the deployed function, and hop 6's webhook family is
+not registered there (§10). A redeploy of current `main` is the
+prerequisite; the runbook below is written against the current surface.
+
+### 9.4 Cross-surface link gap
+
+All four production domains answer (api via `/healthz`, web/docs/marketing
+via `/` — 200 each, observed). The only cross-surface break is C1/C2: the
+branded docs domain is unconfigured, so every marketing → docs link (and a
+would-be dashboard link, W3) dead-ends at DNS while the same paths serve
+200 on `reckon-docs.vercel.app`. Fix options (Lead's call, NOT made in this
+work order — no marketing source was touched): configure `docs.reckon.dev`
+to point at the docs deployment, or repoint the shipped link constants at
+the vercel.app domain.
+
+## 10. Production journey gap analysis + runbook (documented)
+
+Evidence class for this whole section: **documented** unless a row says
+otherwise. Nothing here was faked; no authenticated production hop was
+simulated.
+
+### 10.1 What a production run needs (env, who mints, which key shape)
+
+| Need | Value | Owner |
+|---|---|---|
+| Key material on the deployment | `RECKON_API_KEYS` env on the Vercel `reckon-api` project — one entry per `;`/newline, format `apiKey:tenantId:scope1,scope2` (e.g. `sk_test_<42 base62>:journey-prod-tenant:decisions,outcomes,webhooks`) | **the Lead** (production secrets are Lead-only; a worker session never holds them) |
+| Journey key shape | **`sk_test_…` (test mode)** — the parity decision uses the quickstart's magic `itm_test_suggest` item; a live key would (correctly) be rejected by the S2-003 live-mode test-hint guard. `mintKeyConfig("secret","test",…)` or any generator of `sk_test_` + ≥24 base62 chars produces the shape | the Lead mints |
+| Key material in the runner | `RECKON_JOURNEY_API_KEY` + `RECKON_JOURNEY_TENANT_ID` env (never argv on a production run — the driver refuses `--api-key` with `--production`) | the Lead's shell/CI |
+| Invocation | `node scripts/e2e-journey.mjs --production` (pinned to the production api/web bases) — or the explicit form `--api-base https://reckon-api-phi.vercel.app --tenant-id <id>` | any Lead-run shell |
+| Prerequisite | **redeploy `reckon-api` from current `main`** (§9.3: the live function predates wave-2 — hop 3 would fail against it today) | the Lead |
+
+### 10.2 Hop-by-hop production gap table
+
+| Hop | Local (S4-001/S5-003 §9.0) | Production (current-surface deployment) | Gap class |
+|---|---|---|---|
+| 1 signup | `mintKeyConfig` composition mint (the driver IS the host) | the Lead pre-provisions via `RECKON_API_KEYS`; the driver receives the key + tenant and asserts them over the wire | **documented** (key material is Lead-only; the remote driver refuses to run without it — never fakes provisioning) |
+| 2 api-key | `POST /v1/api-keys` → typed 404 (pending route) | identical typed 404 on a current surface (the route is pending everywhere) | none — parity |
+| 3 decision | canned test engine answers `itm_test_suggest` | identical on a current-surface deployment; **absent on the function deployed today** (pre-S2-003) | **observed drift blocker** (§9.3) — redeploy first |
+| 4 request-log | `GET /v1/request-logs` → typed 404 + idempotency replay row | identical over the wire (`Idempotent-Replayed: true` is wire-visible) | none — parity |
+| 5 analytics | outcome row + observability linkage + S3-002 computation | outcome row is wire-visible; the linkage record and `computeCtrLift` are composition/client-side — honestly NOT asserted over the wire | partial (named, never faked) |
+| 6 webhook | REAL in-memory webhook system through `config.webhooks` | **the production composition mounts no webhook system** (`buildProductionServer` passes no `config.webhooks`; `/readyz` on production carries no `webhookHandler`) — the route family answers typed 501 `NOT_WIRED` on a current surface (404 on today's older function) | **structural gap — machine-verified** from `apps/api/src/composition.ts`; completing hop 6 in production needs a webhook-system production mount (a work item, not a driver change) |
+
+### 10.3 The remote driver mode and its honest verification status
+
+`scripts/e2e-journey.mjs` is parameterized for multi-target runs (S5-003;
+the no-flag invocation is byte-identical to S4-001 — §9.0):
+
+```bash
+node scripts/e2e-journey.mjs                                        # local in-process (S4-001, unchanged)
+node scripts/e2e-journey.mjs --api-base <url> --tenant-id <id> \
+  [--web-base <url>] [--api-key <sk_ key>]                          # remote over the wire
+RECKON_JOURNEY_API_KEY=sk_test_… RECKON_JOURNEY_TENANT_ID=… \
+  node scripts/e2e-journey.mjs --production                         # the Lead-run form
+```
+
+The remote mode drives the SAME six hops over real HTTP (global fetch; no
+new dependencies) with per-run idempotency salts so repeated Lead runs stay
+clean. Composition-internal assertions (the separation-law counter, the
+observability sink records, the recorded outbound webhook client, the local
+S3-002 computation) are NOT wire-observable: the remote journey asserts
+their wire-visible equivalents and names the rest — never fakes them. The
+webhook hop accepts the three honest deployment states and records which it
+observed: 200 (full parity — endpoint + event + delivery log; signature
+verification honestly skipped: it needs the delivered bytes at a receiver
+the driver controls), typed 501 `NOT_WIRED` (the production-composition
+structural gap, §10.2 hop 6), or typed 404 (a surface predating S2-002 —
+the drift of §9.3, which fails the hop by design).
+
+**Verification status (labeled on every run):** this remote code path is
+**untested-in-prod** — no production key material existed in the S5-003
+window. It WAS verified over a real loopback wire (real socket + real
+fetch, real fastify route pipeline) against the frozen surface in BOTH
+relevant compositions: with the webhook system mounted — 6/6 hops, exit 0,
+`webhook hop: full-parity` (delivery row honestly `pending`/
+`responseCode:null` for the deliberately unreachable endpoint URL) — and
+with the production-shaped composition (no `config.webhooks`) — 6/6 hops,
+exit 0, `webhook hop: production-composition-structural-gap` (typed 501
+`NOT_WIRED` recorded). Evidence class for both: **observed
+(controlled-local wire)**. The Lead's first `--production` run upgrades the
+class to observed (production wire).
+
+### 10.4 Re-run commands (S5-003 battery)
+
+```bash
+cd ~/reckon && git checkout work/s5-003-journey-verify
+pnpm install && pnpm build
+node scripts/e2e-journey.mjs                       # 6/6 hops · exit 0 (§9.0)
+node scripts/verify-production.mjs                 # 13/15 green · exit 1 (§9.1 — the 2 failures are the production gaps)
+cd apps/api && pnpm vitest run e2e-journey-map     # lockstep suite green (§12)
+cd apps/api && pnpm run typecheck                  # exit 0
+```
+
+## 11. Evidence classes used in the S5-003 sections
+
+| Claim | Class |
+|---|---|
+| §9.0 local parity reruns (6/6 at both heads) | **observed** (real in-process runs, this window) |
+| §9.1 per-assertion results (13/15) | **observed** (real wire runs against the four LIVE domains, 2026-10-05 21:45 UTC window) |
+| The auth-order law behind api-6 (401 precedes version negotiation) | **documented** (`apps/api/src/routes/shared.ts` order comment) + **machine-verified** (lockstep test asserts the 400 with a valid key) |
+| The 400 `VALIDATION_ERROR` rejection for unsupported `X-Reckon-Version` | **documented** (production, unauthenticated requests cannot reach it) + **machine-verified** (frozen surface, lockstep test) |
+| §9.2 drift register rows A1–A4, W1, C1, C2 | **observed** (wire) + **machine-verified** (the frozen-surface behaviors they diverge from are asserted in the lockstep test) where the row says so |
+| §9.3 the deployed api+web surfaces predate stripe-phase | **observed** (the four wire discriminators) + **documented** (the RELEASE-002 redeploy note) + **machine-verified** (the frozen-surface side of each discriminator) |
+| §10 the production runbook (env names, key shape, minter) | **documented** (`apps/api/src/config.ts` `parseApiKeyList`, `apps/api/src/auth.ts` key grammar, `apps/api/src/vercel.ts` boot) |
+| §10.2 hop-6 structural gap (no webhook system in the production composition) | **machine-verified** (`apps/api/src/composition.ts` mounts no `config.webhooks`; asserted in the lockstep test) + **observed** (production `/readyz` carries no `webhookHandler` entry) |
+| §10.3 the remote driver path | **observed (controlled-local wire)** for the two loopback compositions; **untested-in-prod** until the Lead's first `--production` run |
+
+## 12. Lockstep test (S5-003 extension)
+
+`apps/api/test/e2e-journey-map.test.ts` (extended in this work order, same
+file so the `pnpm vitest run e2e-journey-map` filter covers it) now also
+machine-checks the S5-003 additions against the repository:
+
+- the driver's target-flag contract (`--api-base`, `--web-base`,
+  `--tenant-id`, `--api-key`, `--production`, the env names) and that the
+  no-flag path is the unchanged S4-001 journey (the six STEP sections,
+  once each, in order — the pre-existing assertion);
+- the remote journey's honest three-state webhook-hop handling exists in
+  the driver source (full-parity / 501 structural-gap / 404 pre-S2-002);
+- `scripts/verify-production.mjs` exists and its probe markers match the
+  SHIPPED SOURCES verbatim: the web nav IA labels are exactly the
+  `WORKSPACE_ROUTES` `navLabel` values, the docs identity/tab markers are
+  exactly the shipped constants, the marketing brand/calculator markers
+  are exactly the shipped copy, and the production URL defaults are the
+  four LIVE domains named in this section;
+- the frozen-surface behaviors the production drift register diverges
+  from, asserted for real on `buildServer` in-process: the typed 401
+  envelope carries `class: "authentication_error"` (the S2-001 catalog
+  shape the deployed surface lacks), the `pk_live_` probe gets the
+  dedicated publishable-key rejection, the webhook route family IS
+  registered (`app.hasRoute`), and an unsupported `X-Reckon-Version` with
+  a VALID key answers `400 VALIDATION_ERROR` with `param: "X-Reckon-Version"`;
+- this document's §9/§10 structure exists (the production verification
+  table, the drift register, the runbook) — doc-drift fails the test.
