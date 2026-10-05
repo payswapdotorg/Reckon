@@ -1,7 +1,7 @@
 {
   "name": "@reckon/marketing",
   "version": "0.1.0",
-  "description": "Reckon marketing home (S1-001) — stripe.com-class site shell: live-stat ticker, split-field gradient-mesh hero, outcome-phrased product grid, code-first marketing artifacts, quantified social proof, dual CTA, four-surface footer. Pure CSS + React, zero runtime deps beyond Next/React (pinned to apps/web's exact versions).",
+  "description": "Reckon marketing site (S1-001 home + S1-002 product pages + S1-003 pricing) — stripe.com-class site shell: live-stat ticker, split-field gradient-mesh hero, outcome-phrased product grid, code-first marketing artifacts, quantified social proof, dual CTA, four-surface footer, per-1k-request pricing tiers with an interactive volume calculator (pure, unit-tested) and an honestly marked comparison table. Pure CSS + React, zero runtime deps beyond Next/React (pinned to apps/web's exact versions).",
   "type": "module",
   "private": true,
   "scripts": {
