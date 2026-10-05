@@ -488,3 +488,12 @@ machine-checks the S5-003 additions against the repository:
   a VALID key answers `400 VALIDATION_ERROR` with `param: "X-Reckon-Version"`;
 - this document's §9/§10 structure exists (the production verification
   table, the drift register, the runbook) — doc-drift fails the test.
+
+## §13 — TL5 deployment addendum (Lead, 2026-10-05 23:2xZ)
+
+S5-001 (marketing) live since 14:06Z. S5-003 merged b655ad3. S5-002 merged 67b9b7b
+(/changelog + OG cards + sitemap/robots + pager — clean-room: typecheck 0, 74/74,
+build 0). Drift-register items 1-2 (api+web pre-stripe-phase surfaces) + the
+docs-surface S5-002 pickup: git-path production deploys pending the team's
+free-tier deploy-quota daily reset (promote + CLI deploy rejected: >100/day);
+this note re-arms the docs rootDirectory change-detection trigger.
