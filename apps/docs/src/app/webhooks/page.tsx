@@ -14,12 +14,10 @@ import {
   WEBHOOK_RETRY_BULLETS,
   WEBHOOK_SECURITY_BULLETS,
 } from "@/content/webhooks.js";
+import { routeMetaFor } from "@/content/route-meta.js";
+import { routeMetadata } from "@/lib/site-routes.js";
 
-export const metadata: Metadata = {
-  title: "Webhooks",
-  description:
-    "Reckon webhook events: recommendation.delivered, model.drift.detected, schedule.executed, preference.updated — with HMAC signature verification, retries and replay.",
-};
+export const metadata: Metadata = routeMetadata(routeMetaFor("/webhooks"));
 
 export default function WebhooksPage() {
   return (

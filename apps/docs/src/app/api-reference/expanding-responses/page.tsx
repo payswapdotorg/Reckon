@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CodeBlock } from "@/components/code-block.js";
 import { DocsArticle } from "@/components/docs-article.js";
+import { DocsPager } from "@/components/docs-pager.js";
 import { PageHeader } from "@/components/page-header.js";
 import { Bullets, P, SectionHeading } from "@/components/prose.js";
 import {
@@ -10,12 +11,12 @@ import {
   EXPAND_RULES,
   EXPAND_SDK_EXAMPLE,
 } from "@/content/api-reference/expand.js";
+import { routeMetaFor } from "@/content/route-meta.js";
+import { routeMetadata } from "@/lib/site-routes.js";
 
-export const metadata: Metadata = {
-  title: "Expanding responses",
-  description:
-    "Inline referenced objects on demand with ?expand[] — the decision that references a catalog item can come back carrying the item itself.",
-};
+export const metadata: Metadata = routeMetadata(
+  routeMetaFor("/api-reference/expanding-responses"),
+);
 
 export default function ExpandingResponsesPage() {
   return (
@@ -43,6 +44,7 @@ export default function ExpandingResponsesPage() {
       </SectionHeading>
       <Bullets items={EXPAND_RULES} />
       <CodeBlock sample={EXPAND_SDK_EXAMPLE} />
+      <DocsPager currentPath="/api-reference/expanding-responses" />
     </DocsArticle>
   );
 }

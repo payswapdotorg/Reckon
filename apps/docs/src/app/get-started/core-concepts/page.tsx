@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CodeBlock } from "@/components/code-block.js";
 import { Callout } from "@/components/callout.js";
 import { DocsArticle } from "@/components/docs-article.js";
+import { DocsPager } from "@/components/docs-pager.js";
 import { DocsTable } from "@/components/docs-table.js";
 import { PageHeader } from "@/components/page-header.js";
 import { Bullets, P, SectionHeading } from "@/components/prose.js";
@@ -14,12 +15,10 @@ import {
   LOOP_STEPS,
   TWO_SPEED_ROWS,
 } from "@/content/core-concepts.js";
+import { routeMetaFor } from "@/content/route-meta.js";
+import { routeMetadata } from "@/lib/site-routes.js";
 
-export const metadata: Metadata = {
-  title: "Core concepts",
-  description:
-    "The Reckon vertical: catalog, context, candidates, experience, decision, schedule, outcome, preference delta — plus two-speed runtimes, host authority and evidence classes.",
-};
+export const metadata: Metadata = routeMetadata(routeMetaFor("/get-started/core-concepts"));
 
 export default function CoreConceptsPage() {
   return (
@@ -126,6 +125,7 @@ export default function CoreConceptsPage() {
         title="Why this page matters"
         body={CONCEPTS_SEE_ALSO}
       />
+      <DocsPager currentPath="/get-started/core-concepts" />
     </DocsArticle>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CodeBlock } from "@/components/code-block.js";
 import { Callout } from "@/components/callout.js";
 import { DocsArticle } from "@/components/docs-article.js";
+import { DocsPager } from "@/components/docs-pager.js";
 import { DocsTable } from "@/components/docs-table.js";
 import { PageHeader } from "@/components/page-header.js";
 import { Bullets, P, SectionHeading } from "@/components/prose.js";
@@ -14,12 +15,10 @@ import {
   KEY_SAFETY_BULLETS,
   SCOPES_ROWS,
 } from "@/content/api-reference/authentication.js";
+import { routeMetaFor } from "@/content/route-meta.js";
+import { routeMetadata } from "@/lib/site-routes.js";
 
-export const metadata: Metadata = {
-  title: "Authentication",
-  description:
-    "Reckon API keys: secret sk_ keys for the full API, publishable pk_ keys for browser-safe streaming, route scopes, and key safety.",
-};
+export const metadata: Metadata = routeMetadata(routeMetaFor("/api-reference/authentication"));
 
 export default function AuthenticationPage() {
   return (
@@ -70,6 +69,7 @@ export default function AuthenticationPage() {
         Key safety &amp; rotation
       </SectionHeading>
       <Bullets items={KEY_SAFETY_BULLETS} />
+      <DocsPager currentPath="/api-reference/authentication" />
     </DocsArticle>
   );
 }

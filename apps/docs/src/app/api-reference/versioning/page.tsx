@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CodeBlock } from "@/components/code-block.js";
 import { DocsArticle } from "@/components/docs-article.js";
+import { DocsPager } from "@/components/docs-pager.js";
 import { DocsTable } from "@/components/docs-table.js";
 import { PageHeader } from "@/components/page-header.js";
 import { P, SectionHeading } from "@/components/prose.js";
@@ -11,12 +12,10 @@ import {
   VERSIONING_ROWS,
   VERSIONING_SDK_EXAMPLE,
 } from "@/content/api-reference/versioning.js";
+import { routeMetaFor } from "@/content/route-meta.js";
+import { routeMetadata } from "@/lib/site-routes.js";
 
-export const metadata: Metadata = {
-  title: "Versioning",
-  description:
-    "Pin the Reckon API version with the Reckon-Version header; breaking changes only ship as new versions, supported for at least 12 months after their successor.",
-};
+export const metadata: Metadata = routeMetadata(routeMetaFor("/api-reference/versioning"));
 
 export default function VersioningPage() {
   return (
@@ -57,6 +56,7 @@ export default function VersioningPage() {
         rows={CHANGELOG_ROWS}
         caption="API version changelog"
       />
+      <DocsPager currentPath="/api-reference/versioning" />
     </DocsArticle>
   );
 }

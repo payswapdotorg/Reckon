@@ -111,3 +111,26 @@ export interface WebhookEventEntry {
   readonly description: readonly string[];
   readonly payload: string;
 }
+
+/** One category chip on a changelog entry (stripe.com/changelog grammar). */
+export type ChangelogCategory = "API" | "SDKs" | "Dashboard" | "Docs" | "Platform";
+
+/**
+ * One dated changelog entry (S5-002) — entries are ordered
+ * reverse-chronologically by `date`, and every entry is a true repo fact
+ * (dates are commit timestamps; evidence classes are stated, never
+ * invented — see src/content/changelog.ts).
+ */
+export interface ChangelogEntry {
+  /** ISO calendar date "YYYY-MM-DD" — the commit timestamp of the release. */
+  readonly date: string;
+  /** Category chips — at least one, from the allowed set. */
+  readonly categories: readonly ChangelogCategory[];
+  readonly title: string;
+  /** Plain outcome-phrased one-liner. */
+  readonly oneLiner: string;
+  /** Optional detail — grounded in work items / commit evidence. */
+  readonly detail?: string;
+  /** Per-entry anchor (unique, slug-shaped: date-prefixed). */
+  readonly anchor: string;
+}

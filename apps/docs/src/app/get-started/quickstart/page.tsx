@@ -3,6 +3,7 @@ import { CodeBlock } from "@/components/code-block.js";
 import { CodeTabs } from "@/components/code-tabs.js";
 import { Callout } from "@/components/callout.js";
 import { DocsArticle } from "@/components/docs-article.js";
+import { DocsPager } from "@/components/docs-pager.js";
 import { DocsTable } from "@/components/docs-table.js";
 import { PageHeader } from "@/components/page-header.js";
 import { Bullets, P } from "@/components/prose.js";
@@ -11,12 +12,10 @@ import {
   QUICKSTART_HEADINGS,
   QUICKSTART_STEPS,
 } from "@/content/quickstart.js";
+import { routeMetaFor } from "@/content/route-meta.js";
+import { routeMetadata } from "@/lib/site-routes.js";
 
-export const metadata: Metadata = {
-  title: "Quickstart — serve your first recommendation",
-  description:
-    "Serve your first Reckon recommendation in about five minutes: get a key, call the decision endpoint, read the result, close the loop with an outcome.",
-};
+export const metadata: Metadata = routeMetadata(routeMetaFor("/get-started/quickstart"));
 
 export default function QuickstartPage() {
   return (
@@ -120,6 +119,7 @@ export default function QuickstartPage() {
           "Go typed end-to-end — the [SDKs](/sdks).",
         ]}
       />
+      <DocsPager currentPath="/get-started/quickstart" />
     </DocsArticle>
   );
 }

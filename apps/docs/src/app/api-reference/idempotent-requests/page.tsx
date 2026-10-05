@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CodeBlock } from "@/components/code-block.js";
 import { Callout } from "@/components/callout.js";
 import { DocsArticle } from "@/components/docs-article.js";
+import { DocsPager } from "@/components/docs-pager.js";
 import { PageHeader } from "@/components/page-header.js";
 import { Bullets, P, SectionHeading } from "@/components/prose.js";
 import {
@@ -13,12 +14,12 @@ import {
   IDEMPOTENCY_SDK_EXAMPLE,
   IDEMPOTENCY_RULES,
 } from "@/content/api-reference/idempotency.js";
+import { routeMetaFor } from "@/content/route-meta.js";
+import { routeMetadata } from "@/lib/site-routes.js";
 
-export const metadata: Metadata = {
-  title: "Idempotent requests",
-  description:
-    "Reckon idempotency: send an Idempotency-Key, and a retry with the same key and body replays the original response for 24 hours instead of executing twice.",
-};
+export const metadata: Metadata = routeMetadata(
+  routeMetaFor("/api-reference/idempotent-requests"),
+);
 
 export default function IdempotencyPage() {
   return (
@@ -49,6 +50,7 @@ export default function IdempotencyPage() {
       <CodeBlock sample={IDEMPOTENCY_CONFLICT} />
       <CodeBlock sample={IDEMPOTENCY_SDK_EXAMPLE} />
       <Callout variant="status" title="Status — what runs today" body={IDEMPOTENCY_BRIDGE} />
+      <DocsPager currentPath="/api-reference/idempotent-requests" />
     </DocsArticle>
   );
 }

@@ -1478,6 +1478,204 @@ a {
   background: #bfbfc7;
 }
 
+/* ------------------------------------------------------------------ *
+ * Changelog feed (S5-002) — stripe.com/changelog grammar: a
+ * reverse-chronological list of dated entries with category chips,
+ * per-entry anchors, one-liners and optional detail.
+ * ------------------------------------------------------------------ */
+
+.changelog-list {
+  margin-top: 1.2rem;
+}
+
+.changelog-entry {
+  padding: 1.6rem 0 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.changelog-entry:first-child {
+  border-top: 0;
+  padding-top: 0.4rem;
+}
+
+.changelog-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-bottom: 0.55rem;
+}
+
+.changelog-date {
+  font-size: 0.84rem;
+  font-weight: 620;
+  color: var(--fg-muted);
+  letter-spacing: 0.01em;
+}
+
+.changelog-chips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+}
+
+.changelog-chip {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  padding: 0.08rem 0.55rem;
+}
+
+.changelog-title {
+  font-size: 1.28rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #101014;
+  margin: 0 0 0.5rem;
+}
+
+.changelog-title .docs-anchor {
+  opacity: 0;
+}
+
+.changelog-title:hover .docs-anchor,
+.changelog-title .docs-anchor:focus-visible {
+  opacity: 1;
+}
+
+.changelog-one-liner {
+  margin: 0 0 0.55rem;
+  color: var(--fg-body);
+  font-size: 0.98rem;
+  line-height: 1.65;
+}
+
+.changelog-detail {
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: 0.88rem;
+  line-height: 1.65;
+  max-width: 72ch;
+}
+
+/* ------------------------------------------------------------------ *
+ * Previous / Next pager (S5-002) — stripe-docs style bottom nav over
+ * the get-started reading track (src/content/get-started-nav.ts).
+ * ------------------------------------------------------------------ */
+
+.docs-pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+  margin-top: 2.6rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--border);
+}
+
+.pager-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 0.85rem 1.05rem;
+  min-height: 44px;
+  text-decoration: none;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.pager-card:hover {
+  border-color: var(--accent-border);
+  box-shadow: 0 1px 4px rgba(0, 92, 67, 0.07);
+}
+
+.pager-next {
+  text-align: right;
+}
+
+.pager-spacer {
+  border: 0;
+  visibility: hidden;
+}
+
+.pager-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+}
+
+.pager-title {
+  font-size: 0.92rem;
+  font-weight: 620;
+  color: var(--fg);
+}
+
+@media (max-width: 640px) {
+  .docs-pager {
+    grid-template-columns: 1fr;
+  }
+  .pager-next {
+    text-align: left;
+  }
+  .pager-spacer {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Sidebar extras (S5-002) — the changelog link below the IA groups.
+ * ------------------------------------------------------------------ */
+
+.sidebar-extras {
+  margin-top: 1.2rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-extra-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  border-radius: 7px;
+  padding: 0.42rem 0.55rem;
+  text-decoration: none;
+  color: var(--fg-body);
+  font-weight: 620;
+  font-size: 0.88rem;
+}
+
+.sidebar-extra-link:hover {
+  background: #f2f2ef;
+  color: var(--fg);
+}
+
+.sidebar-extra-link[data-active="true"] {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.sidebar-extra-hint {
+  font-weight: 400;
+  font-size: 0.74rem;
+  color: var(--fg-muted);
+}
+
+.sidebar-extra-link[data-active="true"] .sidebar-extra-hint {
+  color: var(--accent-strong);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

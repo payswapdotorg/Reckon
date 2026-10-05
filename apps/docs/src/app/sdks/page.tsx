@@ -13,12 +13,10 @@ import {
   SDK_TS_TARGET,
   SDK_TS_TODAY,
 } from "@/content/sdks.js";
+import { routeMetaFor } from "@/content/route-meta.js";
+import { routeMetadata } from "@/lib/site-routes.js";
 
-export const metadata: Metadata = {
-  title: "SDKs",
-  description:
-    "Reckon reference SDKs for TypeScript and Python: typed clients over the frozen contracts, with contract validation on both sides and typed errors.",
-};
+export const metadata: Metadata = routeMetadata(routeMetaFor("/sdks"));
 
 export default function SdksPage() {
   return (
