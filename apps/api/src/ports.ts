@@ -9,11 +9,17 @@ import type {
   OutcomeEvent,
   PreferenceDelta,
   Realization,
+  ReckonEvent,
   TenantScope,
+  WebhookDeliveryView,
+  WebhookEndpointCreated,
+  WebhookEventType,
+  WebhookEndpointView,
 } from "@reckon/contracts";
 import { notWired } from "./errors.js";
 import type { ReplanRequest, ResolveRequest, ResolveResponse } from "./envelopes.js";
 import type { AuthContext } from "./types.js";
+import type { WebhookDeliveryFilter } from "./webhooks/ports.js";
 
 /**
  * Handler PORTS (NO-LLM LAW: the API is pure plumbing; the decision kernel
@@ -145,6 +151,53 @@ export interface ExperienceResolveHandler {
   resolve(request: ResolveRequest, auth: AuthContext): Promise<ResolveResponse>;
 }
 
+/**
+ * Webhook endpoint-registration input (S2-002): the validated
+ * WebhookEndpointCreate body — url, optional description, event-type
+ * filter (EMPTY = every event type; entries validated against the
+ * frozen catalog by the route schema). Tenant comes EXCLUSIVELY from
+ * the AuthContext (TENANT LAW — never from the body).
+ */
+export interface WebhookCreateEndpointRequest {
+  readonly url: string;
+  readonly description?: string;
+  readonly eventTypes: readonly WebhookEventType[];
+}
+
+/** POST /v1/webhooks/events/{id}/replay result: the stored event + its fresh (replayed) deliveries. */
+export interface WebhookReplayResult {
+  readonly event: ReckonEvent;
+  readonly deliveries: WebhookDeliveryView[];
+}
+
+/**
+ * Webhook surface port (S2-002): endpoint CRUD, stored-event retrieval,
+ * replay and the delivery log. Every method is tenant-aware by
+ * construction (AuthContext first-class, exactly like the other ports);
+ * the delivery ENGINE (emission, signing, retries) implements this
+ * surface — see webhooks/ports.ts (WebhookSystem).
+ */
+export interface WebhookHandler {
+  /** Register an endpoint; the response carries the ONE-TIME signing secret. */
+  createEndpoint(request: WebhookCreateEndpointRequest, auth: AuthContext): Promise<WebhookEndpointCreated>;
+  /** The tenant's endpoints, newest first (bounded). */
+  listEndpoints(auth: AuthContext, limit?: number): Promise<readonly WebhookEndpointView[]>;
+  /** One endpoint by id (tenant-scoped); null when unknown. */
+  getEndpoint(endpointId: string, auth: AuthContext): Promise<WebhookEndpointView | null>;
+  /** Delete; returns the removed view (null when unknown in this tenant). */
+  deleteEndpoint(endpointId: string, auth: AuthContext): Promise<WebhookEndpointView | null>;
+  /** One stored event by id (tenant-scoped, within the 30-day retention); null when unknown. */
+  getEvent(eventId: string, auth: AuthContext): Promise<ReckonEvent | null>;
+  /** Re-deliver a stored event to its CURRENTLY matching endpoints; null when the event is unknown. */
+  replayEvent(eventId: string, auth: AuthContext): Promise<WebhookReplayResult | null>;
+  /** The delivery log, newest first (bounded, optional endpoint/event filters). */
+  listDeliveries(
+    auth: AuthContext,
+    limit?: number,
+    filter?: WebhookDeliveryFilter,
+  ): Promise<readonly WebhookDeliveryView[]>;
+}
+
 export interface HandlerPorts {
   agentHandler: AgentHandler;
   researchHandler: ResearchHandler;
@@ -160,6 +213,8 @@ export interface HandlerPorts {
   realizationIngest: RealizationIngestHandler;
   candidatesHandler: CandidatesHandler;
   experienceResolver: ExperienceResolveHandler;
+  /** S2-002: webhook endpoints/events/replay/delivery-log (NotWired default until a composition mounts it). */
+  webhookHandler: WebhookHandler;
 }
 
 export type PartialHandlerPorts = Partial<HandlerPorts>;
@@ -202,5 +257,14 @@ export function notWiredDefaults(): HandlerPorts {
     realizationIngest: { ingest: async () => notWired("RealizationIngestHandler", "ingest") },
     candidatesHandler: { submit: async () => notWired("CandidatesHandler", "submit") },
     experienceResolver: { resolve: async () => notWired("ExperienceResolveHandler", "resolve") },
+    webhookHandler: {
+      createEndpoint: async () => notWired("WebhookHandler", "createEndpoint"),
+      listEndpoints: async () => notWired("WebhookHandler", "listEndpoints"),
+      getEndpoint: async () => notWired("WebhookHandler", "getEndpoint"),
+      deleteEndpoint: async () => notWired("WebhookHandler", "deleteEndpoint"),
+      getEvent: async () => notWired("WebhookHandler", "getEvent"),
+      replayEvent: async () => notWired("WebhookHandler", "replayEvent"),
+      listDeliveries: async () => notWired("WebhookHandler", "listDeliveries"),
+    },
   };
 }

@@ -5,11 +5,12 @@ import { ObservabilityRecorder } from "@reckon/observability";
 import { KeyStore } from "./auth.js";
 import { DEFAULT_API_VERSION } from "./config.js";
 import type { ApiConfig } from "./config.js";
-import { ApiError, ERROR_CODES, errorEnvelope, setDocsBaseUrl } from "./errors.js";
+import { ApiError, ConfigError, ERROR_CODES, errorEnvelope, setDocsBaseUrl } from "./errors.js";
 import { InMemoryIdempotencyStore } from "./idempotency.js";
 import { observedDecisionHandler, observedOutcomeIngest, recordRouteErrorSafely } from "./observability.js";
 import { notWiredDefaults } from "./ports.js";
 import type { HandlerPorts, PartialHandlerPorts } from "./ports.js";
+import { TestModeDecisionStore } from "./test-mode.js";
 import { createRateLimiter } from "./rate-limit.js";
 import { DEFAULT_API_VERSION_REGISTRY, assertRegistryCoherent, withRegisteredDefault } from "./versioning.js";
 import { registerAgentRoutes } from "./routes/agents.js";
@@ -23,7 +24,13 @@ import { registerOutcomeRoutes } from "./routes/outcomes.js";
 import { registerPlanRoutes } from "./routes/plans.js";
 import { registerPreferenceRoutes } from "./routes/preferences.js";
 import { registerResearchRoutes } from "./routes/research.js";
+import { registerWebhookRoutes } from "./routes/webhooks.js";
 import type { RouteDeps } from "./routes/shared.js";
+import {
+  webhookEmittingDecisionHandler,
+  webhookEmittingOutcomeIngest,
+  webhookEmittingPreferenceIngest,
+} from "./webhooks/emitter.js";
 
 /**
  * Composition root: buildServer(config) → FastifyInstance. Everything is
@@ -34,8 +41,25 @@ export function buildServer(config: ApiConfig): FastifyInstance {
   const keyStore = config.keyStore ?? new KeyStore(config.keys ?? []);
   const clock = config.clock ?? (() => Date.now());
   const idempotency = config.idempotencyStore ?? new InMemoryIdempotencyStore({ clock });
+  // S2-003 — test-mode state: a SEPARATE idempotency scope for test
+  // traffic (defaults to its own in-memory instance; never the live
+  // store) and the mode-isolated store for canned test decisions.
+  // Together with the canned decision engine (src/test-mode.ts) this is
+  // the "separate storage scope keyed by mode" law: test tenants' data
+  // never mixes with live data.
+  const testIdempotency = config.testIdempotencyStore ?? new InMemoryIdempotencyStore({ clock });
+  const testDecisionStore = new TestModeDecisionStore();
   const portStatus = new Map<string, "wired" | "not-wired">();
   const handlers = resolveHandlers(config.handlers, portStatus);
+
+  // S2-002 webhook mount conflict check (fail fast, before any wrapping):
+  // the full system (config.webhooks) and a manual handlers.webhookHandler
+  // are mutually exclusive — both would answer the same routes.
+  if (config.webhooks !== undefined && config.handlers?.webhookHandler !== undefined) {
+    throw new ConfigError(
+      "buildServer: mount either config.webhooks (the full system) or handlers.webhookHandler — not both",
+    );
+  }
 
   // S2-001 — developer-platform hardening composition:
   //   version registry + pinned default (asserted coherent at boot),
@@ -89,10 +113,39 @@ export function buildServer(config: ApiConfig): FastifyInstance {
     }
   }
 
+  // S2-002 — webhook composition: mounting config.webhooks (the full
+  // system: endpoint CRUD + delivery engine + the emission seam) wires
+  // the webhookHandler port AND decorates the WIRED domain handlers
+  // (OUTERMOST — after the observability wrappers, so the request runs,
+  // is recorded, then fans events out):
+  //   decision  → schedule.executed (non-empty schedule delta)
+  //   outcome   → recommendation.delivered (impression delivery confirmation)
+  //   preference → preference.updated (every appended delta)
+  const webhooks = config.webhooks;
+  if (webhooks !== undefined) {
+    handlers.webhookHandler = webhooks;
+    portStatus.set("webhookHandler", "wired");
+    if (portStatus.get("decisionHandler") === "wired") {
+      handlers.decisionHandler = webhookEmittingDecisionHandler(handlers.decisionHandler, webhooks);
+    }
+    if (portStatus.get("outcomeIngest") === "wired") {
+      // The delivery-confirmation lookup resolves requestId/action/item
+      // anchors from the decision store; without it, emission is skipped
+      // (fields are never invented).
+      const decisionStore = portStatus.get("decisionStore") === "wired" ? handlers.decisionStore : undefined;
+      handlers.outcomeIngest = webhookEmittingOutcomeIngest(handlers.outcomeIngest, webhooks, decisionStore);
+    }
+    if (portStatus.get("preferenceIngest") === "wired") {
+      handlers.preferenceIngest = webhookEmittingPreferenceIngest(handlers.preferenceIngest, webhooks);
+    }
+  }
+
   const deps: RouteDeps = {
     keyStore,
     idempotency,
+    testIdempotency,
     handlers,
+    testDecisionStore,
     apiVersion: buildLabel,
     versionRegistry,
     defaultApiVersion: negotiationDefault,
@@ -184,6 +237,7 @@ export function buildServer(config: ApiConfig): FastifyInstance {
   registerAgentRoutes(app, deps);
   registerResearchRoutes(app, deps);
   registerIntegrationRoutes(app, deps);
+  registerWebhookRoutes(app, deps);
 
   return app;
 }

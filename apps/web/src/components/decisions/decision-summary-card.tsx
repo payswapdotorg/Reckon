@@ -21,7 +21,7 @@ import {
   formatExactNumber,
   uncertaintySummary,
 } from "@/lib/decision-view";
-import { CodeValue, FieldRow, FieldRows, NotProvided } from "./decision-fields";
+import { CodeValue, FieldRow, FieldRows, NotProvided } from "./decision-fields.js";
 import styles from "./decision-summary-card.module.css";
 
 export interface DecisionSummaryCardProps {

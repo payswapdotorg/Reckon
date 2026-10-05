@@ -68,6 +68,13 @@
   /* on-dark dimmed text (sidebar tagline / group labels) */
   --sidebar-muted: #8f8f97;
 
+  /* ---- dashboard mode semantics (S3-001) -------------------------------- */
+  /* The test/live toggle recolors mode indicators across the shell. Both
+   * values come from the committed palette — NO new hues (single-accent
+   * law holds): live = the primary emerald, test = chart-2 amber. */
+  --mode-live: #009768;
+  --mode-test: #dc8b18;
+
   /* ---- layout rhythm (reference §2) ------------------------------------- */
   --header-height: 64px;
   --sidebar-width: 250px;              /* ~240–260px */

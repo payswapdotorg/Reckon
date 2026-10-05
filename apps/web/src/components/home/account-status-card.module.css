@@ -1,0 +1,159 @@
+/* AccountStatusCard — status rows (System status card language) plus
+ * the quick-links grid. */
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.rowKey {
+  flex: none;
+  width: 110px;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted-foreground);
+}
+
+.rowValue {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0;
+  min-width: 0;
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background-color: var(--secondary);
+  border: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.dotOk,
+.dotDown {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.dotOk {
+  background-color: var(--primary);
+}
+
+.dotDown {
+  background-color: var(--destructive);
+}
+
+.probeDetail {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.quickLinks {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.quickLinksTitle {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  margin-bottom: 10px;
+}
+
+.quickList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.quickLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+  background-color: var(--card);
+  transition:
+    background-color var(--transition),
+    border-color var(--transition);
+}
+
+.quickLink:hover {
+  background-color: var(--accent);
+  border-color: var(--muted-foreground);
+}
+
+.quickIcon {
+  flex: none;
+  color: var(--muted-foreground);
+}
+
+.quickLink:hover .quickIcon {
+  color: var(--primary);
+}
+
+.quickText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.quickLabel {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.quickHint {
+  font-size: 11.5px;
+  line-height: 16px;
+  color: var(--muted-foreground);
+}
+
+.quickArrow {
+  flex: none;
+  color: var(--muted-foreground);
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.quickLink:hover .quickArrow {
+  opacity: 1;
+}

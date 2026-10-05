@@ -71,10 +71,22 @@
   color: var(--sidebar-accent-foreground);
 }
 
+/* Nested children (developer sub-surfaces): indented under the parent
+ * section, smaller icons — the parent stays visually active while a
+ * child page is open (§6 arrangement language). */
+.itemNested {
+  padding-left: 20px;
+  font-size: 12.5px;
+}
+
 /* §8 mobile drawer: roomier touch targets */
 @media (max-width: 767px) {
   .item {
     padding: 10px 10px;
     font-size: 14px;
+  }
+
+  .itemNested {
+    padding-left: 26px;
   }
 }

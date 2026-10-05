@@ -1,0 +1,66 @@
+/* ApiKeysManager — head row + outcome banner. */
+
+.manager {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.headRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.headNote {
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+}
+
+.headNoteStrong {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--foreground);
+}
+
+.outcomeOk,
+.outcomeFailed {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  line-height: 19px;
+}
+
+.outcomeOk {
+  background-color: color-mix(in srgb, var(--primary) 8%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+  color: var(--foreground);
+}
+
+.outcomeFailed {
+  background-color: var(--destructive-tint);
+  border: 1px solid var(--destructive-border-soft);
+  color: var(--foreground);
+}
+
+.tableCaption {
+  caption-side: top;
+  text-align: left;
+  padding: 12px 14px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+  border-bottom: 1px solid var(--border);
+  background-color: var(--background);
+}

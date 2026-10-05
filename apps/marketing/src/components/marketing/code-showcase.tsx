@@ -4,7 +4,12 @@
  * Code-first marketing artifact (survey §2.7): a real, copyable API call
  * rendered as a first-class section — cURL + TypeScript tabs, syntax
  * highlighted by the tiny in-repo tokenizer (no heavy deps), and the
- * DecisionResult response shaped by @reckon/contracts.
+ * contract-shaped JSON response.
+ *
+ * S1-002: the showcase is parameterized — the home renders its default
+ * artifact (the POST /v1/decisions pair from marketing-content.ts, byte
+ * for byte as in S1-001), while each product page passes its own
+ * artifact from product-content.ts. One component, one design system.
  *
  * A11y: ARIA tabs pattern (roving tabindex, arrow keys, aria-selected),
  * clipboard feedback announced via a polite live region, copy buttons
@@ -27,27 +32,50 @@ import {
   responseSnippet,
   typescriptSnippet,
 } from "@/lib/marketing-content";
+import type { ProductCodeArtifact } from "@/lib/product-content";
 
-type TabId = "curl" | "typescript";
+type TabId = string;
 
 interface CodeTab {
   id: TabId;
   label: string;
+  language: "curl" | "typescript";
   code: string;
   lines: TokenLines;
 }
 
-const codeTabs: CodeTab[] = [
-  { id: "curl", label: "cURL", code: curlSnippet, lines: tokenizeCurl(curlSnippet) },
-  {
-    id: "typescript",
-    label: "TypeScript",
-    code: typescriptSnippet,
-    lines: tokenizeTypeScript(typescriptSnippet),
-  },
-];
+/** Build the highlighted tab model from an artifact's raw tabs. */
+function buildTabs(artifact: ProductCodeArtifact): CodeTab[] {
+  return artifact.tabs.map((tab) => ({
+    id: tab.id,
+    label: tab.label,
+    language: tab.language,
+    code: tab.code,
+    lines:
+      tab.language === "curl"
+        ? tokenizeCurl(tab.code)
+        : tokenizeTypeScript(tab.code),
+  }));
+}
 
-const responseLines: TokenLines = tokenizeJson(responseSnippet);
+/** The home's default artifact (S1-001, unchanged). */
+const homeArtifact: ProductCodeArtifact = {
+  eyebrow: codeSection.eyebrow,
+  title: codeSection.title,
+  sub: codeSection.sub,
+  tabs: [
+    { id: "curl", label: "cURL", language: "curl", code: curlSnippet },
+    {
+      id: "typescript",
+      label: "TypeScript",
+      language: "typescript",
+      code: typescriptSnippet,
+    },
+  ],
+  responseLabel: codeSection.responseLabel,
+  response: responseSnippet,
+  craftNotes: [...codeSection.craftNotes],
+};
 
 function CodeBlock({ lines }: { lines: TokenLines }) {
   return (
@@ -110,12 +138,25 @@ function CopyButton({
   );
 }
 
-export function CodeShowcase() {
-  const [active, setActive] = useState<TabId>("curl");
+interface CodeShowcaseProps {
+  /** Product pages pass their artifact; the home keeps its default. */
+  artifact?: ProductCodeArtifact;
+  /** Distinguishes ARIA ids when a page mounts a non-default panel; the default keeps the S1-001 ids. */
+  panelId?: string;
+  /** Section anchor id — the home's is #get-started (S1-001); product pages pass their own. */
+  sectionId?: string;
+}
+
+export function CodeShowcase({ artifact = homeArtifact, panelId, sectionId }: CodeShowcaseProps) {
+  const [active, setActive] = useState<TabId>(artifact.tabs[0]?.id ?? "curl");
   const copiedRef = useRef<HTMLParagraphElement>(null);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
+  const codeTabs = buildTabs(artifact);
   const activeTab = codeTabs.find((tab) => tab.id === active) ?? codeTabs[0];
+  const contentId = panelId ? `rk-code-${panelId}-content` : "rk-code-panel-content";
+  const titleId = panelId ? `rk-code-${panelId}-title` : "rk-code-title";
+  const tabId = (id: TabId) => (panelId ? `rk-tab-${panelId}-${id}` : `rk-tab-${id}`);
 
   const selectTab = (index: number) => {
     const tab = codeTabs[index];
@@ -138,15 +179,19 @@ export function CodeShowcase() {
   };
 
   return (
-    <section className="rk-section rk-section-code" id="get-started" aria-labelledby="rk-code-title">
+    <section
+      className="rk-section rk-section-code"
+      id={sectionId ?? "get-started"}
+      aria-labelledby={titleId}
+    >
       <div className="rk-container">
-        <div id="rk-code-title" className="rk-sr-only">
+        <div id={titleId} className="rk-sr-only">
           Code
         </div>
         <SectionHeading
-          eyebrow={codeSection.eyebrow}
-          title={codeSection.title}
-          sub={codeSection.sub}
+          eyebrow={artifact.eyebrow}
+          title={artifact.title}
+          sub={artifact.sub}
         />
 
         <div className="rk-code-panel">
@@ -167,9 +212,9 @@ export function CodeShowcase() {
                   type="button"
                   key={tab.id}
                   role="tab"
-                  id={`rk-tab-${tab.id}`}
+                  id={tabId(tab.id)}
                   aria-selected={active === tab.id}
-                  aria-controls="rk-code-panel-content"
+                  aria-controls={contentId}
                   tabIndex={active === tab.id ? 0 : -1}
                   className={active === tab.id ? "rk-code-tab rk-code-tab-active" : "rk-code-tab"}
                   onClick={() => selectTab(index)}
@@ -186,9 +231,9 @@ export function CodeShowcase() {
 
           <div
             className="rk-code-body"
-            id="rk-code-panel-content"
+            id={contentId}
             role="tabpanel"
-            aria-labelledby={`rk-tab-${active}`}
+            aria-labelledby={tabId(active)}
             tabIndex={0}
           >
             <pre className="rk-code-pre">
@@ -201,18 +246,18 @@ export function CodeShowcase() {
 
         <div className="rk-code-response">
           <div className="rk-code-response-bar">
-            <span className="rk-code-response-label">{codeSection.responseLabel}</span>
-            <CopyButton code={responseSnippet} label="response JSON" onCopied={() => undefined} />
+            <span className="rk-code-response-label">{artifact.responseLabel}</span>
+            <CopyButton code={artifact.response} label="response JSON" onCopied={() => undefined} />
           </div>
           <pre className="rk-code-pre rk-code-pre-response">
             <code className="rk-code">
-              <CodeBlock lines={responseLines} />
+              <CodeBlock lines={tokenizeJson(artifact.response)} />
             </code>
           </pre>
         </div>
 
         <ul className="rk-craft-notes" aria-label="API craft guarantees">
-          {codeSection.craftNotes.map((note) => (
+          {artifact.craftNotes.map((note) => (
             <li key={note}>
               <span className="rk-craft-dot" aria-hidden="true" />
               {note}

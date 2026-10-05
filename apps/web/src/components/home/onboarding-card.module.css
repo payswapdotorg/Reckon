@@ -1,0 +1,142 @@
+/* OnboardingCard — numbered steps + runnable-looking code block (the
+ * code-first quickstart language; §2 survey: docs that run). */
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  counter-reset: none;
+}
+
+.step {
+  display: flex;
+  gap: 12px;
+}
+
+.stepNumber {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-top: 1px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background-color: var(--secondary);
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.stepBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.stepTitle {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.stepLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 4px 10px 4px 6px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+  background-color: var(--card);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--foreground);
+  transition:
+    background-color var(--transition),
+    border-color var(--transition);
+}
+
+.stepLink:hover {
+  background-color: var(--accent);
+  border-color: var(--muted-foreground);
+}
+
+.stepLink:hover .stepIcon {
+  color: var(--primary);
+}
+
+.stepIcon {
+  color: var(--muted-foreground);
+}
+
+.stepNote {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+  max-width: 640px;
+}
+
+.stepCode {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background-color: var(--secondary);
+  border: 1px solid var(--border);
+}
+
+.snippet {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+  background-color: #121215;
+  color: #e8e8ec;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.snippet code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 19px;
+  white-space: pre;
+}
+
+.docsRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+}
+
+.docsIcon {
+  flex: none;
+  color: var(--muted-foreground);
+}
+
+.docsLink {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.docsLink:hover {
+  text-decoration: underline;
+}

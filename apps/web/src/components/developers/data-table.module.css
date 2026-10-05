@@ -1,0 +1,202 @@
+/* DataTable — shared table language for the developer surfaces (keys,
+ * request logs, events). Hairline borders, airy rows, mono for machine
+ * values (ids, prefixes, routes, timestamps); scroll container for long
+ * lists (max height + custom scrollbar). */
+
+.tableCard {
+  overflow: hidden;
+}
+
+.tableScroll {
+  overflow-x: auto;
+  max-height: 480px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.tableScroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.tableScroll::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 4px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 19px;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  background-color: var(--background);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr {
+  transition: background-color var(--transition);
+}
+
+.table tbody tr:hover {
+  background-color: var(--accent);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+.muted {
+  color: var(--muted-foreground);
+}
+
+.cellActions {
+  text-align: right;
+}
+
+/* Status pill (log status codes, event delivery status). */
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 17px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.statusOk {
+  color: color-mix(in srgb, var(--primary) 78%, #000);
+  background-color: color-mix(in srgb, var(--primary) 10%, var(--card));
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
+}
+
+.statusWarn {
+  color: color-mix(in srgb, var(--mode-test) 72%, #000);
+  background-color: color-mix(in srgb, var(--mode-test) 12%, var(--card));
+  border-color: color-mix(in srgb, var(--mode-test) 32%, var(--border));
+}
+
+.statusError {
+  color: var(--destructive);
+  background-color: var(--destructive-tint);
+  border-color: var(--destructive-border-soft);
+}
+
+.statusNeutral {
+  color: var(--muted-foreground);
+  background-color: var(--secondary);
+  border-color: var(--border);
+}
+
+/* Key mode chip — recolors with the mode semantics (test amber / live
+ * emerald), same vocabulary as the account toggle. */
+.modeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 17px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: 1px solid transparent;
+}
+
+.modeChipTest {
+  color: color-mix(in srgb, var(--mode-test) 72%, #000);
+  background-color: color-mix(in srgb, var(--mode-test) 12%, var(--card));
+  border-color: color-mix(in srgb, var(--mode-test) 32%, var(--border));
+}
+
+.modeChipLive {
+  color: color-mix(in srgb, var(--mode-live) 78%, #000);
+  background-color: color-mix(in srgb, var(--mode-live) 10%, var(--card));
+  border-color: color-mix(in srgb, var(--mode-live) 30%, var(--border));
+}
+
+.modeChipOther {
+  opacity: 0.55;
+}
+
+/* Pagination controls (cursor steps — no page math). */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  background-color: var(--background);
+}
+
+.pageLabel {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+}
+
+.pageButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Replay placeholder button (events, S2-002 pending). */
+.replayPlaceholder {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-control);
+  border: 1px dashed var(--border);
+  background-color: transparent;
+  color: var(--muted-foreground);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 500;
+  cursor: not-allowed;
+}
+
+/* Mobile (§8): the table scrolls horizontally inside the card rather
+ * than breaking the layout. */
+@media (max-width: 767px) {
+  .table td,
+  .table th {
+    padding: 10px 10px;
+  }
+}

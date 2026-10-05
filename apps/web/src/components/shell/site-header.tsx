@@ -1,7 +1,12 @@
 /**
  * SiteHeader — reference §2: content header with breadcrumb
- * (`Reckon Studio > Overview`), search field with ⌘K hint, primary CTA on
- * the right; compact on mobile (§8): hamburger + icon-search + short CTA.
+ * (`Reckon Studio > Developers > API keys`), search field with ⌘K hint,
+ * primary CTA on the right; compact on mobile (§8): hamburger +
+ * icon-search + short CTA.
+ *
+ * S3-001: the breadcrumb renders the FULL parent chain (nested developer
+ * routes) and the header carries the account mode badge — one of the
+ * shell-wide mode indicators that recolor with the test/live toggle.
  *
  * Client component: breadcrumb derives from the pathname; the hamburger
  * drives the nav drawer; the search trigger opens the command palette.
@@ -14,17 +19,18 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
-import { getWorkspaceRoute } from "@/lib/workspace";
-import { CommandPalette } from "./command-palette";
-import { useNavDrawer } from "./nav-drawer";
+import { breadcrumbTrailFor, getWorkspaceRoute } from "@/lib/workspace";
+import { ModeBadge } from "./mode-badge.js";
+import { CommandPalette } from "./command-palette.js";
+import { useNavDrawer } from "./nav-drawer.js";
 import styles from "./site-header.module.css";
 
 export function SiteHeader() {
   const pathname = usePathname() ?? "/";
   const { isOpen: drawerOpen, toggle } = useNavDrawer();
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const route = getWorkspaceRoute(pathname);
-  const currentTitle = route?.title ?? "Reckon Studio";
+  const trail = breadcrumbTrailFor(pathname);
+  const currentTitle = getWorkspaceRoute(pathname)?.title ?? "Reckon Studio";
 
   return (
     <header className={styles.header}>
@@ -43,6 +49,20 @@ export function SiteHeader() {
           <Link href="/" className={styles.breadcrumbRoot}>
             Reckon Studio
           </Link>
+          {trail.length > 1
+            ? trail.slice(0, -1).map((route) => (
+                <span className={styles.breadcrumbCrumb} key={route.href}>
+                  <ChevronRight
+                    className={styles.breadcrumbSeparator}
+                    aria-hidden="true"
+                    size={14}
+                  />
+                  <Link href={route.href} className={styles.breadcrumbParent}>
+                    {route.title}
+                  </Link>
+                </span>
+              ))
+            : null}
           <ChevronRight className={styles.breadcrumbSeparator} aria-hidden="true" size={14} />
           <span className={styles.breadcrumbCurrent} aria-current="page">
             {currentTitle}
@@ -50,6 +70,9 @@ export function SiteHeader() {
         </nav>
       </div>
       <div className={styles.right}>
+        <span className={styles.modeBadge}>
+          <ModeBadge />
+        </span>
         <SearchInput onClick={() => setPaletteOpen(true)} />
         <Button href="/decisions" variant="primary" size="md" className={styles.cta}>
           <Plus aria-hidden="true" strokeWidth={2} size={15} />

@@ -42,8 +42,8 @@ export interface NavItem {
 }
 
 export const headerNav: NavItem[] = [
-  { label: "Product", href: "#product" },
-  { label: "Docs", href: "#", placeholder: true },
+  { label: "Product", href: "/products/recommendation-api" },
+  { label: "Docs", href: "https://docs.reckon.dev/" },
   { label: "Pricing", href: "#", placeholder: true },
 ];
 
@@ -79,10 +79,10 @@ export interface Product {
   name: string;
   /** ONE outcome-phrased line. Never a feature list. */
   outcome: string;
-  /** Mono tag grounded in a real API route (apps/api/src/routes/*). */
+  /** Mono tag grounded in a real registered route (apps/api/src/routes/*). */
   routeTag: string;
+  /** The product's page route — always /products/<id> (S1-002). */
   href: string;
-  placeholder: boolean;
   icon: ProductIconKind;
 }
 
@@ -98,35 +98,31 @@ export const products: Product[] = [
     name: "Recommendation API",
     outcome: "Decide what to show next with one API call.",
     routeTag: "POST /v1/decisions",
-    href: "#",
-    placeholder: true,
+    href: "/products/recommendation-api",
     icon: "api",
   },
   {
     id: "personalization",
     name: "Personalization",
     outcome: "Adapt every surface to the person seeing it.",
-    routeTag: "/v1/preferences",
-    href: "#",
-    placeholder: true,
+    routeTag: "POST /v1/preferences/events",
+    href: "/products/personalization",
     icon: "personalization",
   },
   {
     id: "scheduling",
     name: "Scheduling",
     outcome: "Arrive at the right moment, not the loudest one.",
-    routeTag: "/v1/plans",
-    href: "#",
-    placeholder: true,
+    routeTag: "POST /v1/plans",
+    href: "/products/scheduling",
     icon: "scheduling",
   },
   {
     id: "analytics",
     name: "Analytics",
     outcome: "Prove the lift, not just the clicks.",
-    routeTag: "/v1/outcomes",
-    href: "#",
-    placeholder: true,
+    routeTag: "POST /v1/outcomes",
+    href: "/products/analytics",
     icon: "analytics",
   },
 ];
@@ -289,10 +285,10 @@ export const finalCta = {
   secondaryCta,
 };
 
-/** Footer — the four-surface IA (survey §1) as placeholder links. */
+/** Footer — the four-surface IA (survey §1). Product + Docs surfaces are live (S1-002); Pricing (S1-003) and Dashboard (S3) still ship later. */
 export const footerSurfaces: NavItem[] = [
-  { label: "Product", href: "#product" },
-  { label: "Docs", href: "#", placeholder: true },
+  { label: "Product", href: "/products/recommendation-api" },
+  { label: "Docs", href: "https://docs.reckon.dev/" },
   { label: "Pricing", href: "#", placeholder: true },
   { label: "Dashboard", href: "#", placeholder: true },
 ];
@@ -305,20 +301,18 @@ export interface FooterColumn {
 export const footerColumns: FooterColumn[] = [
   {
     heading: "Products",
-    links: [
-      { label: "Recommendation API", href: "#", placeholder: true },
-      { label: "Personalization", href: "#", placeholder: true },
-      { label: "Scheduling", href: "#", placeholder: true },
-      { label: "Analytics", href: "#", placeholder: true },
-    ],
+    links: products.map((product) => ({
+      label: product.name,
+      href: product.href,
+    })),
   },
   {
     heading: "Developers",
     links: [
-      { label: "Documentation", href: "#", placeholder: true },
-      { label: "API reference", href: "#", placeholder: true },
-      { label: "Quickstart", href: "#", placeholder: true },
-      { label: "Webhooks guide", href: "#", placeholder: true },
+      { label: "Documentation", href: "https://docs.reckon.dev/" },
+      { label: "API reference", href: "https://docs.reckon.dev/api-reference/authentication" },
+      { label: "Quickstart", href: "https://docs.reckon.dev/get-started/quickstart" },
+      { label: "Webhooks guide", href: "https://docs.reckon.dev/webhooks" },
       { label: "Status", href: "#", placeholder: true },
     ],
   },

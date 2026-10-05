@@ -17,6 +17,13 @@ import {
   stableClone,
   CONTRACT_VERSIONS,
   CONTRACT_IDS,
+  ERROR_CATALOG,
+  TEST_SCENARIOS,
+  TestScenarioSchema,
+  X_RECKON_MODE_HEADER,
+  X_RECKON_MODE_HEADER_CANONICAL,
+  errorDocUrl,
+  parseMagicTestItemId,
 } from "../src/index.js";
 
 const ctx = ContextSnapshotSchema.parse({ contextId: "ctx-1", at: 1_000 });
@@ -227,5 +234,121 @@ describe("candidate set", () => {
       candidates: [{ itemId: "i-1", realizationIds: [], source: "search" }],
     });
     expect(ok.candidates[0].source).toBe("search");
+  });
+});
+
+describe("test mode (S2-003): frozen vocabulary + mode catalog entry", () => {
+  it("TEST_SCENARIOS is the frozen canned vocabulary (unique, kebab-case, non-empty)", () => {
+    expect(TEST_SCENARIOS.length).toBeGreaterThan(0);
+    expect(new Set(TEST_SCENARIOS).size).toBe(TEST_SCENARIOS.length);
+    for (const scenario of TEST_SCENARIOS) {
+      expect(scenario).toMatch(/^[a-z][a-z0-9-]*$/);
+    }
+    expect(TEST_SCENARIOS).toContain("default");
+    expect(TEST_SCENARIOS).toContain("error");
+  });
+
+  it("TestScenarioSchema accepts exactly the vocabulary", () => {
+    for (const scenario of TEST_SCENARIOS) {
+      expect(TestScenarioSchema.safeParse(scenario).success).toBe(true);
+    }
+    for (const bad of ["", "explode", "DEFAULT", "decline ", 42, null]) {
+      expect(TestScenarioSchema.safeParse(bad).success).toBe(false);
+    }
+  });
+
+  it("parseMagicTestItemId maps itm_test_<scenario> and rejects the rest", () => {
+    expect(parseMagicTestItemId("itm_test_decline")).toEqual({ scenario: "decline" });
+    expect(parseMagicTestItemId("itm_test_default")).toEqual({ scenario: "default" });
+    expect(parseMagicTestItemId("itm_test_nope")).toEqual({ scenario: null });
+    expect(parseMagicTestItemId("itm_test_")).toEqual({ scenario: null });
+    expect(parseMagicTestItemId("item-1")).toBeNull();
+    expect(parseMagicTestItemId("itm_testish")).toBeNull();
+    expect(parseMagicTestItemId("")).toBeNull();
+  });
+
+  it("magic test item ids are valid contract ids (usable as candidate item ids)", () => {
+    for (const scenario of TEST_SCENARIOS) {
+      const parsed = CandidateSetSchema.parse({
+        setId: "cs-test",
+        candidates: [
+          { itemId: `itm_test_${scenario}`, realizationIds: [], source: "host-retrieval" },
+        ],
+      });
+      expect(parsed.candidates[0]?.itemId).toBe(`itm_test_${scenario}`);
+    }
+  });
+
+  it("MODE_MISMATCH is a catalogued permission_error with a stable doc slug", () => {
+    expect(ERROR_CATALOG.MODE_MISMATCH).toEqual({
+      errorClass: "permission_error",
+      httpStatus: 403,
+      docSlug: "mode-mismatch",
+      description: expect.any(String),
+    });
+    expect(errorDocUrl("MODE_MISMATCH")).toBe("https://docs.reckon.dev/errors/mode-mismatch");
+  });
+
+  it("the mode marker header constants are pinned (wire name lowercase)", () => {
+    expect(X_RECKON_MODE_HEADER).toBe("x-reckon-mode");
+    expect(X_RECKON_MODE_HEADER_CANONICAL).toBe("X-Reckon-Mode");
+  });
+});
+
+describe("test mode (S2-003): frozen vocabulary + mode catalog entry", () => {
+  it("TEST_SCENARIOS is the frozen canned vocabulary (unique, kebab-case, non-empty)", () => {
+    expect(TEST_SCENARIOS.length).toBeGreaterThan(0);
+    expect(new Set(TEST_SCENARIOS).size).toBe(TEST_SCENARIOS.length);
+    for (const scenario of TEST_SCENARIOS) {
+      expect(scenario).toMatch(/^[a-z][a-z0-9-]*$/);
+    }
+    expect(TEST_SCENARIOS).toContain("default");
+    expect(TEST_SCENARIOS).toContain("error");
+  });
+
+  it("TestScenarioSchema accepts exactly the vocabulary", () => {
+    for (const scenario of TEST_SCENARIOS) {
+      expect(TestScenarioSchema.safeParse(scenario).success).toBe(true);
+    }
+    for (const bad of ["", "explode", "DEFAULT", "decline ", 42, null]) {
+      expect(TestScenarioSchema.safeParse(bad).success).toBe(false);
+    }
+  });
+
+  it("parseMagicTestItemId maps itm_test_<scenario> and rejects the rest", () => {
+    expect(parseMagicTestItemId("itm_test_decline")).toEqual({ scenario: "decline" });
+    expect(parseMagicTestItemId("itm_test_default")).toEqual({ scenario: "default" });
+    expect(parseMagicTestItemId("itm_test_nope")).toEqual({ scenario: null });
+    expect(parseMagicTestItemId("itm_test_")).toEqual({ scenario: null });
+    expect(parseMagicTestItemId("item-1")).toBeNull();
+    expect(parseMagicTestItemId("itm_testish")).toBeNull();
+    expect(parseMagicTestItemId("")).toBeNull();
+  });
+
+  it("magic test item ids are valid contract ids (usable as candidate item ids)", () => {
+    for (const scenario of TEST_SCENARIOS) {
+      const parsed = CandidateSetSchema.parse({
+        setId: "cs-test",
+        candidates: [
+          { itemId: `itm_test_${scenario}`, realizationIds: [], source: "host-retrieval" },
+        ],
+      });
+      expect(parsed.candidates[0]?.itemId).toBe(`itm_test_${scenario}`);
+    }
+  });
+
+  it("MODE_MISMATCH is a catalogued permission_error with a stable doc slug", () => {
+    expect(ERROR_CATALOG.MODE_MISMATCH).toEqual({
+      errorClass: "permission_error",
+      httpStatus: 403,
+      docSlug: "mode-mismatch",
+      description: expect.any(String),
+    });
+    expect(errorDocUrl("MODE_MISMATCH")).toBe("https://docs.reckon.dev/errors/mode-mismatch");
+  });
+
+  it("the mode marker header constants are pinned (wire name lowercase)", () => {
+    expect(X_RECKON_MODE_HEADER).toBe("x-reckon-mode");
+    expect(X_RECKON_MODE_HEADER_CANONICAL).toBe("X-Reckon-Mode");
   });
 });

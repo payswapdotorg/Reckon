@@ -13,7 +13,7 @@
 import { ArrowDown, ArrowUp, CornerDownLeft, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { WORKSPACE_ROUTES, type WorkspaceRoute } from "@/lib/workspace";
+import { WORKSPACE_ROUTES, navHintForRoute, type WorkspaceRoute } from "@/lib/workspace";
 import styles from "./command-palette.module.css";
 
 export interface CommandPaletteProps {
@@ -24,12 +24,14 @@ export interface CommandPaletteProps {
 
 interface PaletteCommand {
   readonly route: WorkspaceRoute;
+  readonly hint: string;
   readonly keywords: string;
 }
 
 const COMMANDS: readonly PaletteCommand[] = WORKSPACE_ROUTES.map((route) => ({
   route,
-  keywords: `${route.title} ${route.navLabel} ${route.subtitle} ${route.navGroup}`.toLowerCase(),
+  hint: navHintForRoute(route),
+  keywords: `${route.title} ${route.navLabel} ${route.subtitle} ${route.navGroup} ${navHintForRoute(route)}`.toLowerCase(),
 }));
 
 export function CommandPalette({ open, onOpen, onClose }: CommandPaletteProps) {
@@ -145,7 +147,7 @@ export function CommandPalette({ open, onOpen, onClose }: CommandPaletteProps) {
                 onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => navigate(command)}
               >
-                <span className={styles.resultGroup}>{command.route.navGroup}</span>
+                <span className={styles.resultGroup}>{command.hint}</span>
                 <span className={styles.resultTitle}>{command.route.title}</span>
                 <span className={styles.resultHint}>{command.route.subtitle}</span>
               </button>

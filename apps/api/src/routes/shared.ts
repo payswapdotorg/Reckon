@@ -4,6 +4,7 @@ import {
   IDEMPOTENCY_KEY_HEADER,
   IDEMPOTENCY_WINDOW_MS,
   IdSchema,
+  X_RECKON_MODE_HEADER,
   contentDigest,
   type ApiVersionRegistry,
   type TenantScope,
@@ -12,6 +13,7 @@ import { ApiError, ERROR_CODES } from "../errors.js";
 import type { KeyAuthenticator } from "../auth.js";
 import type { IdempotencyStore, StoredIdempotent } from "../idempotency.js";
 import type { HandlerPorts } from "../ports.js";
+import type { TestModeDecisionStore } from "../test-mode.js";
 import type { RequestRateLimiter } from "../rate-limit.js";
 import type { AuthContext, Scope, Validator } from "../types.js";
 import { assertRequestTenant, assertResponseTenant, assertTenantHeader, peekBodyTenant } from "../tenant.js";
@@ -20,7 +22,11 @@ import { resolveRequestVersion } from "../versioning.js";
 export interface RouteDeps {
   readonly keyStore: KeyAuthenticator;
   readonly idempotency: IdempotencyStore;
+  /** S2-003: SEPARATE idempotency scope for test-mode traffic (test state never mixes with live state). */
+  readonly testIdempotency: IdempotencyStore;
   readonly handlers: HandlerPorts;
+  /** S2-003: mode-isolated store for canned test-mode decisions (live keys reach it only via the cross-mode probe). */
+  readonly testDecisionStore: TestModeDecisionStore;
   readonly apiVersion: string;
   /** S2-001: version registry + pinned default for X-Reckon-Version negotiation. */
   readonly versionRegistry: ApiVersionRegistry;
@@ -32,21 +38,29 @@ export interface RouteDeps {
 }
 
 /**
- * Auth middleware (Fastify preHandler), S2-001-hardened. The fixed order
- * (documented law — later checks assume earlier ones passed):
+ * Auth middleware (Fastify preHandler), S2-001-hardened, S2-003
+ * mode-marked. The fixed order (documented law — later checks assume
+ * earlier ones passed):
  *
  *   401 authenticate (bearer key; pk_ keys rejected as typed
  *      authentication_error)
+ *   → X-Reckon-Mode marker (S2-003: every authenticated response —
+ *      success or typed error — carries the key's mode; test traffic
+ *      is always identifiable)
  *   → 429 rate limit (per-key fixed window, when configured)
  *   → 400 API version (X-Reckon-Version vs the registry)
  *   → 403 scope (route family)
  *   → 403 tenant header + security-first body tenant peek
- *   → (route) 400 validation → 422/replay idempotency → 501/2xx handler
+ *   → (route) 403 live-mode test-hint guard (S2-003, decision path)
+ *      → 400 validation → 422/replay idempotency (mode-scoped store)
+ *      → 501/2xx handler (test-mode decisions: canned engine, never
+ *      the live handler)
  */
 export function authPreHandler(deps: RouteDeps, scope: Scope) {
   return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
     const auth = deps.keyStore.authenticate(request.headers.authorization);
     request.reckonAuth = auth;
+    reply.header(X_RECKON_MODE_HEADER, auth.mode);
     if (deps.rateLimiter !== undefined) {
       deps.rateLimiter.check(auth.keyHash);
     }
@@ -207,6 +221,16 @@ export interface RouteSpec<Body, Res> {
   readonly execute: (body: Body, auth: AuthContext) => Promise<Res>;
 }
 
+/**
+ * S2-003: the idempotency scope for a request — SEPARATE stores keyed
+ * by the key's mode. A test key replays only test traffic; a live key
+ * only live traffic; the two scopes never observe each other's
+ * entries (test state never mixes with live state).
+ */
+export function idempotencyForMode(deps: RouteDeps, auth: AuthContext): IdempotencyStore {
+  return auth.mode === "test" ? deps.testIdempotency : deps.idempotency;
+}
+
 /** A stored idempotent entry is a replay candidate only inside the window (absent storedAt = non-expiring). */
 function isWithinWindow(stored: StoredIdempotent, now: number): boolean {
   if (stored.storedAt === undefined) return true;
@@ -215,14 +239,19 @@ function isWithinWindow(stored: StoredIdempotent, now: number): boolean {
 
 /**
  * The full contract-route pipeline, shared by every POST route:
- * auth (done in preHandler) → body tenant check → validation → idempotency
- * replay/conflict → handler execution → response validation → response
- * tenant invariant → 200 with schema echo + idempotency headers.
+ * auth (done in preHandler) → body tenant check → validation →
+ * idempotency replay/conflict → handler execution → response validation
+ * → response tenant invariant → 200 with schema echo + idempotency
+ * headers.
  *
  * S2-001: replays carry BOTH `Idempotent-Replayed: true` (the new law)
  * and the legacy lowercase `idempotent-replay: true` header; conflicts
  * answer 422 IDEMPOTENCY_CONFLICT (typed invalid_request_error); stored
  * responses expire after the 24h window (then the key executes fresh).
+ *
+ * S2-003: the idempotency scope is MODE-KEYED — test-mode requests
+ * replay from the separate test store (never live entries) and
+ * vice versa.
  */
 export async function runContractRoute<Body, Res>(
   deps: RouteDeps,
@@ -231,6 +260,7 @@ export async function runContractRoute<Body, Res>(
   spec: RouteSpec<Body, Res>,
 ): Promise<void> {
   const auth = requireAuth(request);
+  const idempotency = idempotencyForMode(deps, auth);
   const body = parseRequestBody(spec.requestSchema, request, spec.contractId);
   const bodyTenant = spec.tenantFromBody?.(body);
   if (bodyTenant !== undefined) assertRequestTenant(auth, bodyTenant);
@@ -239,7 +269,7 @@ export async function runContractRoute<Body, Res>(
   const requestDigest = contentDigest(body);
   const now = deps.clock();
 
-  const stored = await deps.idempotency.lookup(auth.tenantId, routeKey, idempotencyKey);
+  const stored = await idempotency.lookup(auth.tenantId, routeKey, idempotencyKey);
   if (stored !== undefined && isWithinWindow(stored, now)) {
     if (stored.requestDigest !== requestDigest) {
       throw new ApiError(
@@ -272,7 +302,7 @@ export async function runContractRoute<Body, Res>(
 
   reply.code(200);
   reply.header(IDEMPOTENCY_KEY_HEADER, idempotencyKey);
-  await deps.idempotency.store(auth.tenantId, routeKey, idempotencyKey, requestDigest, {
+  await idempotency.store(auth.tenantId, routeKey, idempotencyKey, requestDigest, {
     statusCode: 200,
     body: payload,
   });

@@ -12,11 +12,11 @@
  * every section is server-rendered from the SDK result.
  */
 import type { DecisionResult } from "@reckon/sdk";
-import { AlternativesCard } from "./alternatives-card";
-import { CostsConsequencesCard } from "./costs-consequences-card";
-import { CurrentContextCard } from "./current-context-card";
-import { CurrentExperienceCard } from "./current-experience-card";
-import { DecisionSummaryCard } from "./decision-summary-card";
+import { AlternativesCard } from "./alternatives-card.js";
+import { CostsConsequencesCard } from "./costs-consequences-card.js";
+import { CurrentContextCard } from "./current-context-card.js";
+import { CurrentExperienceCard } from "./current-experience-card.js";
+import { DecisionSummaryCard } from "./decision-summary-card.js";
 import styles from "./decision-workspace.module.css";
 
 export interface DecisionWorkspaceProps {

@@ -98,6 +98,18 @@
   background: rgba(16, 207, 143, 0.3);
 }
 
+/* Page shell — every marketing route renders the rk-root canvas as the
+   whole page, so the default 8px body margin (a white frame around the
+   dark site, visible at the footer's bottom edge) is zeroed here and the
+   html canvas is painted the rk background (no white flash on load). */
+html {
+  background: #050607;
+}
+
+body {
+  margin: 0;
+}
+
 .rk-root a:focus-visible,
 .rk-root button:focus-visible,
 .rk-root [tabindex]:focus-visible {
@@ -386,6 +398,9 @@
 
 .rk-hero {
   position: relative;
+  /* The ::before glow bleeds ±12% horizontally — clip it so the
+     decorative field never creates phantom horizontal scroll on mobile. */
+  overflow-x: clip;
   padding-block: clamp(3.5rem, 7vw, 6.5rem) clamp(4rem, 8vw, 7rem);
 }
 
@@ -1234,6 +1249,335 @@
 }
 
 /* ------------------------------------------------------------------ */
+/* Product pages (S1-002) — hero, capabilities, steps, docs links      */
+/* ------------------------------------------------------------------ */
+
+.rk-product-hero {
+  position: relative;
+  /* Same decorative-bleed clip as the home hero (no phantom scroll). */
+  overflow-x: clip;
+  padding-block: clamp(3rem, 6vw, 5.5rem) clamp(3.5rem, 7vw, 6rem);
+}
+
+.rk-product-hero::before {
+  content: "";
+  position: absolute;
+  inset: -14% -12% auto;
+  height: 72%;
+  pointer-events: none;
+  background: radial-gradient(
+      52% 46% at 30% 18%,
+      rgba(16, 207, 143, 0.1),
+      transparent 70%
+    ),
+    radial-gradient(40% 42% at 78% 10%, rgba(124, 92, 255, 0.12), transparent 72%);
+}
+
+.rk-product-hero .rk-container {
+  position: relative;
+  max-width: 880px;
+}
+
+.rk-product-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 2.2rem;
+  font-size: 0.86rem;
+  color: var(--rk-text-tertiary);
+}
+
+.rk-product-breadcrumb-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: #98a29c;
+  transition: color 150ms ease;
+}
+
+.rk-product-breadcrumb-link:hover {
+  color: var(--rk-accent);
+}
+
+.rk-product-breadcrumb-sep {
+  color: #4a524d;
+}
+
+.rk-product-eyebrow-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.42rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 207, 143, 0.24);
+  background: rgba(16, 207, 143, 0.07);
+  font-family: var(--rk-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--rk-accent);
+}
+
+.rk-product-eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rk-accent);
+  box-shadow: 0 0 0 3px rgba(16, 207, 143, 0.16);
+}
+
+.rk-product-headline {
+  margin-top: 1.6rem;
+  font-size: clamp(2.4rem, 4.8vw, 3.7rem);
+}
+
+.rk-product-sub {
+  max-width: 56ch;
+}
+
+.rk-product-route-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.6rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: 9px;
+  border: 1px solid var(--rk-line-strong);
+  background: rgba(9, 12, 15, 0.7);
+  font-family: var(--rk-mono);
+  font-size: 0.84rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #cfd8d3;
+}
+
+.rk-product-route-tag::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--rk-accent);
+  opacity: 0.85;
+}
+
+/* Capability blocks */
+
+.rk-feature-grid {
+  display: grid;
+  gap: 1.1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin-top: 0.5rem;
+}
+
+.rk-feature-card {
+  height: 100%;
+  padding: 1.7rem 1.6rem 1.55rem;
+  border-radius: 16px;
+  border: 1px solid var(--rk-line);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.03),
+    rgba(255, 255, 255, 0.008)
+  );
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+
+.rk-feature-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.17);
+}
+
+.rk-feature-index {
+  display: block;
+  font-family: var(--rk-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--rk-accent);
+  opacity: 0.85;
+}
+
+.rk-feature-headline {
+  margin-top: 0.9rem;
+  font-size: 1.12rem;
+  font-weight: 580;
+  line-height: 1.32;
+  letter-spacing: -0.012em;
+}
+
+.rk-feature-body {
+  margin-top: 0.6rem;
+  font-size: 0.94rem;
+  line-height: 1.55;
+  color: var(--rk-text-secondary);
+}
+
+/* How-it-works strip */
+
+.rk-steps {
+  display: grid;
+  gap: 1.1rem;
+  margin-top: 0.5rem;
+}
+
+.rk-step {
+  position: relative;
+  padding: 1.7rem 1.6rem 1.6rem;
+  border-radius: 16px;
+  border: 1px solid var(--rk-line);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.028),
+    rgba(255, 255, 255, 0.006)
+  );
+}
+
+.rk-step-index {
+  display: block;
+  width: fit-content;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 207, 143, 0.22);
+  background: rgba(16, 207, 143, 0.07);
+  font-family: var(--rk-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: var(--rk-accent);
+}
+
+.rk-step-label {
+  display: block;
+  margin-top: 1.05rem;
+  font-family: var(--rk-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--rk-text-tertiary);
+}
+
+.rk-step-title {
+  margin-top: 0.45rem;
+  font-size: 1.1rem;
+  font-weight: 580;
+  letter-spacing: -0.01em;
+}
+
+.rk-step-body {
+  margin-top: 0.55rem;
+  font-size: 0.94rem;
+  line-height: 1.55;
+  color: var(--rk-text-secondary);
+}
+
+/* Related-products band tail */
+
+.rk-related-back {
+  margin-top: 2.4rem;
+}
+
+.rk-related-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  color: var(--rk-accent);
+  font-size: 0.95rem;
+  font-weight: 540;
+}
+
+.rk-related-back-link:hover {
+  color: var(--rk-accent-hover);
+}
+
+/* Docs deep-links */
+
+.rk-docs-links {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  margin-top: 0.5rem;
+}
+
+.rk-docs-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.1rem;
+  min-height: 44px;
+  padding: 1.15rem 1.35rem;
+  border-radius: 14px;
+  border: 1px solid var(--rk-line);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.028),
+    rgba(255, 255, 255, 0.006)
+  );
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+
+.rk-docs-link:hover {
+  transform: translateY(-2px);
+  border-color: rgba(16, 207, 143, 0.32);
+}
+
+.rk-docs-link-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.rk-docs-link-label {
+  font-size: 1rem;
+  font-weight: 580;
+  letter-spacing: -0.008em;
+  color: #e8edeb;
+}
+
+.rk-docs-link-description {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--rk-text-secondary);
+}
+
+.rk-docs-link-arrow {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--rk-line-strong);
+  color: var(--rk-accent);
+  background: rgba(255, 255, 255, 0.02);
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.rk-docs-link:hover .rk-docs-link-arrow {
+  background: rgba(16, 207, 143, 0.1);
+  border-color: rgba(16, 207, 143, 0.32);
+}
+
+.rk-docs-portal-line {
+  margin-top: 2.2rem;
+}
+
+.rk-docs-portal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  color: var(--rk-accent);
+  font-size: 0.95rem;
+  font-weight: 540;
+}
+
+.rk-docs-portal-link:hover {
+  color: var(--rk-accent-hover);
+}
+
+/* ------------------------------------------------------------------ */
 /* Breakpoints                                                         */
 /* ------------------------------------------------------------------ */
 
@@ -1259,6 +1603,10 @@
 
   .rk-footer-grid {
     grid-template-columns: 1.9fr 1fr 1fr 1fr;
+  }
+
+  .rk-steps {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 

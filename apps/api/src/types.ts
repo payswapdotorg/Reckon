@@ -29,9 +29,19 @@ export type Parsed<S> = S extends Validator<infer T> ? T : never;
  * Route families gated by static API-key scopes. `research` is reserved for
  * the research runtime routes (W3 lane, later waves); no /v1 route in this
  * skeleton requires it yet, but the scope exists so key provisioning can
- * already express it.
+ * already express it. `webhooks` (S2-002) gates the /v1/webhooks route
+ * family (endpoint CRUD, event retrieval, replay, delivery log).
  */
-export const ROUTE_SCOPES = ["decisions", "outcomes", "plans", "catalog", "research", "agents", "integrations"] as const;
+export const ROUTE_SCOPES = [
+  "decisions",
+  "outcomes",
+  "plans",
+  "catalog",
+  "research",
+  "agents",
+  "integrations",
+  "webhooks",
+] as const;
 export type Scope = (typeof ROUTE_SCOPES)[number];
 
 /**

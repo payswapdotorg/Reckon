@@ -105,15 +105,19 @@ describe("keys: auth matrix (S2-001)", () => {
     expect((res.body as { tenant: { tenantId: string } }).tenant.tenantId).toBe("tenant-a");
   });
 
-  it("sk_test_ key authenticates and propagates mode=test to handlers; sk_live propagates mode=live", async () => {
-    const testCall = await injectJson(stub.app, "POST", "/v1/decisions", {
-      payload: validDecisionRequest({ tenant: { tenantId: TENANT_T } }),
-      headers: authHeaders(NEW_SK_TEST),
+  it("key-scoped mode propagates to mounted handlers (S2-001 seam; S2-003: proven on delegated routes)", async () => {
+    // S2-003: the decision path in test mode is CANNED (never executes
+    // mounted handlers — test state separation), so key-mode propagation
+    // is proven on a delegated route; the decision-path canned semantics
+    // are covered in test-mode.test.ts.
+    const testCall = await injectJson(stub.app, "POST", "/v1/preferences/events", {
+      payload: validPreferenceDelta({ tenant: { tenantId: TENANT_T } }),
+      headers: { ...authHeaders(NEW_SK_TEST), "idempotency-key": freshIdem("mode-test") },
     });
     expect(testCall.status).toBe(200);
-    const liveCall = await injectJson(stub.app, "POST", "/v1/decisions", {
-      payload: validDecisionRequest({ tenant: { tenantId: "tenant-a" } }),
-      headers: authHeaders(NEW_SK_LIVE),
+    const liveCall = await injectJson(stub.app, "POST", "/v1/preferences/events", {
+      payload: validPreferenceDelta({ tenant: { tenantId: "tenant-a" } }),
+      headers: { ...authHeaders(NEW_SK_LIVE), "idempotency-key": freshIdem("mode-live") },
     });
     expect(liveCall.status).toBe(200);
     expect(stub.state.observedModes).toEqual(["test", "live"]);

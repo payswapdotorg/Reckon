@@ -44,6 +44,7 @@ describe("GET /readyz", () => {
     "agentHandler",
     "researchHandler",
     "integrationHandler",
+    "webhookHandler",
   ];
 
   it("default server reports every handler port as not-wired", async () => {

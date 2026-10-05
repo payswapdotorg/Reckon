@@ -4,6 +4,9 @@ import type { ApiConfig } from "../src/config.js";
 import type { StaticKeyConfig } from "../src/auth.js";
 import { KeyStore } from "../src/auth.js";
 import type { HandlerPorts } from "../src/ports.js";
+import { createInMemoryWebhookSystem } from "../src/webhooks/in-memory.js";
+import type { WebhookHttpClient } from "../src/webhooks/ports.js";
+import type { AuthContext } from "../src/types.js";
 import type {
   CatalogItem,
   CandidateSet,
@@ -52,6 +55,9 @@ export const TEST_KEYS: StaticKeyConfig[] = [
   { apiKey: "test-key-ws", tenantId: "tenant-a", workspaceId: "ws-1", scopes: [...ALL_RUNTIME_SCOPES] },
   { apiKey: "test-key-research", tenantId: "tenant-r", scopes: ["research"] },
   { apiKey: "test-key-agents", tenantId: "tenant-a", scopes: ["agents"] },
+  // S2-002: webhook-scoped keys (CRUD/replay/log surface for two tenants).
+  { apiKey: "test-key-webhooks", tenantId: "tenant-a", scopes: ["webhooks"] },
+  { apiKey: "test-key-webhooks-b", tenantId: "tenant-b", scopes: ["webhooks"] },
   { apiKey: SK_LIVE, tenantId: "tenant-a", scopes: [...ALL_RUNTIME_SCOPES] },
   { apiKey: SK_TEST, tenantId: "tenant-t", scopes: [...ALL_RUNTIME_SCOPES] },
   { apiKey: PK_LIVE, tenantId: "tenant-a", scopes: [...ALL_RUNTIME_SCOPES] },
@@ -63,6 +69,8 @@ export const GAMMA = "test-key-gamma";
 export const WS_KEY = "test-key-ws";
 export const RESEARCH_KEY = "test-key-research";
 export const AGENTS_KEY = "test-key-agents";
+export const WEBHOOKS_KEY = "test-key-webhooks";
+export const WEBHOOKS_KEY_B = "test-key-webhooks-b";
 export const NEW_SK_LIVE = SK_LIVE;
 export const NEW_SK_TEST = SK_TEST;
 export const NEW_PK_LIVE = PK_LIVE;
@@ -209,6 +217,13 @@ export interface StubState {
 
 export function stubHandlers(state: StubState): HandlerPorts {
   const plansById = new Map<string, ExperiencePlan>();
+  // S2-002: the stub webhook surface = the REAL in-memory system with a
+  // deterministic always-2xx outbound client (webhook route tests build
+  // their own systems with recording/failing clients).
+  const webhookClient: WebhookHttpClient = {
+    post: async () => ({ statusCode: 200, latencyMs: 0 }),
+  };
+  const webhookHandler = createInMemoryWebhookSystem({ httpClient: webhookClient });
   return {
     integrationHandler: {
       listAdapters: async () => [],
@@ -260,8 +275,12 @@ export function stubHandlers(state: StubState): HandlerPorts {
       },
     },
     preferenceIngest: {
-      ingest: async (delta: PreferenceDelta) => {
+      ingest: async (delta: PreferenceDelta, auth: AuthContext) => {
         state.preferenceCalls += 1;
+        // S2-003: mode propagation to delegated (non-canned) handler
+        // routes is proven here — the test-mode decision path is canned
+        // and never reaches mounted handlers.
+        state.observedModes.push(auth.mode);
         return delta;
       },
     },
@@ -337,6 +356,7 @@ export function stubHandlers(state: StubState): HandlerPorts {
         };
       },
     },
+    webhookHandler,
   };
 }
 

@@ -1,0 +1,101 @@
+/* ModeToggle — segmented control on the dark rail (§6 sidebar language).
+ * Mode colors are SEMANTIC tokens from the committed palette:
+ *   --mode-test: #dc8b18 (the palette's chart-2 amber)
+ *   --mode-live: #009768 (the primary emerald)
+ * No new hues — mode indicators recolor, the single-accent law holds. */
+
+.toggleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 12px 10px;
+}
+
+.segmented {
+  display: flex;
+  padding: 3px;
+  gap: 3px;
+  border-radius: 999px;
+  background-color: var(--sidebar-accent);
+  border: 1px solid var(--sidebar-border);
+}
+
+.segment {
+  flex: 1 1 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--sidebar-muted);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--transition),
+    color var(--transition),
+    box-shadow var(--transition);
+}
+
+.segment:hover {
+  color: var(--sidebar-accent-foreground);
+}
+
+/* Active sides: filled pill in the mode's semantic color. */
+.segmentActiveTest,
+.segmentActiveLive {
+  color: #fafaf9;
+}
+
+.segmentActiveTest {
+  background-color: var(--mode-test);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mode-test) 70%, #000);
+}
+
+.segmentActiveTest:hover {
+  color: #fafaf9;
+}
+
+.segmentActiveLive {
+  background-color: var(--mode-live);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mode-live) 70%, #000);
+}
+
+.segmentActiveLive:hover {
+  color: #fafaf9;
+}
+
+/* Visually hidden radio inputs (real inputs for a11y — visible focus
+ * ring is drawn on the label via :focus-visible within). */
+.input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.segment:has(.input:focus-visible) {
+  outline: 2px solid var(--sidebar-ring);
+  outline-offset: 1px;
+}
+
+.segment:has(.input:checked) {
+  cursor: default;
+}
+
+.caption {
+  margin: 0;
+  padding: 0 2px;
+  font-size: 10.5px;
+  line-height: 15px;
+  color: var(--sidebar-muted);
+}
