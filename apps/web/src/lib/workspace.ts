@@ -132,7 +132,7 @@ export const WORKSPACE_ROUTES: readonly WorkspaceRoute[] = [
     subtitle:
       "CTR lift, latency percentiles, drift indicators and funnels — measured on real traffic, never fabricated.",
     emptyStateReason:
-      "analytics views are the S3-002 work item — they land after the dashboard shell and read from real decision/outcome traffic.",
+      "connect the API — each view states its real evidence class here: observed data when a surface answers, the pending route named when it does not.",
     navGroup: "operate",
     icon: "analytics",
     relatedHrefs: ["/research"],

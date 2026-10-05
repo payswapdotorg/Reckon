@@ -1,0 +1,572 @@
+/* Analytics views (S3-002) — the shared visual language for the four
+ * /analytics views: view header rows, stat cards, CSS bar charts (bucket
+ * histogram + funnel bars), severity pills, mode chips and caveat lists.
+ * Follows the reference design system: hairline borders, no shadows, mono
+ * for machine values, uppercase tracked labels, the committed chart
+ * palette (chart-1 emerald / mode-test amber / destructive red) — no new
+ * hues. */
+
+/* ---- view header (title + evidence badge + source note) ---- */
+
+.viewHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.viewTitle {
+  margin: 0;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.sourceNote {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+}
+
+.sourceNote code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background-color: var(--secondary);
+  border: 1px solid var(--border);
+}
+
+/* ---- stat cards ---- */
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background-color: var(--card);
+  min-width: 0;
+}
+
+.statValue {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.statValueLift {
+  color: var(--primary);
+}
+
+.statValueDrop {
+  color: var(--destructive);
+}
+
+.statLabel {
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.statHint {
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+}
+
+/* ---- CTR group cards ---- */
+
+.groupGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.groupCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background-color: var(--card);
+  min-width: 0;
+}
+
+.groupTitleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.groupSubtitle {
+  margin: 0;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+}
+
+.groupCtr {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  line-height: 32px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.groupMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+}
+
+/* ---- CSS bar chart (latency histogram) ---- */
+
+.barList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: 96px minmax(60px, 1fr) 118px;
+  align-items: center;
+  gap: 10px;
+}
+
+.barLabel {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.barTrack {
+  height: 10px;
+  border-radius: 5px;
+  background-color: var(--secondary);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  background-color: var(--chart-1);
+  border-radius: 4px;
+}
+
+.barCount {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--foreground);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ---- funnel bars ---- */
+
+.funnelList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.funnelStage {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background-color: var(--card);
+  overflow: hidden;
+}
+
+.funnelFillTrack {
+  height: 8px;
+  background-color: var(--secondary);
+}
+
+.funnelFill {
+  height: 100%;
+  background-color: var(--chart-1);
+}
+
+.funnelStageBody {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+}
+
+.funnelStageLabel {
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.funnelStageDesc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+  flex-basis: 100%;
+}
+
+.funnelStageNumbers {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.funnelCount {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+/* ---- severity pills (drift) ---- */
+
+.severityPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 17px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.severityCritical {
+  color: var(--destructive);
+  background-color: var(--destructive-tint);
+  border-color: var(--destructive-border-soft);
+}
+
+.severityWarning {
+  color: color-mix(in srgb, var(--mode-test) 72%, #000);
+  background-color: color-mix(in srgb, var(--mode-test) 12%, var(--card));
+  border-color: color-mix(in srgb, var(--mode-test) 32%, var(--border));
+}
+
+.severityInfo {
+  color: color-mix(in srgb, var(--primary) 78%, #000);
+  background-color: color-mix(in srgb, var(--primary) 10%, var(--card));
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
+}
+
+/* ---- drift model cards ---- */
+
+.driftGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.driftCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background-color: var(--card);
+  min-width: 0;
+}
+
+.driftModelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.driftModelId {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.driftFacts {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+}
+
+.driftScoreRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.driftScore {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.driftScoreOf {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+}
+
+/* ---- mode chips (the mode machine's own vocabulary) ---- */
+
+.modeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 17px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: 1px solid transparent;
+}
+
+.modeChipTest {
+  color: color-mix(in srgb, var(--mode-test) 72%, #000);
+  background-color: color-mix(in srgb, var(--mode-test) 12%, var(--card));
+  border-color: color-mix(in srgb, var(--mode-test) 32%, var(--border));
+}
+
+.modeChipLive {
+  color: color-mix(in srgb, var(--mode-live) 78%, #000);
+  background-color: color-mix(in srgb, var(--mode-live) 10%, var(--card));
+  border-color: color-mix(in srgb, var(--mode-live) 30%, var(--border));
+}
+
+.modeChipUnlabeled {
+  color: var(--muted-foreground);
+  background-color: var(--secondary);
+  border-color: var(--border);
+}
+
+.modeChipRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.modeChipMeta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+}
+
+/* ---- caveat list (the confidence caveat rendering) ---- */
+
+.caveatList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.caveatItem {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+}
+
+.caveatMarker {
+  flex: none;
+  color: var(--mode-test);
+  font-weight: 600;
+}
+
+.caveatTitle {
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+
+/* ---- honest empty / degradation states inside a computed view ---- */
+
+.emptyPane {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 16px;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.emptyNote {
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+}
+
+/* ---- related surfaces (the S3-001 affordance kept on the live page) ---- */
+
+.relatedList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.relatedLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 19px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.relatedLink:hover {
+  text-decoration: underline;
+}
+
+.relatedHint {
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+
+/* ---- mode-awareness note (client) ---- */
+
+.noteRows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.noteRow {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+}
+
+.noteKey {
+  flex: none;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  width: 92px;
+}
+
+/* ---- visually hidden (globals define no .sr-only utility yet) ---- */
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* ---- mobile (§8): bars keep a fixed label column, cards go single ---- */
+
+@media (max-width: 767px) {
+  .barRow {
+    grid-template-columns: 84px minmax(48px, 1fr) 96px;
+    gap: 8px;
+  }
+
+  .funnelStageNumbers {
+    white-space: normal;
+  }
+}
