@@ -45,3 +45,5 @@ The `next.config.ts` in this directory is the production config as shipped
 (`reactStrictMode` only — the webpack `resolveExtensionAlias` mapping is not
 needed here because this app contains no NodeNext `.js`-specifier workspace
 imports). Deploying requires no configuration change to this app.
+
+<!-- deploy-trigger: RELEASE-002 completion — first production deploy of the marketing surface (Lead, 2026-10-05) -->
