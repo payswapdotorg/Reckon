@@ -1,22 +1,27 @@
 /**
- * Overview — the landing workspace (UI-003): the full decision-loop view
- * per FINAL TL HANDOFF §8.
+ * Home — the operator dashboard landing (S3-001), built on the UI-003
+ * overview foundation.
  *
  * Composition, top to bottom:
- *  1. WHAT SHOULD HAPPEN NEXT? — the answer card: a real decision read
+ *  1. ACCOUNT STATUS — live status strip: the real /healthz probe, the
+ *     account mode badge (the test/live toggle's indicator) and the
+ *     operator quick links into the dashboard sections;
+ *  2. SERVE YOUR FIRST RECOMMENDATION — the onboarding card tying the
+ *     dashboard to the docs quickstart (S1-004);
+ *  3. WHAT SHOULD HAPPEN NEXT? — the answer card: a real decision read
  *     live through the SDK seam by id, or the honest idle/degraded state
  *     with the by-id lookup affordance;
- *  2. Decision activity — the contract-validated record behind the answer;
- *  3. The decision loop / Signals & state — every remaining §8 surface,
- *     each showing real data where the SDK provides it and a precise
- *     not-available reason where it does not;
- *  4. System status — the foundation's real /healthz probe surface.
+ *  4. Decision activity — the contract-validated record behind the answer;
+ *  5. The decision loop / Signals & state — every remaining §8 surface;
+ *  6. System status — the foundation's real /healthz probe surface.
  *
  * force-dynamic: the probe, the SDK read and searchParams resolve at
  * request time so the page shows what was actually observed — never a
  * build-time snapshot and never fabricated state (Gate Q).
  */
 import type { Metadata } from "next";
+import { AccountStatusCard } from "@/components/home/account-status-card";
+import { OnboardingCard } from "@/components/home/onboarding-card";
 import { DecisionActivityCard } from "@/components/overview/decision-activity-card";
 import { LoopSignalsCards } from "@/components/overview/loop-signals-card";
 import { NextActionHero } from "@/components/overview/next-action-hero";
@@ -29,18 +34,26 @@ import { requireWorkspaceRoute } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 
-const overview = requireWorkspaceRoute("/");
+const home = requireWorkspaceRoute("/");
+
+/** Docs portal origin (S1-004); overridable per deployment. */
+const DEFAULT_DOCS_BASE_URL = "https://docs.reckon.dev";
+
+function quickstartHref(): string {
+  const base = process.env.RECKON_DOCS_BASE_URL?.trim() || DEFAULT_DOCS_BASE_URL;
+  return `${base.replace(/\/$/, "")}/get-started/quickstart`;
+}
 
 export const metadata: Metadata = {
-  title: overview.title,
-  description: overview.subtitle,
+  title: home.title,
+  description: home.subtitle,
 };
 
-interface OverviewPageProps {
+interface HomePageProps {
   readonly searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function OverviewPage({ searchParams }: OverviewPageProps) {
+export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams;
   const decisionId = normalizeDecisionId(params.decision);
 
@@ -51,7 +64,9 @@ export default async function OverviewPage({ searchParams }: OverviewPageProps) 
   ]);
 
   return (
-    <WorkspacePage title={overview.title} subtitle={overview.subtitle}>
+    <WorkspacePage title={home.title} subtitle={home.subtitle}>
+      <AccountStatusCard config={config} probe={probe} />
+      <OnboardingCard quickstartHref={quickstartHref()} />
       <NextActionHero result={result} config={config} probe={probe} />
       <DecisionActivityCard result={result} />
       <LoopSignalsCards result={result} />

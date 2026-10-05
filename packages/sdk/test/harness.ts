@@ -211,6 +211,19 @@ export function deterministicHandlers(state: HarnessState): HandlerPorts {
         };
       },
     },
+    // S2-002: webhook surface — the SDK harness does not exercise
+    // webhooks, so the port answers empty/absent (nulls / empty lists).
+    webhookHandler: {
+      createEndpoint: async () => {
+        throw new Error("webhook endpoints are not exercised by the SDK harness");
+      },
+      listEndpoints: async () => [],
+      getEndpoint: async () => null,
+      deleteEndpoint: async () => null,
+      getEvent: async () => null,
+      replayEvent: async () => null,
+      listDeliveries: async () => [],
+    },
   };
 }
 

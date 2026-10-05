@@ -36,7 +36,7 @@ export function ProductGrid() {
                   <a
                     className="rk-product-link"
                     href={product.href}
-                    aria-label={`${product.name} product page — placeholder, ships next`}
+                    aria-label={`${product.name} product page`}
                   >
                     Learn more
                     <ArrowRight size={15} />

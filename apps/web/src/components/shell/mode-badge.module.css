@@ -1,0 +1,38 @@
+/* ModeBadge — pill badge in the mode's semantic color; used on light
+ * surfaces (header, status cards) and inherits the §5 badge language. */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background-color: currentColor;
+}
+
+.badgeTest {
+  color: color-mix(in srgb, var(--mode-test) 72%, #000);
+  background-color: color-mix(in srgb, var(--mode-test) 12%, var(--card));
+  border-color: color-mix(in srgb, var(--mode-test) 32%, var(--border));
+}
+
+.badgeLive {
+  color: color-mix(in srgb, var(--mode-live) 78%, #000);
+  background-color: color-mix(in srgb, var(--mode-live) 10%, var(--card));
+  border-color: color-mix(in srgb, var(--mode-live) 30%, var(--border));
+}

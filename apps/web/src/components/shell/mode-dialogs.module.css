@@ -1,0 +1,116 @@
+/* Mode confirm dialogs — overlay + flat panel, following the
+ * CommandPalette overlay language (§5: borders over shadows). */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 14vh 16px 16px;
+  background-color: rgba(18, 18, 21, 0.4);
+  animation: mode-dialog-fade var(--transition-slow) ease-out;
+}
+
+@keyframes mode-dialog-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.dialog {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 24px 20px;
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  animation: mode-dialog-pop var(--transition) ease-out;
+}
+
+@keyframes mode-dialog-pop {
+  from {
+    transform: translateY(-6px);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.dialogHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dialogIcon {
+  flex: none;
+  color: var(--foreground);
+}
+
+.dialogIconDestructive {
+  flex: none;
+  color: var(--destructive);
+}
+
+.dialogTitle {
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.dialogBody {
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--foreground);
+}
+
+.dialogCode {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background-color: var(--secondary);
+  border: 1px solid var(--border);
+}
+
+.dialogNote {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  background-color: var(--secondary);
+  border: 1px solid var(--border);
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* The destructive confirm gets the error-red fill (sparing use, §3). */
+.confirmDestructive {
+  background-color: var(--destructive);
+  border-color: var(--destructive);
+  color: var(--destructive-foreground);
+}
+
+.confirmDestructive:hover {
+  background-color: color-mix(in srgb, var(--destructive) 88%, #000);
+  border-color: color-mix(in srgb, var(--destructive) 88%, #000);
+  color: var(--destructive-foreground);
+}

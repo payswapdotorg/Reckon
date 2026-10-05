@@ -1,0 +1,78 @@
+/* RequestLogsCard — header + empty page + pagination link styling. */
+
+.cardHead {
+  border-bottom: 1px solid var(--border);
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background-color: var(--secondary);
+  border: 1px solid var(--border);
+}
+
+.emptyPage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 44px 20px;
+  text-align: center;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.emptyNote {
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+  max-width: 480px;
+}
+
+/* Pagination links (Buttons render as anchors only via the ui Button;
+ * these are plain Next links in the table's language). */
+.pageLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 5px 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+  background-color: var(--card);
+  color: var(--foreground);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  transition:
+    background-color var(--transition),
+    border-color var(--transition);
+}
+
+.pageLink:hover {
+  background-color: var(--accent);
+  border-color: var(--muted-foreground);
+}
+
+.pageLinkDisabled {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 5px 12px;
+  border-radius: var(--radius-control);
+  border: 1px dashed var(--border);
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 18px;
+  cursor: not-allowed;
+}

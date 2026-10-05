@@ -14,7 +14,9 @@ import { z } from "zod/v4";
  *
  * Downstream waves plug in here:
  *   - S2-002 (webhooks): reuses the machine-code vocabulary below;
- *   - S2-003 (test mode): reuses KeyMode + the sk_/pk_ key model;
+ *   - S2-003 (test mode): OWNS the test-mode semantics below (KeyMode +
+ *     the sk_/pk_ key model + TEST_SCENARIOS + the mode marker +
+ *     MODE_MISMATCH);
  *   - S2-004 (SDKs): reuses ErrorEnvelopeSchema + pagination params.
  */
 
@@ -118,6 +120,93 @@ export function generateSecretKey(mode: KeyMode, generateToken?: KeyTokenGenerat
 }
 export function generatePublishableKey(mode: KeyMode, generateToken?: KeyTokenGenerator): string {
   return generateReckonApiKey("publishable", mode, generateToken);
+}
+
+/* ================================================================== *
+ * 1b. Test mode (S2-003 — Stripe-style test/live separation)
+ * ================================================================== */
+
+/**
+ * The response header carrying the mode of the key that served the
+ * request (`X-Reckon-Mode: live|test`) — set by the API auth middleware
+ * on EVERY authenticated /v1 response (successes AND typed errors), so
+ * test traffic is always identifiable (Stripe-style test-mode
+ * indicators). HTTP wire name is lowercase.
+ */
+export const X_RECKON_MODE_HEADER = "x-reckon-mode" as const;
+/** Canonical header spelling (documentation / clients). */
+export const X_RECKON_MODE_HEADER_CANONICAL = "X-Reckon-Mode" as const;
+
+/**
+ * The canned test-mode scenario vocabulary (S2-003). In test mode, the
+ * recommendation path (POST /v1/decisions) NEVER executes live handler
+ * state: it resolves one of these scenarios — from an explicit body
+ * `scenario` hint, a magic `itm_test_<scenario>` candidate item id, or
+ * the `default` fallback — and returns a deterministic, contract-valid
+ * canned DecisionResult. This vocabulary is the SINGLE SOURCE OF TRUTH
+ * the docs portal's future test-mode page will be generated from (see
+ * apps/api/README.md § "Test mode"; the docs host itself is S1-004's
+ * surface).
+ *
+ * | Scenario    | Action     | Selection / scheduleDelta                        |
+ * |-------------|------------|--------------------------------------------------|
+ * | default     | SUGGEST    | first candidate selected                         |
+ * | suggest     | SUGGEST    | first candidate selected                         |
+ * | decline     | HOLD       | nothing selected (the "card declined" analogue)  |
+ * | hold        | HOLD       | nothing selected                                 |
+ * | queue       | QUEUE      | scheduleDelta enqueues every candidate           |
+ * | continue    | CONTINUE   | nothing selected (keep current)                  |
+ * | switch      | SWITCH     | second candidate (first when only one) selected  |
+ * | interrupt   | INTERRUPT  | scheduleDelta carries a resume checkpoint        |
+ * | resume      | RESUME     | first candidate selected (resumed)               |
+ * | end         | END        | nothing selected                                 |
+ * | error       | —          | typed 500 api_error (client error-path testing)  |
+ */
+export const TEST_SCENARIOS = [
+  "default",
+  "suggest",
+  "decline",
+  "hold",
+  "queue",
+  "continue",
+  "switch",
+  "interrupt",
+  "resume",
+  "end",
+  "error",
+] as const;
+export type TestScenario = (typeof TEST_SCENARIOS)[number];
+
+/** A member of the frozen canned-scenario vocabulary. */
+export const TestScenarioSchema = z.enum(TEST_SCENARIOS);
+
+/** The fallback scenario for test-mode decision requests carrying no hint. */
+export const DEFAULT_TEST_SCENARIO: TestScenario = "default";
+
+/**
+ * Magic test item id prefix (S2-003): in test mode, a candidate item id
+ * `itm_test_<scenario>` selects that scenario (e.g. `itm_test_decline`)
+ * — the analogue of Stripe's magic test card numbers. The prefix is
+ * RESERVED: on the decision path it is rejected with MODE_MISMATCH when
+ * presented with a LIVE key.
+ */
+export const MAGIC_TEST_ITEM_PREFIX = "itm_test_" as const;
+
+/**
+ * Parse a magic test item id (`itm_test_<scenario>`) into its scenario.
+ * Returns null for ids that are not magic test ids; a magic id whose
+ * suffix is not in the vocabulary returns `{ scenario: null }` so the
+ * caller can reject it with a typed 400 naming the vocabulary.
+ */
+export function parseMagicTestItemId(
+  itemId: string,
+): { scenario: TestScenario } | { scenario: null } | null {
+  if (!itemId.startsWith(MAGIC_TEST_ITEM_PREFIX)) return null;
+  const suffix = itemId.slice(MAGIC_TEST_ITEM_PREFIX.length);
+  if (suffix.length === 0) return { scenario: null };
+  return TestScenarioSchema.safeParse(suffix).success
+    ? { scenario: suffix as TestScenario }
+    : { scenario: null };
 }
 
 /* ================================================================== *
@@ -258,6 +347,7 @@ export const ErrorClassSchema = z.enum(ERROR_CLASSES);
  * | VALIDATION_ERROR          | invalid_request_error  | 400  | yes    | request body/query failed a frozen contract schema |
  * | UNAUTHENTICATED           | authentication_error   | 401  | no     | missing/malformed/unknown/invalid API key, or a publishable key used as a secret |
  * | TENANT_MISMATCH           | permission_error       | 403  | no     | body/header tenant ≠ key tenant, or workspace scope violation |
+ * | MODE_MISMATCH             | permission_error       | 403  | yes    | cross-mode violation (S2-003): test key touching live data, live key touching test data, or a live key carrying test-mode-only hints |
  * | INSUFFICIENT_SCOPE        | permission_error       | 403  | no     | key lacks the route's scope |
  * | NOT_FOUND                 | invalid_request_error  | 404  | no     | unknown id inside the authenticated tenant |
  * | IDEMPOTENCY_CONFLICT      | invalid_request_error  | 422  | yes    | Idempotency-Key reused with a different request body |
@@ -293,6 +383,13 @@ export const ERROR_CATALOG = {
     httpStatus: 403,
     docSlug: "tenant-mismatch",
     description: "The request tenant does not match the authenticated tenant, or a workspace-scoped key operated outside its workspace.",
+  },
+  MODE_MISMATCH: {
+    errorClass: "permission_error",
+    httpStatus: 403,
+    docSlug: "mode-mismatch",
+    description:
+      "Cross-mode violation (S2-003 test mode): a test key touched live data, a live key touched test data, or a live key carried test-mode-only request hints (scenario field / itm_test_ item ids).",
   },
   INSUFFICIENT_SCOPE: {
     errorClass: "permission_error",

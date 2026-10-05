@@ -15,7 +15,7 @@
 import { TriangleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MutedNote } from "./decision-fields";
+import { MutedNote } from "./decision-fields.js";
 import styles from "./decision-idle-state.module.css";
 
 export interface DecisionIdleStateProps {

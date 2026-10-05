@@ -80,6 +80,39 @@
   text-overflow: ellipsis;
 }
 
+/* Parent crumb (nested routes, S3-001): same muted tone as the root,
+ * links into the parent section. */
+.breadcrumbCrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.breadcrumbParent {
+  color: var(--foreground);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--transition);
+}
+
+.breadcrumbParent:hover {
+  color: var(--primary);
+}
+
+/* Account mode badge (S3-001) — hidden on very narrow viewports to keep
+ * the compact header (§8) breathing; the sidebar footer keeps one. */
+.modeBadge {
+  flex: none;
+}
+
+@media (max-width: 900px) {
+  .modeBadge {
+    display: none;
+  }
+}
+
 /* CTA label: long on wide viewports, short on mobile (§8). */
 .ctaShort {
   display: none;

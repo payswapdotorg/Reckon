@@ -81,6 +81,16 @@ export function ArrowRight(props: IconProps) {
   );
 }
 
+/** External-link arrow — docs deep-links leaving the marketing app. */
+export function ArrowUpRight(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M7 17 17 7" />
+      <path d="M8.5 7H17v8.5" />
+    </svg>
+  );
+}
+
 export function MenuIcon(props: IconProps) {
   return (
     <svg {...base(props)}>

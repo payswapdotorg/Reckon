@@ -1,0 +1,115 @@
+/* Developers landing — status rows (System status language) + the
+ * surface grid. */
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.rowKey {
+  flex: none;
+  width: 110px;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted-foreground);
+}
+
+.rowValue {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0;
+  min-width: 0;
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background-color: var(--secondary);
+  border: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.dotOk,
+.dotDown {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.dotOk {
+  background-color: var(--primary);
+}
+
+.dotDown {
+  background-color: var(--destructive);
+}
+
+.probeDetail {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+
+.surfaceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.surfaceCard {
+  display: flex;
+  flex-direction: column;
+}
+
+.surfaceTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.surfaceContent {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: auto;
+}
+
+.surfaceOk {
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--foreground);
+}
+
+.surfaceLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  font-size: 13px;
+  line-height: 19px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.surfaceLink:hover {
+  text-decoration: underline;
+}

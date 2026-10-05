@@ -25,7 +25,7 @@ import {
   uncertaintySummary,
   type AlternativeView,
 } from "@/lib/decision-view";
-import { CodeValue, MutedNote, NotProvided } from "./decision-fields";
+import { CodeValue, MutedNote, NotProvided } from "./decision-fields.js";
 import styles from "./alternatives-card.module.css";
 
 export interface AlternativesCardProps {

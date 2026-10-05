@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "status": "stripe-phase-wave1-complete-pending-push-9-open-items-56-done",
+  "status": "stripe-phase-wave2-complete-4-open-items-60-done",
   "implementationComplete": false,
-  "dispatchBaseSha": "199baa2fbb",
+  "dispatchBaseSha": "b55eb205",
   "workers": [
     {
       "id": "W1",
@@ -555,7 +555,7 @@
       "dependsOn": [
         "S1-001"
       ],
-      "status": "pending",
+      "status": "done",
       "title": "Product pages \u2014 Recommendation API / Personalization / Scheduling / Analytics (one page per product, Stripe product-page grammar)"
     },
     {
@@ -589,7 +589,7 @@
       "dependsOn": [
         "S2-001"
       ],
-      "status": "pending",
+      "status": "done",
       "title": "Recommendation webhooks \u2014 event catalog (recommendation.delivered, model.drift.detected, schedule.executed\u2026), HMAC signatures, replay endpoint, delivery logs"
     },
     {
@@ -598,7 +598,7 @@
       "dependsOn": [
         "S2-001"
       ],
-      "status": "pending",
+      "status": "done",
       "title": "Test mode \u2014 test keys, canned scenarios, test/live separation semantics"
     },
     {
@@ -616,7 +616,7 @@
       "dependsOn": [
         "S2-001"
       ],
-      "status": "pending",
+      "status": "done",
       "title": "Dashboard shell (apps/web extension) \u2014 nav IA (Home / Recommendations / Models / Data Sources / Analytics / Developers / Settings), API-keys manager, request logs, events console, test/live toggle"
     },
     {

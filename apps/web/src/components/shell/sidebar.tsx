@@ -12,7 +12,9 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { SidebarNav } from "@/components/ui/sidebar-nav";
 import { Badge } from "@/components/ui/badge";
-import { useNavDrawer } from "./nav-drawer";
+import { ModeBadge } from "./mode-badge.js";
+import { ModeToggle } from "./mode-toggle.js";
+import { useNavDrawer } from "./nav-drawer.js";
 import styles from "./sidebar.module.css";
 
 export interface SidebarProps {
@@ -70,6 +72,9 @@ export function Sidebar({ envLabel, apiHostLabel }: SidebarProps) {
             <span className={styles.brandTagline}>Decision infrastructure</span>
           </span>
         </div>
+        {/* S3-001: the account-level test/live toggle — the dashboard's
+            signature affordance, top of the rail (Stripe placement). */}
+        <ModeToggle />
         <div className={styles.navScroll}>
           <SidebarNav />
         </div>
@@ -84,6 +89,7 @@ export function Sidebar({ envLabel, apiHostLabel }: SidebarProps) {
             </span>
           </div>
           <div className={styles.statusRow}>
+            <ModeBadge />
             <Badge uppercase>ENV: {envLabel}</Badge>
             <span className={styles.apiLabel} title="Reckon API origin this studio points at">
               {apiHostLabel}

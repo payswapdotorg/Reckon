@@ -47,11 +47,55 @@ export { fetchSizeFor, paginationMeta, parsePaginationParams, slicePage } from "
 export type { Page, ParsedPaginationParams } from "./pagination.js";
 export { parseExpansion, wantsExpand, wantsNestedExpand } from "./expansion.js";
 export type { ExpandPath } from "./expansion.js";
+// S2-003 test-mode surface (canned scenarios, mode-scoped state, mode markers).
+export {
+  TEST_MODE_PROVENANCE_SYSTEM,
+  TestModeDecisionStore,
+  assertNoTestHintsInLiveMode,
+  cannedDecision,
+  crossModeMismatch,
+  executeTestModeDecision,
+  markTestMode,
+  probeLiveDecision,
+  resolveTestScenario,
+} from "./test-mode.js";
+export type { ResolvedScenario } from "./test-mode.js";
 export { transportBackedOutcomeIngest, wireOutcomeTransport } from "./outcome-transport.js";
 export type {
   OutcomeTransportWiring,
   OutcomeTransportWiringOptions,
 } from "./outcome-transport.js";
+// S2-002 webhook surface.
+export type {
+  WebhookCreateEndpointRequest,
+  WebhookHandler,
+  WebhookReplayResult,
+} from "./ports.js";
+export type {
+  InMemoryWebhookSystemOptions,
+  StoredWebhookDelivery,
+  StoredWebhookEndpoint,
+  WebhookDeliveryFilter,
+  WebhookDeliveryStore,
+  WebhookEndpointStore,
+  WebhookEventStore,
+  WebhookHttpClient,
+  WebhookHttpResponse,
+  WebhookSystem,
+} from "./webhooks/ports.js";
+export {
+  InMemoryWebhookDeliveryStore,
+  InMemoryWebhookEndpointStore,
+  InMemoryWebhookEventStore,
+  ManualWebhookClock,
+  createInMemoryWebhookSystem,
+} from "./webhooks/in-memory.js";
+export { FetchWebhookHttpClient } from "./webhooks/http.js";
+export {
+  webhookEmittingDecisionHandler,
+  webhookEmittingOutcomeIngest,
+  webhookEmittingPreferenceIngest,
+} from "./webhooks/emitter.js";
 export { observedDecisionHandler, observedOutcomeIngest, recordRouteErrorSafely } from "./observability.js";
 export type { ObservationDeps } from "./observability.js";
 export type { ObservabilityConfig } from "./config.js";

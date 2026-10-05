@@ -9,7 +9,7 @@
  */
 import { TriangleAlert } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { RetryButton } from "./retry-button";
+import { RetryButton } from "./retry-button.js";
 import styles from "./empty-state.module.css";
 
 export interface EmptyStateProps {

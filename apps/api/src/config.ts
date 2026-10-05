@@ -11,6 +11,7 @@ import type { RateLimiterConfig } from "./rate-limit.js";
 import type { PartialHandlerPorts } from "./ports.js";
 import { ROUTE_SCOPES } from "./types.js";
 import type { Scope } from "./types.js";
+import type { WebhookSystem } from "./webhooks/ports.js";
 
 const VALID_SCOPES: ReadonlySet<string> = new Set<string>(ROUTE_SCOPES);
 
@@ -45,6 +46,14 @@ export interface ApiConfig {
   readonly handlers?: PartialHandlerPorts;
   /** Store-and-replay map; defaults to the in-memory implementation. */
   readonly idempotencyStore?: IdempotencyStore;
+  /**
+   * S2-003: SEPARATE store-and-replay map for TEST-mode traffic
+   * (defaults to a dedicated in-memory instance — test state never
+   * mixes with live state). Hosts wanting durable test-mode idempotency
+   * inject their own store here; it must NOT be the same instance as
+   * `idempotencyStore`.
+   */
+  readonly testIdempotencyStore?: IdempotencyStore;
   /** Fastify logger; off by default (keys are never logged either way). */
   readonly logger?: boolean;
   /** W3-004: emit decision/outcome/scheduler/error records to a sink. */
@@ -59,6 +68,15 @@ export interface ApiConfig {
   readonly clock?: () => number;
   /** S2-001: docs URL base for error doc_url values (default: the pinned contracts base). */
   readonly docsBaseUrl?: string;
+  /**
+   * S2-002: the webhook system (endpoint CRUD + delivery engine + the
+   * domain emission seam). When mounted: the /v1/webhooks routes answer
+   * through it and the wired decision/outcome/preference handlers emit
+   * thin events (schedule.executed / recommendation.delivered /
+   * preference.updated). Absent = the webhook routes stay NotWired (501).
+   * Mutually exclusive with handlers.webhookHandler (fail-fast ConfigError).
+   */
+  readonly webhooks?: WebhookSystem;
 }
 
 /**

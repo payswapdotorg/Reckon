@@ -25,3 +25,7 @@ export * from "./transport.js";
 export { BufferedTransport } from "./buffered-transport.js";
 export type { BufferedTransportOptions } from "./buffered-transport.js";
 export * from "./journal.js";
+// S2-002: webhook event emission seam — domain records → thin ReckonEvents
+// published through the ReckonEventPublisher port (additive; the outcome
+// backbone above is untouched).
+export * from "./emission.js";

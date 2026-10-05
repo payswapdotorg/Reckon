@@ -21,3 +21,7 @@ export * from "./serialization.js";
 // S2-001: developer-platform API contracts (Stripe-style hardening) —
 // additive extension; no existing exported shape above changes.
 export * from "./api-platform.js";
+// S2-002: recommendation webhook contracts (thin events, HMAC signatures,
+// endpoints, delivery log) — additive extension; no existing exported
+// shape above changes.
+export * from "./webhooks.js";

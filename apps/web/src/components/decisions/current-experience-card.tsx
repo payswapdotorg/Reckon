@@ -23,7 +23,7 @@ import {
   opaqueEntries,
   selectedExperienceRole,
 } from "@/lib/decision-view";
-import { CodeValue, FieldRow, FieldRows, MutedNote, NotProvided } from "./decision-fields";
+import { CodeValue, FieldRow, FieldRows, MutedNote, NotProvided } from "./decision-fields.js";
 import styles from "./current-experience-card.module.css";
 
 export interface CurrentExperienceCardProps {

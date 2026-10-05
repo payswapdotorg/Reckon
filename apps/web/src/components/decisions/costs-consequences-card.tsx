@@ -21,7 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { EvidenceClassBadge } from "@/components/ui/evidence-class-badge";
 import type { DecisionResult } from "@reckon/sdk";
 import { formatExactNumber, uncertaintyEntries } from "@/lib/decision-view";
-import { CodeValue, FieldRow, FieldRows, MutedNote, NotProvided } from "./decision-fields";
+import { CodeValue, FieldRow, FieldRows, MutedNote, NotProvided } from "./decision-fields.js";
 import styles from "./costs-consequences-card.module.css";
 
 export interface CostsConsequencesCardProps {

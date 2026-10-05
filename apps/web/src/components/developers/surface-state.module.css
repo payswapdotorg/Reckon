@@ -1,0 +1,83 @@
+/* SurfaceStateCard / SurfaceStateSummary — the honest not-wired callout.
+ * Uses the §7 degraded tone (light red tint + soft red border) because a
+ * surface that cannot report real state IS a degradation — but the copy
+ * carries the precise observation, never a fabricated one. */
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.icon {
+  flex: none;
+  color: var(--destructive);
+}
+
+.detail {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 19px;
+  color: var(--foreground);
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.pendingRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.pendingLabel {
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.pendingRoute {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 18px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background-color: var(--secondary);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+}
+
+/* Landing-grid compact summary */
+.summaryDetail {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+}
+
+.summaryOutcome {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background-color: var(--secondary);
+  color: var(--muted-foreground);
+}
