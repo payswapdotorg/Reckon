@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CodeBlock } from "@/components/code-block.js";
 import { Callout } from "@/components/callout.js";
 import { DocsArticle } from "@/components/docs-article.js";
+import { DocsPager } from "@/components/docs-pager.js";
 import { DocsTable } from "@/components/docs-table.js";
 import { PageHeader } from "@/components/page-header.js";
 import { Bullets, P, SectionHeading } from "@/components/prose.js";
@@ -12,12 +13,10 @@ import {
   ERROR_HANDLING_BULLETS,
   SDK_CATCH_EXAMPLE,
 } from "@/content/api-reference/errors.js";
+import { routeMetaFor } from "@/content/route-meta.js";
+import { routeMetadata } from "@/lib/site-routes.js";
 
-export const metadata: Metadata = {
-  title: "Errors",
-  description:
-    "Reckon's typed error catalog: invalid_request_error, authentication_error, rate_limit_error and api_error classes with stable codes and an HTTP mapping.",
-};
+export const metadata: Metadata = routeMetadata(routeMetaFor("/api-reference/errors"));
 
 export default function ErrorsPage() {
   return (
@@ -80,6 +79,7 @@ export default function ErrorsPage() {
           "v0.1.0 already returns a typed envelope `{ error: { code, message, details } }` with the codes `VALIDATION_ERROR`, `UNAUTHENTICATED`, `TENANT_MISMATCH`, `INSUFFICIENT_SCOPE`, `NOT_FOUND`, `IDEMPOTENCY_CONFLICT`, `NOT_WIRED` (the SDK mirrors them as typed error classes). S2-001 adds the `type` class field, rate limiting, and the snake_case code spellings shown above.",
         ]}
       />
+      <DocsPager currentPath="/api-reference/errors" />
     </DocsArticle>
   );
 }

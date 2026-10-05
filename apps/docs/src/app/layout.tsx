@@ -4,8 +4,17 @@ import "./globals.css";
 import { SiteHeader } from "@/components/site-header.js";
 import { Sidebar } from "@/components/sidebar.js";
 import { DocsFooter } from "@/components/docs-footer.js";
+import { resolveSiteUrl } from "@/lib/site-routes.js";
 
+/**
+ * Root layout (S1-004) — site-wide metadata: the "%s · Reckon Docs" title
+ * template nested routes compose under, and (S5-002) the canonical
+ * metadataBase every og:url / og:image and file-convention social card
+ * resolves against — NEXT_PUBLIC_SITE_URL-overridable, the one sanctioned
+ * env read on this otherwise zero-env surface (see src/lib/site-routes.ts).
+ */
 export const metadata: Metadata = {
+  metadataBase: new URL(resolveSiteUrl()),
   title: {
     default: "Reckon Docs",
     template: "%s · Reckon Docs",

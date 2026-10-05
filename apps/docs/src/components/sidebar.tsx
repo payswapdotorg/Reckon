@@ -121,6 +121,20 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       {filtering && totalMatches === 0 && (
         <p className="sidebar-empty">No pages match “{query.trim()}”.</p>
       )}
+      {!filtering && (
+        <div className="sidebar-extras">
+          <Link
+            href="/changelog"
+            onClick={onNavigate}
+            className="sidebar-extra-link"
+            data-active={pathname === "/changelog" ? "true" : "false"}
+            aria-current={pathname === "/changelog" ? "page" : undefined}
+          >
+            <span>Changelog</span>
+            <span className="sidebar-extra-hint">What shipped, newest first</span>
+          </Link>
+        </div>
+      )}
       <p className="sidebar-contracts">Contracts v0.1.0 · frozen (CONTRACT-001)</p>
     </div>
   );

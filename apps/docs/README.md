@@ -1,4 +1,4 @@
-# @reckon/docs — Reckon docs portal (S1-004)
+# @reckon/docs — Reckon docs portal (S1-004 + S5-002)
 
 A Next.js (App Router, TypeScript) documentation portal whose information
 architecture mirrors docs.stripe.com, per
@@ -22,6 +22,25 @@ architecture mirrors docs.stripe.com, per
   recommendation) + replay semantics. TARGET contract; S2-002
   implements.
 - **SDKs** — TypeScript (live: `@reckon/sdk`) + Python (target, S2-004).
+- **Changelog (S5-002)** — the stripe.com/changelog grammar applied to
+  the repo's own release history: a reverse-chronological feed of dated
+  entries with category chips, per-entry anchors and outcome-phrased
+  one-liners, 100% data-driven from `src/content/changelog.ts` (every
+  entry a repository fact — dates are commit timestamps, evidence
+  classes stated, nothing invented).
+- **SEO / social / crawl completeness (S5-002)** — per-route Open Graph +
+  Twitter cards on every page (via the shared `routeMetadata()` builder
+  in `src/lib/site-routes.ts`, fed by `src/content/route-meta.ts`), a
+  1200×630 social card from the `app/opengraph-image.tsx` file
+  convention (next/og `ImageResponse` — the approach proven green under
+  `next build --webpack` by the S5-001 marketing app on the same
+  workspace-pinned Next 16.3.8; **no static PNG fallback needed**),
+  `sitemap.xml` + `robots.txt` (`app/sitemap.ts` / `app/robots.ts`,
+  generated from the same route model), and a stripe-docs style
+  Previous/Next pager across the get-started reading track
+  (quickstart → core concepts → the six API-reference pages), driven by
+  `src/content/get-started-nav.ts` (derived from the sidebar IA, so the
+  pager and the sidebar can never disagree).
 
 ## Laws (violations void the delivery)
 
@@ -42,6 +61,12 @@ architecture mirrors docs.stripe.com, per
 - Clean light theme, single brand accent family (`#009768` Reckon
   green, matching `apps/web` design tokens). No indigo/blue.
 - No env vars, no backend, no data fetching — every page is static.
+  (S5-002 exception: `NEXT_PUBLIC_SITE_URL` may OPTIONALLY override the
+  canonical base URL used by the sitemap/robots/OG-card generators —
+  preview deployments and future domain moves. It is never required;
+  unset, everything defaults to the production deployment
+  `https://reckon-docs.vercel.app`. This is the surface's one sanctioned
+  env read, and the pages themselves stay fully static.)
 - New code lives only under `apps/docs/**` (+ lockfile).
 
 ## Development
@@ -50,7 +75,7 @@ architecture mirrors docs.stripe.com, per
 pnpm --filter ./apps/docs dev        # local dev server
 pnpm --filter ./apps/docs build      # builds @reckon/contracts first, then next build
 pnpm --filter ./apps/docs typecheck
-pnpm --filter ./apps/docs test       # docs contract-fixture + IA tests
+pnpm --filter ./apps/docs test       # contract-fixture + IA + changelog/SEO/nav tests
 ```
 
 The app imports `@reckon/contracts` **types only** (`import type`), so no
@@ -70,7 +95,7 @@ preset** (the full four-project setup lives in
 | Root directory | `apps/docs` |
 | Framework preset | Next.js (16.3.8 — the workspace-pinned Next family) |
 | Build command | `pnpm run build` — the package build script, which chains `pnpm --filter @reckon/contracts build && next build --webpack` (the contracts dist must exist before `next build` typechecks the `import type` fixtures) |
-| Env vars | **NONE — zero-env surface.** Every page is static; the `process.env.RECKON_API_KEY` strings inside `src/content/**` are documentation code samples (text), never runtime consumption. Do not configure any variable. |
+| Env vars | **NONE required — zero-env by default.** Every page is static; the `process.env.RECKON_API_KEY` strings inside `src/content/**` are documentation code samples (text), never runtime consumption. S5-002 adds exactly one OPTIONAL override: `NEXT_PUBLIC_SITE_URL` retargets the sitemap/robots/OG-card canonical base (preview deploys, domain moves); unset it defaults to `https://reckon-docs.vercel.app` — do not configure it for production. |
 | `vercel.json` | **None, deliberately.** No route rewrites exist on this surface — the framework preset serves the App Router routes as built. |
 | Output mode | Standard Next.js build output (no `standalone` — the Vercel preset handles output; no config change required for deploy) |
 

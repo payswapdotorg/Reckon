@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CodeBlock } from "@/components/code-block.js";
 import { Callout } from "@/components/callout.js";
 import { DocsArticle } from "@/components/docs-article.js";
+import { DocsPager } from "@/components/docs-pager.js";
 import { DocsTable } from "@/components/docs-table.js";
 import { PageHeader } from "@/components/page-header.js";
 import { Bullets, P, SectionHeading } from "@/components/prose.js";
@@ -14,12 +15,10 @@ import {
   PAGINATION_RULES,
   PAGINATION_SDK_EXAMPLE,
 } from "@/content/api-reference/pagination.js";
+import { routeMetaFor } from "@/content/route-meta.js";
+import { routeMetadata } from "@/lib/site-routes.js";
 
-export const metadata: Metadata = {
-  title: "Pagination",
-  description:
-    "Reckon lists are cursor-paginated: ask with limit, follow next_cursor while has_more is true.",
-};
+export const metadata: Metadata = routeMetadata(routeMetaFor("/api-reference/pagination"));
 
 export default function PaginationPage() {
   return (
@@ -60,6 +59,7 @@ export default function PaginationPage() {
           "The list routes already exist in v0.1.0 (`GET /v1/plans?limit=N`, `/v1/agents/bodies?limit=N`, `/v1/research/jobs?limit&state`) with plain-array responses. S2-001 wraps them in the `{ data, has_more, next_cursor }` envelope documented here.",
         ]}
       />
+      <DocsPager currentPath="/api-reference/pagination" />
     </DocsArticle>
   );
 }

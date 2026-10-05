@@ -18,6 +18,7 @@ export function DocsFooter() {
           <DocsLink href="/api-reference/authentication">API reference</DocsLink>
           <DocsLink href="/webhooks">Webhooks</DocsLink>
           <DocsLink href="/sdks">SDKs</DocsLink>
+          <DocsLink href="/changelog">Changelog</DocsLink>
         </nav>
       </div>
     </footer>

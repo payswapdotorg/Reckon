@@ -3,12 +3,10 @@ import { CodeBlock } from "@/components/code-block.js";
 import { DocsArticle } from "@/components/docs-article.js";
 import { DocsLink } from "@/components/docs-link.js";
 import { DOCS_SECTIONS } from "@/content/navigation.js";
+import { routeMetaFor } from "@/content/route-meta.js";
+import { routeMetadata } from "@/lib/site-routes.js";
 
-export const metadata: Metadata = {
-  title: "Reckon Docs",
-  description:
-    "Reckon developer documentation — serve your first recommendation in five minutes, then go deeper on the API reference, webhooks and SDKs.",
-};
+export const metadata: Metadata = routeMetadata(routeMetaFor("/"));
 
 const SECTION_BLURBS: Record<string, string> = {
   "get-started": "The five-minute quickstart and the concepts behind the loop.",
@@ -50,9 +48,9 @@ export default function DocsHomePage() {
             <p className="page-eyebrow">Reckon documentation</p>
             <h1>Docs for the recommendation loop</h1>
             <p className="docs-hero-lede">
-              Provider-neutral recommendation infrastructure: your retrieval proposes, a versioned
-              policy decides, you deliver, and learning writes auditable deltas. Serve your first
-              recommendation in about five minutes.
+              Welcome to the Reckon Docs portal — provider-neutral recommendation infrastructure:
+              your retrieval proposes, a versioned policy decides, you deliver, and learning
+              writes auditable deltas. Serve your first recommendation in about five minutes.
             </p>
             <div className="hero-cta-row">
               <DocsLink href="/get-started/quickstart" className="btn-primary">
