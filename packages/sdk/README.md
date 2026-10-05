@@ -1,6 +1,9 @@
 # @reckon/sdk
 
-The typed host-integration SDK for the Reckon API (work item W3-002).
+The typed host-integration SDK for the Reckon API (work item W3-002;
+hardened to the full developer-platform surface by S2-004 — webhooks,
+version pinning, expansion, cursor pagination, test mode, and the
+webhook-signature reference helper).
 
 **Laws**
 
@@ -18,7 +21,9 @@ POST /v1/decisions            POST /v1/outcomes
 POST /v1/preferences/events   POST /v1/plans, /v1/plans/{id}/replan
 POST /v1/catalog/items        POST /v1/catalog/realizations
 POST /v1/candidates           POST /v1/experiences/resolve
-GET  /v1/decisions/{id}
+GET  /v1/decisions/{id}       GET/POST /v1/plans (+ /history, cursor pages)
+POST/GET/DELETE /v1/webhooks/endpoints      GET /v1/webhooks/events/{id}
+POST /v1/webhooks/events/{id}/replay        GET /v1/webhooks/deliveries
 ```
 
 ```ts
@@ -27,7 +32,10 @@ import { createReckonClient } from "@reckon/sdk";
 const reckon = createReckonClient({
   baseUrl: "https://reckon.example.com",
   apiKey: process.env.RECKON_API_KEY!, // tenant identity comes EXCLUSIVELY from the key
+  apiVersion: "0.1.0",                // optional: pin X-Reckon-Version on every request
 });
+
+reckon.lastResponseMode(); // "live" | "test" — the X-Reckon-Mode marker of the last response
 ```
 
 ## Usage examples
@@ -94,6 +102,52 @@ await reckon.preferences.appendDelta({
 });
 ```
 
+### Expansion, pagination, test mode (S2-004)
+
+```ts
+// ?expand[] — embed the selected experience's catalog item:
+const decision = await reckon.decisions.get(id, { expand: ["selectedExperience.item"] });
+decision.selectedExperience?.item; // CatalogItem | null | undefined (null = honest absence)
+
+// Cursor pagination — one explicit page, or the auto-iterating loop:
+const page = await reckon.plans.listPage({ limit: 20 });
+page.plans; page.has_more; page.next_cursor; // feed back as startingAfter
+for await (const plan of reckon.plans.list({ limit: 100 })) { ... }
+
+// Test mode lives in the key (sk_test_…); every response is mode-marked.
+// Canned scenarios ride the schema-legal magic item ids:
+const declined = await reckon.decisions.request({
+  ...input,
+  candidates: { setId: "cs-1", candidates: [{ itemId: "itm_test_decline", source: "host-retrieval" }] },
+});
+declined.action; // "HOLD"
+```
+
+### Webhooks (S2-004)
+
+```ts
+import { verifyWebhook } from "@reckon/sdk"; // the docs-named alias of the canonical helper
+
+// Register an endpoint — the ONE-TIME whsec_… secret is issued here, never again:
+const endpoint = await reckon.webhookEndpoints.create({
+  url: "https://hooks.example.com/reckon",
+  description: "nightly reconciliation",
+});
+
+// Verify a delivery — RAW body, constant time, 5-minute tolerance:
+const ok = verifyWebhook(rawBody, req.headers["reckon-signature"]!, endpoint.secret);
+
+// Management surface:
+await reckon.webhookEndpoints.listPage({ limit: 20 });   // { endpoints, has_more, next_cursor }
+for await (const e of reckon.webhookEndpoints.list()) { ... }
+await reckon.webhookEndpoints.get(endpoint.id);
+await reckon.webhookEndpoints.delete(endpoint.id);
+const event = await reckon.webhookEvents.get(eventId);      // stored thin event (30-day retention)
+const replay = await reckon.webhookEvents.replay(eventId);  // same event id, at-least-once
+await reckon.webhookDeliveries.listPage({ endpointId: endpoint.id });
+for await (const d of reckon.webhookDeliveries.list({ eventId })) { ... }
+```
+
 ### Error handling
 
 ```ts
@@ -110,11 +164,16 @@ try {
     error.code;        // machine-readable discriminator
     error.statusCode;  // HTTP status when the server responded
     error.details;     // server error-envelope details
+    error.errorClass;  // "invalid_request_error" | "authentication_error" | ...
+    error.param;       // the offending request parameter, when named
+    error.docUrl;      // the catalog docs page for this code
+    error.mode;        // "live" | "test" — the failing request's key mode
+    error.retryAfterSeconds; // on 429 RATE_LIMIT_EXCEEDED
   }
 }
 ```
 
-Mapped server failures: `VALIDATION_ERROR` (400), `UNAUTHENTICATED` (401), `TENANT_MISMATCH` / `INSUFFICIENT_SCOPE` (403), `NOT_FOUND` (404), `IDEMPOTENCY_CONFLICT` (409), `NOT_WIRED` (501), `INTERNAL` / `HANDLER_*` (500-family). Client-side failures: `SDK_CONFIG_ERROR`, `SDK_REQUEST_INVALID`, `SDK_TRANSPORT_ERROR`, `SDK_UNEXPECTED_ERROR_SHAPE`, `SDK_RESPONSE_CONTRACT_VIOLATION`.
+Mapped server failures (the frozen ERROR_CATALOG): `VALIDATION_ERROR` (400), `UNAUTHENTICATED` (401), `TENANT_MISMATCH` / `MODE_MISMATCH` / `INSUFFICIENT_SCOPE` (403), `NOT_FOUND` (404), `IDEMPOTENCY_CONFLICT` (422), `RATE_LIMIT_EXCEEDED` (429, + `retryAfterSeconds`), `NOT_WIRED` (501), `INTERNAL` / `HANDLER_*` (500-family). Client-side failures: `SDK_CONFIG_ERROR`, `SDK_REQUEST_INVALID`, `SDK_TRANSPORT_ERROR`, `SDK_UNEXPECTED_ERROR_SHAPE`, `SDK_RESPONSE_CONTRACT_VIOLATION`.
 
 ## In-process testing against the real API
 

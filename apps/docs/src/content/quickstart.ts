@@ -22,7 +22,8 @@ export const QUICKSTART_HEADINGS: readonly TocEntry[] = [
   { id: "serve-your-first-recommendation", label: "2. Serve your first recommendation", level: 2 },
   { id: "read-the-decision", label: "3. Read the decision", level: 2 },
   { id: "close-the-loop", label: "4. Close the loop: report the outcome", level: 2 },
-  { id: "whats-next", label: "5. What's next", level: 2 },
+  { id: "verify-webhook-deliveries", label: "5. Verify webhook deliveries", level: 2 },
+  { id: "whats-next", label: "6. What's next", level: 2 },
 ];
 
 export const QUICKSTART_STEPS: readonly QuickstartStep[] = [
@@ -165,6 +166,51 @@ stream.addEventListener("decision", (event) => {
         ],
       },
     ],
+    extra: [
+      {
+        language: "python",
+        label: "serve_recommendation.py — the Python reference client",
+        code: `# Vendor the single-file client (sdks/python/reckon.py), then:
+import os
+import uuid
+from reckon import ReckonClient
+
+reckon = ReckonClient(
+    api_key=os.environ["RECKON_API_KEY"],  # sk_test_… — server side only
+    base_url="https://api.reckon.dev",
+    api_version="0.1.0",
+)
+
+decision = reckon.decisions.request(
+    schema="reckon.decision-request",
+    schema_version="0.1.0",
+    request_id=f"req-{uuid.uuid4().hex[:12]}",
+    tenant={"tenantId": "demo"},
+    subject={"kind": "user", "ref": "usr_88213"},
+    objective={"objectiveId": "obj_relax_evening", "kind": "relax"},
+    attention_policy={"policyId": "att_balanced", "style": "balanced"},
+    context={"contextId": "ctx_01J8ZWJ9K2"},
+    candidates={
+        "setId": f"cand-{uuid.uuid4().hex[:8]}",
+        "candidates": [
+            {
+                "itemId": "itm_test_suggest",  # test mode: magic item id
+                "realizationIds": ["rlz_reef_en_hd"],
+                "source": "host-retrieval",
+                "rankHint": 1,
+            }
+        ],
+    },
+    policy_selector={"policyId": "pol_evening_relax", "version": "3"},
+    idempotency_key=f"idem-{uuid.uuid4().hex[:12]}",
+)
+
+print(decision.action)               # "SUGGEST"
+print(reckon.last_mode)              # "test" — the mode lives in the key`,
+        caption:
+          "Test-mode keys (`sk_test_…`) never touch live state: the decision path resolves canned scenarios — a magic `itm_test_<scenario>` item id picks one (`itm_test_decline` → `HOLD`), exactly like Stripe's magic test card numbers. The TypeScript client reaches the same scenarios with the same item ids.",
+      },
+    ],
   },
   {
     id: "read-the-decision",
@@ -225,6 +271,95 @@ JSON`,
   evidenceClass: "production-observed",
   idempotencyKey: "idem_01J9A2K8D4",
 });`,
+      },
+      {
+        language: "python",
+        label: "with the Python client",
+        code: `reckon.outcomes.append(
+    schema="reckon.outcome-event",
+    schema_version="0.1.0",
+    event_id=f"evt-{uuid.uuid4().hex[:12]}",
+    tenant={"tenantId": "demo"},
+    decision_id=decision.decision_id,
+    experience_id=decision.selected_experience.experience_id,
+    subject={"kind": "user", "ref": "usr_88213"},
+    event_type="completion",
+    occurred_at=int(time.time() * 1000),
+    metrics={"watchedSeconds": 1180, "completionRatio": 0.98},
+    evidence_class="production-observed",
+    idempotency_key=f"idem-{uuid.uuid4().hex[:12]}",
+)`,
+        caption:
+          "The same loop in Python — snake_case kwargs serialize onto the same frozen `reckon.outcome-event` contract, and responses come back with snake_case attributes.",
+      },
+    ],
+  },
+  {
+    id: "verify-webhook-deliveries",
+    title: "Verify webhook deliveries",
+    minutes: "~2 min",
+    intro: [
+      "Close the loop in real time: register a webhook endpoint and Reckon POSTs signed, thin events to you — `recommendation.delivered`, `preference.updated`, `schedule.executed` and friends. Every delivery carries a `Reckon-Signature: t=<unix>,v1=<hex>` header: an HMAC-SHA256 over `\"{t}.{rawBody}\"` with the endpoint's `whsec_…` signing secret.",
+      "Verify before you process — with the SDK helper, over the **raw** request body, in constant time — and return `2xx` fast (a slow handler looks like a failure and triggers retries). Delivery is at-least-once: dedupe on `event.id`, and replays reuse the same id.",
+    ],
+    extra: [
+      {
+        language: "typescript",
+        label: "register-endpoint.ts — then verify every POST",
+        code: `import { createReckonClient, verifyWebhook } from "@reckon/sdk";
+
+const reckon = createReckonClient({
+  baseUrl: "https://api.reckon.dev",
+  apiKey: process.env.RECKON_API_KEY!,
+});
+
+// Register the endpoint — the ONE-TIME signing secret is issued
+// here and never returned again. Store it immediately.
+const endpoint = await reckon.webhookEndpoints.create({
+  url: "https://hooks.example.com/reckon",
+  description: "nightly reconciliation",
+});
+const whsec = endpoint.secret; // whsec_…
+
+// In your HTTP handler — verify the RAW body in constant time:
+app.post("/reckon/webhooks", express.raw({ type: "application/json" }), (req, res) => {
+  const ok = verifyWebhook(
+    req.body.toString("utf8"),
+    req.headers["reckon-signature"] as string,
+    whsec,
+  );
+  if (!ok) return res.sendStatus(401);
+  const event = JSON.parse(req.body.toString("utf8"));
+  // …dedupe on event.id, enqueue the work, answer 2xx fast.
+  res.sendStatus(202);
+});`,
+        caption:
+          "`verifyWebhook` is the reference implementation maintained with the API — the same algorithm the [webhooks page](/webhooks) documents, with the 5-minute tolerance on `t` built in.",
+      },
+      {
+        language: "python",
+        label: "register + verify — the Python client",
+        code: `from reckon import ReckonClient, verify_webhook
+
+reckon = ReckonClient(api_key=os.environ["RECKON_API_KEY"])
+
+# Register the endpoint — same one-time whsec_… secret.
+endpoint = reckon.webhook_endpoints.create(
+    "https://hooks.example.com/reckon",
+    description="nightly reconciliation",
+)
+whsec = endpoint.secret  # whsec_… — store it now
+
+# In your HTTP handler — the RAW body, in constant time:
+if not verify_webhook(raw_body, headers["Reckon-Signature"], whsec):
+    return Response(status_code=401)  # never process the unverifiable
+
+# Replay, inspect the delivery log, walk events — same client:
+delivery_page = reckon.webhook_deliveries.list(endpoint_id=endpoint.id)
+event = reckon.webhook_events.get(delivery_page.deliveries[0].event_id)
+replay = reckon.webhook_events.replay(event.id)  # same event id`,
+        caption:
+          "`verify_webhook` is byte-for-byte the reference algorithm (HMAC-SHA256 over `\"{t}.{raw_body}\"`, `hmac.compare_digest`, 5-minute tolerance). Full receiver example: [sdks/python/examples/verify_webhook_handler.py](https://github.com/payswapdotorg/reckon/tree/main/sdks/python/examples).",
       },
     ],
   },

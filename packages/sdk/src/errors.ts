@@ -26,9 +26,11 @@ export const SDK_SERVER_ERROR_CODES = [
   "VALIDATION_ERROR",
   "UNAUTHENTICATED",
   "TENANT_MISMATCH",
+  "MODE_MISMATCH",
   "INSUFFICIENT_SCOPE",
   "NOT_FOUND",
   "IDEMPOTENCY_CONFLICT",
+  "RATE_LIMIT_EXCEEDED",
   "NOT_WIRED",
   "HANDLER_RESPONSE_INVALID",
   "HANDLER_TENANT_VIOLATION",
@@ -55,6 +57,18 @@ export interface ReckonSdkErrorOptions {
   readonly issues?: readonly SdkValidationIssue[];
   /** Underlying transport cause, kept for diagnostics (never stringified into message). */
   readonly cause?: unknown;
+  /** S2-001: the error envelope's stable class (`invalid_request_error`, …) when the server responded. */
+  readonly errorClass?: string;
+  /** S2-001: the offending request parameter the server named (`param`). */
+  readonly param?: string;
+  /** S2-001: the catalog docs URL for this error code (`doc_url`). */
+  readonly docUrl?: string;
+  /** S2-003: the serving key's mode, from the X-Reckon-Mode response header (`live` | `test`). */
+  readonly mode?: "live" | "test";
+  /** S2-001: Retry-After seconds (429 rate_limit_error only). */
+  readonly retryAfterSeconds?: number;
+  /** S2-001: true when the response was an idempotency REPLAY (Idempotent-Replayed: true). */
+  readonly idempotentReplayed?: boolean;
 }
 
 /** Base typed error for every SDK failure. Discriminated by `code`. */
@@ -63,6 +77,18 @@ export class ReckonSdkError extends Error {
   readonly statusCode?: number;
   readonly details?: unknown;
   readonly issues?: readonly SdkValidationIssue[];
+  /** S2-001: stable error class from the wire envelope, when present. */
+  readonly errorClass?: string;
+  /** S2-001: the offending request parameter named by the server. */
+  readonly param?: string;
+  /** S2-001: catalog docs URL for this error code. */
+  readonly docUrl?: string;
+  /** S2-003: mode of the key that served the failing request (X-Reckon-Mode). */
+  readonly mode?: "live" | "test";
+  /** S2-001: Retry-After seconds on 429s. */
+  readonly retryAfterSeconds?: number;
+  /** S2-001: true when the failure response was itself an idempotent replay. */
+  readonly idempotentReplayed?: boolean;
 
   constructor(code: SdkErrorCode, message: string, options: ReckonSdkErrorOptions = {}) {
     super(message, options.cause !== undefined ? { cause: options.cause } : undefined);
@@ -71,6 +97,12 @@ export class ReckonSdkError extends Error {
     this.statusCode = options.statusCode;
     this.details = options.details;
     this.issues = options.issues;
+    this.errorClass = options.errorClass;
+    this.param = options.param;
+    this.docUrl = options.docUrl;
+    this.mode = options.mode;
+    this.retryAfterSeconds = options.retryAfterSeconds;
+    this.idempotentReplayed = options.idempotentReplayed;
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
@@ -112,6 +144,14 @@ export class ReckonTenantMismatchError extends ReckonSdkError {
   }
 }
 
+/** 403 MODE_MISMATCH (S2-003) — cross-mode violation: test key touching live data (or vice versa), or a live key carrying test-mode-only hints. */
+export class ReckonModeMismatchError extends ReckonSdkError {
+  constructor(message: string, options: ReckonSdkErrorOptions = {}) {
+    super("MODE_MISMATCH", message, options);
+    this.name = "ReckonModeMismatchError";
+  }
+}
+
 /** 403 INSUFFICIENT_SCOPE — the key lacks the route's scope. */
 export class ReckonScopeError extends ReckonSdkError {
   constructor(message: string, options: ReckonSdkErrorOptions = {}) {
@@ -133,6 +173,14 @@ export class ReckonIdempotencyConflictError extends ReckonSdkError {
   constructor(message: string, options: ReckonSdkErrorOptions = {}) {
     super("IDEMPOTENCY_CONFLICT", message, options);
     this.name = "ReckonIdempotencyConflictError";
+  }
+}
+
+/** 429 RATE_LIMIT_EXCEEDED (S2-001) — too many requests; honor `retryAfterSeconds`. */
+export class ReckonRateLimitError extends ReckonSdkError {
+  constructor(message: string, options: ReckonSdkErrorOptions = {}) {
+    super("RATE_LIMIT_EXCEEDED", message, options);
+    this.name = "ReckonRateLimitError";
   }
 }
 
@@ -187,12 +235,16 @@ export function mapServerError(
       return new ReckonAuthError(message, options);
     case "TENANT_MISMATCH":
       return new ReckonTenantMismatchError(message, options);
+    case "MODE_MISMATCH":
+      return new ReckonModeMismatchError(message, options);
     case "INSUFFICIENT_SCOPE":
       return new ReckonScopeError(message, options);
     case "NOT_FOUND":
       return new ReckonNotFoundError(message, options);
     case "IDEMPOTENCY_CONFLICT":
       return new ReckonIdempotencyConflictError(message, options);
+    case "RATE_LIMIT_EXCEEDED":
+      return new ReckonRateLimitError(message, options);
     case "NOT_WIRED":
       return new ReckonNotWiredError(message, options);
     case "HANDLER_RESPONSE_INVALID":
