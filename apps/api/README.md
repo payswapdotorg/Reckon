@@ -574,3 +574,14 @@ Production deploy note (Lead): this release redeploys `reckon-api` unchanged-in-
 since the wave-2 merge (webhooks + test-mode + keys surface shipped there); the
 bundle regenerated and verified this window per the S4-002 report. This note
 exists so the Vercel rootDirectory change-detection sees a fresh deploy.
+
+## REDEPLOY-002b (stripe phase, 2026-10-05 23:2xZ)
+
+Production deploy note (Lead): the RELEASE-002 note above was WRONG in effect —
+the serving function stayed pre-stripe-phase (S5-003 drift register, evidence
+class wire+machine-verified: typed 401/404 envelopes lacked the S2-001
+class/param/doc_url fields; /v1/webhooks/endpoints 404'd — the S2-002 webhook
+family unregistered; pk_live_ probes got the generic unknown-key message).
+This note triggers the git-path production redeploy of current main (67b9b7b:
+TL4 complete + S5-001 + S5-003 + S5-002) so the wire matches the frozen
+surface. Re-verify with scripts/verify-production.mjs after deploy.

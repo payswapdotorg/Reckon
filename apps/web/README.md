@@ -222,3 +222,12 @@ uses.
   search results).
 - No theme toggle: the captured reference is the light shell with the dark
   rail; dark mode is not part of this wave.
+
+## REDEPLOY-002b (stripe phase, 2026-10-05 23:2xZ)
+
+Production deploy note (Lead): same as apps/api REDEPLOY-002b — the deployed
+dashboard ran the pre-stripe-phase shell (title "Overview", DEPLOY-002-era
+routes; S5-003 drift register web-2: S3-001 nav IA absent, no docs link).
+This note triggers the git-path production redeploy of current main (67b9b7b)
+so the shell matches the frozen surface (WORKSPACE_ROUTES nav IA + the
+S1-004 onboarding card's docs quickstart link).
