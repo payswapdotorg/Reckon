@@ -257,7 +257,7 @@ not change the S4-001 path):
 
 ```text
 node scripts/e2e-journey.mjs        # 6/6 hops asserted · exit 0 (head 3748816, pre-change)
-node scripts/e2e-journey.mjs        # 6/6 hops asserted · exit 0 (head 43638af, post-change)
+node scripts/e2e-journey.mjs        # 6/6 hops asserted · exit 0 (head 43638af, post-change; final battery re-verified at e184280)
 ```
 
 Node v24.21.0, `pnpm install && pnpm build` first (the driver loads
