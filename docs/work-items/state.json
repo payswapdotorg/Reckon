@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "status": "stripe-phase-wave2-complete-4-open-items-60-done",
+  "status": "stripe-phase-final-release-prepared-65-done",
   "implementationComplete": false,
-  "dispatchBaseSha": "b55eb205",
+  "dispatchBaseSha": "0c55b0c",
   "workers": [
     {
       "id": "W1",
@@ -564,8 +564,9 @@
       "dependsOn": [
         "S1-001"
       ],
-      "status": "pending",
-      "title": "Pricing page \u2014 per-1k-request tiers + volume calculator + 'everything included' comparison table + enterprise track"
+      "status": "done",
+      "title": "Pricing page \u2014 per-1k-request tiers + volume calculator + 'everything included' comparison table + enterprise track",
+      "notes": "Delivered: stripe-phase wave-4, lane deb05e8 (pricing page, battery at lane 86 files/1502 tests), merged ff4f9bb. Status flipped done by S4-002 state finalization (the wave-4 merge delivered the surface; state.json lagged at the wave-2 snapshot)."
     },
     {
       "id": "S1-004",
@@ -607,8 +608,9 @@
       "dependsOn": [
         "S2-001"
       ],
-      "status": "pending",
-      "title": "Reference SDKs (TypeScript + Python) \u2014 typed client over the hardened API with the docs quickstart runnable through them"
+      "status": "done",
+      "title": "Reference SDKs (TypeScript + Python) \u2014 typed client over the hardened API with the docs quickstart runnable through them",
+      "notes": "Delivered: stripe-phase wave-4, lane 84c3e42 (TS client extensions + sdks/python reference client + docs lockstep, battery at lane 88 files/1463 tests + 1 skip), merged ff4f9bb. The python suite runs in the battery against the REAL API over HTTP (packages/sdk/test/python-sdk.test.ts; self-skips only on missing python3/requests). Status flipped done by S4-002 state finalization."
     },
     {
       "id": "S3-001",
@@ -626,8 +628,9 @@
         "S3-001",
         "S2-002"
       ],
-      "status": "pending",
-      "title": "Dashboard analytics views \u2014 CTR lift, latency percentiles, drift indicators, funnels"
+      "status": "done",
+      "title": "Dashboard analytics views \u2014 CTR lift, latency percentiles, drift indicators, funnels",
+      "notes": "Delivered: stripe-phase wave-4, lane 894a9da (ctr-lift/latency-p99/drift/funnel pure libs + /analytics views with evidence-class badges + not-wired honesty, battery at lane 88 files/1552 tests), merged ff4f9bb. Status flipped done by S4-002 state finalization."
     },
     {
       "id": "S4-001",
@@ -637,8 +640,9 @@
         "S2-003",
         "S3-001"
       ],
-      "status": "pending",
-      "title": "End-to-end journey proof \u2014 signup \u2192 API key \u2192 first recommendation call \u2192 log entry \u2192 analytics entry \u2192 webhook event, demonstrated and captured"
+      "status": "done",
+      "title": "End-to-end journey proof \u2014 signup \u2192 API key \u2192 first recommendation call \u2192 log entry \u2192 analytics entry \u2192 webhook event, demonstrated and captured",
+      "notes": "Delivered: journey lane 3485621, merged 0c55b0c (repeatable driver scripts/e2e-journey.mjs, 6/6 hops exit 0; captured evidence docs/handoff/e2e-journey-proof.md; 8-test lockstep apps/api/test/e2e-journey-map.test.ts; battery at merge 95 files/1673 tests + 1 skip). Status flipped done by S4-002 state finalization."
     },
     {
       "id": "S4-002",
@@ -656,8 +660,9 @@
         "S3-002",
         "S4-001"
       ],
-      "status": "pending",
-      "title": "Final release \u2014 production deploy of all four surfaces, final-release evidence refresh, implementationComplete=true (Stripe phase)"
+      "status": "done",
+      "title": "Final release \u2014 production deploy of all four surfaces, final-release evidence refresh, implementationComplete=true (Stripe phase)",
+      "notes": "Delivered (this commit, work/s4-002-final-release from base 0c55b0c): deploy-readiness verified for all four surfaces (all four build; api/web shapes unchanged by the stripe phase), deployment runbook docs/deployment/stripe-phase-release.md, release gate scripts/verify-deployment.mjs + tests/deployment/verify-deployment.test.ts lockstep, final-release evidence refresh docs/handoff/final-release-evidence.md, this state finalization (65/65 done). FLAG LAW: implementationComplete stays false in this commit; the Lead flips it to true in the closing commit AFTER the four surfaces are verified deployed (scripts/verify-deployment.mjs gate, runbook section 4). PLACEHOLDER LAW: production URLs/timestamps are LEAD-FILL placeholders in the evidence doc; the deploy itself happens post-merge."
     }
   ],
   "workerBranches": {

@@ -56,3 +56,25 @@ pnpm --filter ./apps/docs test       # docs contract-fixture + IA tests
 The app imports `@reckon/contracts` **types only** (`import type`), so no
 runtime workspace code ships in the client bundle; the tests import the
 schemas at runtime (hence the contracts-first build order above).
+
+## Deployment (Vercel — S4-002 deploy readiness)
+
+Production-deployed as a **Vercel project with the Next.js framework
+preset** (the full four-project setup lives in
+`docs/deployment/stripe-phase-release.md`; the release verification gate is
+`scripts/verify-deployment.mjs` at the repo root):
+
+| Field | Value |
+|---|---|
+| Project | `reckon-docs` (git-connected, this monorepo) |
+| Root directory | `apps/docs` |
+| Framework preset | Next.js (16.3.8 — the workspace-pinned Next family) |
+| Build command | `pnpm run build` — the package build script, which chains `pnpm --filter @reckon/contracts build && next build --webpack` (the contracts dist must exist before `next build` typechecks the `import type` fixtures) |
+| Env vars | **NONE — zero-env surface.** Every page is static; the `process.env.RECKON_API_KEY` strings inside `src/content/**` are documentation code samples (text), never runtime consumption. Do not configure any variable. |
+| `vercel.json` | **None, deliberately.** No route rewrites exist on this surface — the framework preset serves the App Router routes as built. |
+| Output mode | Standard Next.js build output (no `standalone` — the Vercel preset handles output; no config change required for deploy) |
+
+The `next.config.ts` in this directory is the production config (webpack
+build path with the `resolveExtensionAlias` mapping for the workspace's
+NodeNext `.js`-specifier convention — same bundler note as `apps/web`).
+Deploying requires no configuration change to this app.
