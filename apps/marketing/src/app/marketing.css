@@ -1,0 +1,1291 @@
+/*
+ * Reckon marketing home — design system (S1-001).
+ *
+ * Laws (docs/surveys/stripe-com-survey.md §2 + §5):
+ *  - dark-premium aesthetic: near-black canvas, ONE deliberate brand
+ *    accent (emerald-mint #10cf8f — the Reckon accent family, chosen over
+ *    default Tailwind indigo), technical-vibrancy contrast;
+ *  - gradient-mesh hero visual (layered SVG turbulence + blurred radial
+ *    meshes — never a flat two-stop gradient);
+ *  - generous section rhythm, tight large headlines, one idea per line;
+ *  - all motion CSS-only and fully disabled under prefers-reduced-motion.
+ *
+ * The stylesheet is namespaced (.rk-*) and self-contained — it renders
+ * identically with and without a CSS reset (the monorepo build has no
+ * Tailwind), so the scoped mini-reset below pins box-sizing, margins,
+ * list styles, and control fonts.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Tokens + scoped reset                                               */
+/* ------------------------------------------------------------------ */
+
+.rk-root {
+  --rk-bg: #050607;
+  --rk-bg-deep: #040506;
+  --rk-bg-panel: #090c0f;
+  --rk-text: #f2f5f4;
+  --rk-text-secondary: #a9b2ad;
+  --rk-text-tertiary: #6d7671;
+  --rk-accent: #10cf8f;
+  --rk-accent-hover: #1ae69c;
+  --rk-accent-ink: #03130b;
+  --rk-line: rgba(255, 255, 255, 0.07);
+  --rk-line-strong: rgba(255, 255, 255, 0.14);
+  --rk-sans: var(--font-geist-sans, ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
+  --rk-mono: var(--font-geist-mono, ui-monospace, SFMono-Regular, Menlo,
+    Consolas, "Liberation Mono", monospace);
+
+  min-height: 100vh;
+  min-height: 100svh; /* mobile-safe sticky-footer base */
+  display: flex;
+  flex-direction: column;
+  background: var(--rk-bg);
+  color: var(--rk-text);
+  font-family: var(--rk-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.rk-root *,
+.rk-root *::before,
+.rk-root *::after {
+  box-sizing: border-box;
+}
+
+.rk-root h1,
+.rk-root h2,
+.rk-root h3,
+.rk-root p,
+.rk-root ul,
+.rk-root ol,
+.rk-root blockquote,
+.rk-root figure {
+  margin: 0;
+}
+
+.rk-root ul {
+  padding: 0;
+  list-style: none;
+}
+
+.rk-root a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.rk-root button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.rk-root svg {
+  display: block;
+}
+
+.rk-root pre {
+  margin: 0;
+}
+
+.rk-root ::selection {
+  background: rgba(16, 207, 143, 0.3);
+}
+
+.rk-root a:focus-visible,
+.rk-root button:focus-visible,
+.rk-root [tabindex]:focus-visible {
+  outline: 2px solid var(--rk-accent);
+  outline-offset: 2px;
+}
+
+.rk-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.rk-container {
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding-inline: clamp(1.25rem, 5vw, 2.5rem);
+}
+
+.rk-skip-link {
+  position: absolute;
+  top: -4rem;
+  left: 1rem;
+  z-index: 200;
+  padding: 0.7rem 1.1rem;
+  border-radius: 9px;
+  background: var(--rk-accent);
+  color: var(--rk-accent-ink);
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: top 150ms ease;
+}
+
+.rk-skip-link:focus {
+  top: 1rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Live-stat ticker                                                    */
+/* ------------------------------------------------------------------ */
+
+.rk-ticker {
+  background: #070908;
+  border-bottom: 1px solid var(--rk-line);
+  font-size: 0.83rem;
+}
+
+.rk-ticker-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.65rem;
+  min-height: 44px;
+  padding-block: 0.35rem;
+}
+
+.rk-ticker-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--rk-accent);
+  animation: rk-pulse 2.8s ease-out infinite;
+}
+
+.rk-ticker-label {
+  color: #9aa39e;
+}
+
+.rk-ticker-sep {
+  color: #4a524d;
+}
+
+.rk-ticker-value {
+  font-family: var(--rk-mono);
+  font-weight: 600;
+  color: var(--rk-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.rk-ticker-note {
+  margin-left: auto;
+  color: #616a66;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ */
+/* Header + navigation                                                 */
+/* ------------------------------------------------------------------ */
+
+.rk-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(5, 6, 7, 0.78);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--rk-line);
+}
+
+.rk-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  min-height: 68px;
+}
+
+.rk-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--rk-text);
+}
+
+.rk-brand-mark {
+  color: var(--rk-accent);
+  flex: none;
+}
+
+.rk-brand-name {
+  font-size: 1.14rem;
+  font-weight: 640;
+  letter-spacing: -0.015em;
+}
+
+.rk-nav {
+  display: none;
+}
+
+.rk-nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.5rem 0.85rem;
+  border-radius: 9px;
+  color: #c3cac5;
+  font-size: 0.93rem;
+  font-weight: 480;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.rk-nav-link:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.rk-header-actions {
+  display: none;
+  align-items: center;
+  gap: 0.85rem;
+  margin-left: auto;
+}
+
+.rk-nav-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  border-radius: 10px;
+  color: var(--rk-text);
+  border: 1px solid var(--rk-line);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.rk-nav-toggle:hover {
+  border-color: var(--rk-line-strong);
+}
+
+.rk-mobile-nav {
+  border-top: 1px solid var(--rk-line);
+  background: rgba(5, 6, 7, 0.96);
+}
+
+.rk-mobile-nav[hidden] {
+  display: none;
+}
+
+.rk-mobile-nav-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-block: 0.8rem 1.15rem;
+}
+
+.rk-mobile-link {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding-inline: 0.5rem;
+  border-radius: 10px;
+  color: #d5dcd7;
+  font-size: 1rem;
+}
+
+.rk-mobile-link:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.rk-mobile-nav-inner .rk-btn {
+  margin-top: 0.6rem;
+  justify-content: center;
+}
+
+/* ------------------------------------------------------------------ */
+/* Buttons + CTA rows                                                  */
+/* ------------------------------------------------------------------ */
+
+.rk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 570;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  transition: background-color 160ms ease, border-color 160ms ease,
+    color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.rk-btn-primary {
+  background: var(--rk-accent);
+  color: var(--rk-accent-ink);
+}
+
+.rk-btn-primary:hover {
+  background: var(--rk-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 30px -10px rgba(16, 207, 143, 0.45);
+}
+
+.rk-btn-secondary {
+  border: 1px solid var(--rk-line-strong);
+  color: #eef2f0;
+}
+
+.rk-btn-secondary:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.rk-btn-lg {
+  min-height: 48px;
+  padding: 0 1.5rem;
+  font-size: 1rem;
+}
+
+.rk-btn-sm {
+  min-height: 44px;
+  padding: 0 1rem;
+  font-size: 0.88rem;
+}
+
+.rk-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-top: 2.2rem;
+}
+
+.rk-cta-row-compact {
+  margin-top: 3rem;
+}
+
+.rk-cta-row-center {
+  justify-content: center;
+}
+
+/* ------------------------------------------------------------------ */
+/* Hero                                                                */
+/* ------------------------------------------------------------------ */
+
+.rk-hero {
+  position: relative;
+  padding-block: clamp(3.5rem, 7vw, 6.5rem) clamp(4rem, 8vw, 7rem);
+}
+
+.rk-hero::before {
+  content: "";
+  position: absolute;
+  inset: -18% -12% auto;
+  height: 78%;
+  pointer-events: none;
+  background: radial-gradient(
+      58% 52% at 72% 22%,
+      rgba(124, 92, 255, 0.16),
+      transparent 72%
+    ),
+    radial-gradient(38% 40% at 22% 8%, rgba(16, 207, 143, 0.08), transparent 70%);
+}
+
+.rk-hero-grid {
+  position: relative;
+  display: grid;
+  gap: clamp(2.6rem, 6vw, 4.5rem);
+  align-items: center;
+}
+
+.rk-hero-copy {
+  max-width: 580px;
+}
+
+.rk-h1 {
+  font-size: clamp(2.65rem, 5.3vw, 4.15rem);
+  font-weight: 630;
+  line-height: 1.04;
+  letter-spacing: -0.032em;
+}
+
+.rk-hero-line {
+  display: block;
+}
+
+.rk-hero-sub {
+  margin-top: 1.4rem;
+  max-width: 46ch;
+  font-size: clamp(1.05rem, 1.5vw, 1.27rem);
+  line-height: 1.55;
+  color: var(--rk-text-secondary);
+}
+
+.rk-hero-trust {
+  margin-top: 1.35rem;
+  color: var(--rk-text-tertiary);
+  font-size: 0.87rem;
+}
+
+.rk-hero-visual {
+  max-width: 660px;
+  width: 100%;
+  margin-inline: auto;
+}
+
+/* ------------------------------------------------------------------ */
+/* Gradient-mesh visual                                                */
+/* ------------------------------------------------------------------ */
+
+.rk-mesh {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  background: #07090c;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 40px 90px -30px rgba(0, 0, 0, 0.75),
+    0 24px 120px -40px rgba(124, 92, 255, 0.28);
+}
+
+.rk-mesh-wash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(85% 70% at 70% 12%, #14182b 0%, transparent 62%),
+    radial-gradient(70% 60% at 12% 88%, #0b1512 0%, transparent 60%),
+    radial-gradient(50% 45% at 50% 55%, #101418 0%, transparent 70%);
+}
+
+.rk-mesh-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(48px);
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+
+.rk-mesh-blob-a {
+  width: 58%;
+  height: 64%;
+  left: 36%;
+  top: -8%;
+  background: radial-gradient(circle at 40% 40%, #7c5cff 0%, transparent 68%);
+  opacity: 0.72;
+  animation: rk-drift-a 26s ease-in-out infinite alternate;
+}
+
+.rk-mesh-blob-b {
+  width: 52%;
+  height: 60%;
+  left: -10%;
+  top: 46%;
+  background: radial-gradient(circle at 55% 45%, #ff5c8a 0%, transparent 66%);
+  opacity: 0.6;
+  animation: rk-drift-b 31s ease-in-out infinite alternate;
+}
+
+.rk-mesh-blob-c {
+  width: 46%;
+  height: 52%;
+  left: 58%;
+  top: 55%;
+  background: radial-gradient(circle at 45% 45%, #ffb44d 0%, transparent 64%);
+  opacity: 0.55;
+  animation: rk-drift-c 22s ease-in-out infinite alternate;
+}
+
+.rk-mesh-blob-d {
+  width: 40%;
+  height: 46%;
+  left: 30%;
+  top: 40%;
+  background: radial-gradient(circle at 50% 50%, #10cf8f 0%, transparent 62%);
+  opacity: 0.5;
+  animation: rk-drift-d 27s ease-in-out infinite alternate;
+}
+
+.rk-mesh-liquid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: rk-drift-liquid 38s ease-in-out infinite alternate;
+}
+
+.rk-mesh-graph {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.rk-mesh-gloss {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.02) 30%,
+    transparent 46%
+  );
+}
+
+.rk-mesh-grain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+}
+
+.rk-mesh-chip {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(8, 10, 12, 0.55);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #cfd8d3;
+  font-family: var(--rk-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+}
+
+@keyframes rk-drift-a {
+  to {
+    transform: translate3d(-7%, 5%, 0) scale(1.12);
+  }
+}
+
+@keyframes rk-drift-b {
+  to {
+    transform: translate3d(9%, -7%, 0) scale(0.94);
+  }
+}
+
+@keyframes rk-drift-c {
+  to {
+    transform: translate3d(-6%, -9%, 0) scale(1.18);
+  }
+}
+
+@keyframes rk-drift-d {
+  to {
+    transform: translate3d(7%, 6%, 0) scale(1.08);
+  }
+}
+
+@keyframes rk-drift-liquid {
+  to {
+    transform: translate3d(2.5%, 1.8%, 0) scale(1.06);
+  }
+}
+
+@keyframes rk-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 207, 143, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(16, 207, 143, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 207, 143, 0);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Sections + headings                                                 */
+/* ------------------------------------------------------------------ */
+
+.rk-section {
+  padding-block: clamp(4.5rem, 9vw, 7.5rem);
+  border-top: 1px solid rgba(255, 255, 255, 0.045);
+}
+
+.rk-section-head {
+  max-width: 680px;
+}
+
+.rk-section-head-center {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.rk-eyebrow {
+  font-family: var(--rk-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--rk-accent);
+}
+
+.rk-h2 {
+  margin-top: 0.85rem;
+  font-size: clamp(1.95rem, 3.4vw, 2.9rem);
+  font-weight: 610;
+  line-height: 1.09;
+  letter-spacing: -0.022em;
+}
+
+.rk-section-sub {
+  margin-top: 1rem;
+  max-width: 60ch;
+  font-size: clamp(1.02rem, 1.3vw, 1.18rem);
+  line-height: 1.6;
+  color: var(--rk-text-secondary);
+}
+
+/* ------------------------------------------------------------------ */
+/* Product grid                                                        */
+/* ------------------------------------------------------------------ */
+
+.rk-product-grid {
+  display: grid;
+  gap: 1.1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.rk-product-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1.75rem 1.6rem 1.4rem;
+  border-radius: 16px;
+  border: 1px solid var(--rk-line);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.035),
+    rgba(255, 255, 255, 0.012)
+  );
+  transition: transform 180ms ease, border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.rk-product-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.17);
+}
+
+.rk-product-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 1.15rem;
+  border-radius: 11px;
+  color: var(--rk-accent);
+  background: rgba(16, 207, 143, 0.09);
+  border: 1px solid rgba(16, 207, 143, 0.2);
+}
+
+.rk-product-name {
+  font-size: 1.07rem;
+  font-weight: 580;
+  letter-spacing: -0.01em;
+}
+
+.rk-product-outcome {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--rk-text-secondary);
+}
+
+.rk-product-route {
+  margin-top: 1rem;
+  font-family: var(--rk-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  color: #5f6a64;
+}
+
+.rk-product-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: auto;
+  padding-top: 1.4rem;
+  color: var(--rk-accent);
+  font-size: 0.93rem;
+  font-weight: 540;
+}
+
+.rk-product-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+}
+
+.rk-product-link:hover {
+  color: var(--rk-accent-hover);
+}
+
+/* ------------------------------------------------------------------ */
+/* Code-first marketing artifact                                       */
+/* ------------------------------------------------------------------ */
+
+.rk-code-panel {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--rk-bg-panel);
+  box-shadow: 0 30px 80px -35px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+}
+
+.rk-code-panel-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--rk-line);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.rk-code-dots {
+  display: flex;
+  gap: 6px;
+  padding-inline: 0.2rem;
+}
+
+.rk-code-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.rk-code-dots span:nth-child(1) {
+  background: rgba(255, 92, 138, 0.55);
+}
+
+.rk-code-dots span:nth-child(2) {
+  background: rgba(255, 180, 77, 0.55);
+}
+
+.rk-code-dots span:nth-child(3) {
+  background: rgba(16, 207, 143, 0.55);
+}
+
+.rk-code-tabs {
+  display: flex;
+  gap: 0.2rem;
+  padding: 3px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.rk-code-tab {
+  min-height: 34px;
+  padding: 0 0.95rem;
+  border-radius: 7px;
+  font-family: var(--rk-mono);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #98a29c;
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.rk-code-tab:hover {
+  color: #dfe6e2;
+}
+
+.rk-code-tab-active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f0f4f2;
+}
+
+.rk-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 36px;
+  margin-left: auto;
+  padding: 0 0.85rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  color: #aab3ae;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: border-color 150ms ease, color 150ms ease,
+    background-color 150ms ease;
+}
+
+.rk-copy-btn:hover {
+  border-color: rgba(255, 255, 255, 0.26);
+  color: #e6ebe9;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.rk-code-body {
+  padding: 1.2rem 1.35rem 1.4rem;
+  overflow-x: auto;
+}
+
+.rk-code-pre {
+  font-family: var(--rk-mono);
+  font-size: 0.84rem;
+  line-height: 1.68;
+  color: #dfe6e2;
+  tab-size: 2;
+}
+
+.rk-code-pre-response {
+  font-size: 0.8rem;
+}
+
+.rk-code-line {
+  display: block;
+  white-space: pre;
+}
+
+.rk-code-body::-webkit-scrollbar,
+.rk-code-response::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.rk-code-body::-webkit-scrollbar-thumb,
+.rk-code-response::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.rk-code-body::-webkit-scrollbar-track,
+.rk-code-response::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.rk-code-body,
+.rk-code-response {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+
+/* Token palette — echoes the mesh family, never the UI accent alone. */
+.rk-tok-comment {
+  color: #667069;
+  font-style: italic;
+}
+
+.rk-tok-string {
+  color: #ffce7a;
+}
+
+.rk-tok-number {
+  color: #b8a6ff;
+}
+
+.rk-tok-keyword {
+  color: #f78fb8;
+}
+
+.rk-tok-property,
+.rk-tok-flag {
+  color: #7ee0b4;
+}
+
+.rk-tok-punct {
+  color: #79837d;
+}
+
+.rk-tok-const {
+  color: #6cd2ff;
+}
+
+.rk-code-response {
+  margin-top: 1.1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(9, 12, 15, 0.62);
+  overflow: hidden auto;
+  max-height: 30rem;
+}
+
+.rk-code-response-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.6rem 0.9rem 0.55rem 1.35rem;
+  border-bottom: 1px solid var(--rk-line);
+  background: rgba(9, 12, 15, 0.96);
+}
+
+.rk-code-response-label {
+  font-family: var(--rk-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--rk-accent);
+}
+
+.rk-code-response .rk-code-pre {
+  padding: 1rem 1.35rem 1.2rem;
+}
+
+.rk-craft-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem 1.8rem;
+  margin-top: 1.7rem;
+}
+
+.rk-craft-notes li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #93a099;
+  font-size: 0.88rem;
+}
+
+.rk-craft-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--rk-accent);
+}
+
+/* ------------------------------------------------------------------ */
+/* Social proof                                                        */
+/* ------------------------------------------------------------------ */
+
+.rk-logo-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 2.6rem;
+  align-items: baseline;
+  margin-bottom: 2.6rem;
+}
+
+.rk-logo-word {
+  font-size: 1rem;
+  font-weight: 590;
+  letter-spacing: -0.01em;
+  color: #7c857f;
+}
+
+.rk-logo-row li:nth-child(2),
+.rk-logo-row li:nth-child(3) {
+  opacity: 0.75;
+}
+
+.rk-logo-row li:nth-child(4),
+.rk-logo-row li:nth-child(5) {
+  opacity: 0.55;
+}
+
+.rk-case-grid {
+  display: grid;
+  gap: 1.1rem;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+}
+
+.rk-case-card {
+  height: 100%;
+  padding: 1.9rem 1.7rem 1.7rem;
+  border-radius: 16px;
+  border: 1px solid var(--rk-line);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.03),
+    rgba(255, 255, 255, 0.008)
+  );
+}
+
+.rk-case-metric {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.rk-case-metric-value {
+  font-size: 2.5rem;
+  font-weight: 620;
+  letter-spacing: -0.03em;
+  color: var(--rk-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.rk-case-metric-label {
+  color: #8d968f;
+  font-size: 0.85rem;
+}
+
+.rk-case-headline {
+  margin-top: 1.15rem;
+  font-size: 1.07rem;
+  font-weight: 580;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.rk-case-quote {
+  margin-top: 0.95rem;
+}
+
+.rk-case-quote p {
+  color: var(--rk-text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.rk-case-quote footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-top: 1.25rem;
+}
+
+.rk-case-person {
+  font-size: 0.87rem;
+  font-weight: 520;
+  color: #dfe6e2;
+}
+
+.rk-case-role {
+  font-size: 0.8rem;
+  color: #667069;
+}
+
+/* ------------------------------------------------------------------ */
+/* Final CTA band                                                      */
+/* ------------------------------------------------------------------ */
+
+.rk-cta-band {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(3rem, 6vw, 4.5rem) clamp(1.5rem, 4vw, 3.5rem);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.035),
+    rgba(255, 255, 255, 0.008)
+  );
+  text-align: center;
+}
+
+.rk-cta-band-glow {
+  position: absolute;
+  inset: -45% -18% auto;
+  height: 90%;
+  pointer-events: none;
+  background: radial-gradient(
+    48% 62% at 50% 38%,
+    rgba(16, 207, 143, 0.14),
+    transparent 72%
+  );
+}
+
+.rk-cta-band-title,
+.rk-cta-band-sub,
+.rk-cta-band .rk-cta-row {
+  position: relative;
+}
+
+.rk-cta-band-sub {
+  margin: 1.1rem auto 0;
+  max-width: 52ch;
+  font-size: 1.05rem;
+  color: var(--rk-text-secondary);
+}
+
+.rk-cta-band .rk-cta-row {
+  margin-top: 2.2rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Footer                                                              */
+/* ------------------------------------------------------------------ */
+
+.rk-footer {
+  margin-top: auto;
+  padding-block: 3rem 2.2rem;
+  border-top: 1px solid var(--rk-line);
+  background: var(--rk-bg-deep);
+}
+
+.rk-footer-surfaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1.15rem;
+  align-items: center;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--rk-line);
+  margin-bottom: 2.4rem;
+}
+
+.rk-footer-surface-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.15rem;
+}
+
+.rk-footer-surface-sep {
+  color: #3f4642;
+}
+
+.rk-footer-surface-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #eef2f0;
+  font-size: 0.98rem;
+  font-weight: 560;
+}
+
+.rk-footer-surface-link:hover {
+  color: var(--rk-accent);
+}
+
+.rk-footer-grid {
+  display: grid;
+  gap: 2.4rem;
+}
+
+.rk-footer-brand-line {
+  margin-top: 1rem;
+  max-width: 30ch;
+  color: #7c857f;
+  font-size: 0.92rem;
+}
+
+.rk-footer-col-heading {
+  margin-bottom: 0.95rem;
+  font-family: var(--rk-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #5f6a64;
+}
+
+.rk-footer-col ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.rk-footer-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: #a9b2ad;
+  font-size: 0.92rem;
+}
+
+.rk-footer-link:hover {
+  color: #eef2f0;
+}
+
+.rk-footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2.6rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--rk-line);
+}
+
+.rk-footer-copy {
+  color: #667069;
+  font-size: 0.8rem;
+}
+
+.rk-footer-chip {
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--rk-mono);
+  font-size: 0.7rem;
+  color: #5f6a64;
+}
+
+.rk-brand-footer .rk-brand-mark {
+  color: #4db98a;
+}
+
+/* ------------------------------------------------------------------ */
+/* Breakpoints                                                         */
+/* ------------------------------------------------------------------ */
+
+@media (min-width: 560px) {
+  .rk-ticker-inner {
+    flex-wrap: nowrap;
+  }
+}
+
+@media (min-width: 860px) {
+  .rk-nav {
+    display: flex;
+    gap: 0.15rem;
+  }
+
+  .rk-header-actions {
+    display: flex;
+  }
+
+  .rk-nav-toggle {
+    display: none;
+  }
+
+  .rk-footer-grid {
+    grid-template-columns: 1.9fr 1fr 1fr 1fr;
+  }
+}
+
+@media (min-width: 940px) {
+  .rk-hero-grid {
+    grid-template-columns: minmax(0, 43fr) minmax(0, 57fr);
+  }
+
+  .rk-hero-visual {
+    margin-inline: 0;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Reduced motion — the mesh goes still, the ticker settles instantly  */
+/* ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .rk-root *,
+  .rk-root *::before,
+  .rk-root *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

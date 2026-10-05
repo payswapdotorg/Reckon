@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "stripe-phase-in-flight-13-new-items-53-done",
+  "status": "stripe-phase-wave1-complete-pending-push-9-open-items-56-done",
   "implementationComplete": false,
   "dispatchBaseSha": "199baa2fbb",
   "workers": [
@@ -545,9 +545,9 @@
       "id": "S1-001",
       "owner": "S1",
       "dependsOn": [],
-      "status": "in_progress",
+      "status": "done",
       "title": "Marketing home \u2014 stripe.com-class site shell (apps/marketing): gradient-mesh split hero, live-stat ticker, product grid with outcome-phrased headlines, quantified social proof, dual CTA (Start now / Contact sales), code-first marketing artifacts",
-      "notes": "Survey: docs/surveys/stripe-com-survey.md sections 2 + 5. Quality bar non-negotiable."
+      "notes": "Survey: docs/surveys/stripe-com-survey.md sections 2 + 5. Quality bar non-negotiable. | Delivered 2026-10-05: narrative-harvest rebuild from worker sessions (pods reaped, PAT dead) \u2014 Lead-station verified full battery (build/typecheck/1157-tests/verify-repo) on integrate/stripe-phase-wave1 @ fca605d+; push to main pending PAT reissue."
     },
     {
       "id": "S1-002",
@@ -571,16 +571,17 @@
       "id": "S1-004",
       "owner": "S1",
       "dependsOn": [],
-      "status": "in_progress",
-      "title": "Docs portal (apps/docs) \u2014 'Serve your first recommendation' quickstart with integration-option tabs (hosted endpoint / SDK / streaming), API reference skeleton (Authentication / Errors / Idempotency / Expand / Pagination / Versioning), webhooks guide, runnable code samples"
+      "status": "done",
+      "title": "Docs portal (apps/docs) \u2014 'Serve your first recommendation' quickstart with integration-option tabs (hosted endpoint / SDK / streaming), API reference skeleton (Authentication / Errors / Idempotency / Expand / Pagination / Versioning), webhooks guide, runnable code samples",
+      "notes": " | Delivered 2026-10-05: narrative-harvest rebuild from worker sessions (pods reaped, PAT dead) \u2014 Lead-station verified full battery (build/typecheck/1157-tests/verify-repo) on integrate/stripe-phase-wave1 @ fca605d+; push to main pending PAT reissue."
     },
     {
       "id": "S2-001",
       "owner": "S2",
       "dependsOn": [],
-      "status": "in_progress",
+      "status": "done",
       "title": "API hardening Stripe-style \u2014 sk_/pk_ key model, versioned API surface, idempotency-key semantics, response expansion, cursor pagination, typed error catalog with stable codes",
-      "notes": "Owned: packages/contracts, apps/api. Public contract changes coordinate with frozen contracts discipline (AGENTS.md)."
+      "notes": "Owned: packages/contracts, apps/api. Public contract changes coordinate with frozen contracts discipline (AGENTS.md). | Delivered 2026-10-05: narrative-harvest rebuild from worker sessions (pods reaped, PAT dead) \u2014 Lead-station verified full battery (build/typecheck/1157-tests/verify-repo) on integrate/stripe-phase-wave1 @ fca605d+; push to main pending PAT reissue."
     },
     {
       "id": "S2-002",

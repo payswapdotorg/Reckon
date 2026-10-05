@@ -5,8 +5,8 @@ import type { StaticKeyConfig } from "../src/auth.js";
 import { KeyStore } from "../src/auth.js";
 import type { HandlerPorts } from "../src/ports.js";
 import type {
-  CandidateSet,
   CatalogItem,
+  CandidateSet,
   DecisionRequest,
   DecisionResult,
   ExperiencePlan,
@@ -16,10 +16,15 @@ import type {
   TenantScope,
 } from "@reckon/contracts";
 import {
+  CatalogItemSchema,
   DecisionResultSchema,
   ExperiencePlanSchema,
   ExperienceSchema,
+  generatePublishableKey,
+  generateSecretKey,
+  type ErrorClass,
 } from "@reckon/contracts";
+import { ERROR_CLASSES } from "@reckon/contracts";
 import type { FastifyInstance } from "fastify";
 
 /**
@@ -30,12 +35,26 @@ import type { FastifyInstance } from "fastify";
 
 const ALL_RUNTIME_SCOPES = ["decisions", "outcomes", "plans", "catalog"] as const;
 
+/**
+ * S2-001 key fixtures: the legacy opaque keys (kept — the transition
+ * accepts them) plus generated new-format keys: sk_live (tenant-a),
+ * sk_test (tenant-t, all scopes) and a pk_live publishable key that is
+ * configured but must never authenticate an API route.
+ */
+const SK_LIVE = generateSecretKey("live");
+const SK_TEST = generateSecretKey("test");
+const PK_LIVE = generatePublishableKey("live");
+
 export const TEST_KEYS: StaticKeyConfig[] = [
   { apiKey: "test-key-alpha", tenantId: "tenant-a", scopes: [...ALL_RUNTIME_SCOPES] },
   { apiKey: "test-key-beta", tenantId: "tenant-b", scopes: ["decisions"] },
   { apiKey: "test-key-gamma", tenantId: "tenant-c", scopes: ["catalog"] },
   { apiKey: "test-key-ws", tenantId: "tenant-a", workspaceId: "ws-1", scopes: [...ALL_RUNTIME_SCOPES] },
   { apiKey: "test-key-research", tenantId: "tenant-r", scopes: ["research"] },
+  { apiKey: "test-key-agents", tenantId: "tenant-a", scopes: ["agents"] },
+  { apiKey: SK_LIVE, tenantId: "tenant-a", scopes: [...ALL_RUNTIME_SCOPES] },
+  { apiKey: SK_TEST, tenantId: "tenant-t", scopes: [...ALL_RUNTIME_SCOPES] },
+  { apiKey: PK_LIVE, tenantId: "tenant-a", scopes: [...ALL_RUNTIME_SCOPES] },
 ];
 
 export const ALPHA = "test-key-alpha";
@@ -43,6 +62,11 @@ export const BETA = "test-key-beta";
 export const GAMMA = "test-key-gamma";
 export const WS_KEY = "test-key-ws";
 export const RESEARCH_KEY = "test-key-research";
+export const AGENTS_KEY = "test-key-agents";
+export const NEW_SK_LIVE = SK_LIVE;
+export const NEW_SK_TEST = SK_TEST;
+export const NEW_PK_LIVE = PK_LIVE;
+export const TENANT_T = "tenant-t";
 
 export const TENANT_A = "tenant-a";
 export const TENANT_B = "tenant-b";
@@ -175,6 +199,12 @@ export interface StubState {
   /** tenant ids observed by the outcome ingest port (proves auth flow). */
   outcomeTenants: string[];
   decisions: Map<string, DecisionResult>;
+  /** In-memory catalog for the expansion reader (tenant|itemId → item). */
+  catalogItems: Map<string, CatalogItem>;
+  /** Modes observed by handler ports (proves key-mode propagation). */
+  observedModes: string[];
+  /** The tenant scopes the catalog reader observed (proves tenant scoping). */
+  catalogReaderTenants: string[];
 }
 
 export function stubHandlers(state: StubState): HandlerPorts {
@@ -207,6 +237,7 @@ export function stubHandlers(state: StubState): HandlerPorts {
     decisionHandler: {
       decide: async (request: DecisionRequest, auth) => {
         state.decisionCalls += 1;
+        state.observedModes.push(auth.mode);
         return DecisionResultSchema.parse({
           decisionId: `dec-${auth.tenantId}-${request.idempotencyKey}`,
           requestId: request.requestId,
@@ -245,7 +276,7 @@ export function stubHandlers(state: StubState): HandlerPorts {
         const plan = plansById.get(planId);
         return plan === undefined ? [] : [{ plan, version: plan.version, reason: null }];
       },
-      listRecent: async (_auth, limit) => [...plansById.values()].slice(0, limit ?? 20),
+      listRecent: async (_auth, limit) => [...plansById.values()].reverse().slice(0, limit ?? 20),
       replan: async (planId: string, request: { trigger: string }, auth) => {
         state.replanCalls += 1;
         return ExperiencePlanSchema.parse({
@@ -263,10 +294,21 @@ export function stubHandlers(state: StubState): HandlerPorts {
       },
     },
     catalogItemIngest: {
-      ingest: async (item: CatalogItem) => {
+      ingest: async (item: CatalogItem, auth) => {
         state.catalogItemCalls += 1;
+        state.catalogItems.set(`${auth.tenantId}|${item.itemId}`, item);
         return item;
       },
+    },
+    // S2-001: expansion reader over the same in-memory catalog the ingest
+    // stub writes — tenant-scoped reads, and it records observed tenants
+    // so tests can prove the TENANT LAW holds on expansion reads.
+    catalogReader: {
+      getItem: async (tenant, itemId) => {
+        state.catalogReaderTenants.push(tenant.tenantId);
+        return state.catalogItems.get(`${tenant.tenantId}|${itemId}`) ?? null;
+      },
+      getRealization: async () => null,
     },
     realizationIngest: {
       ingest: async (realization: Realization) => {
@@ -311,6 +353,9 @@ export function newStubState(): StubState {
     resolveCalls: 0,
     outcomeTenants: [],
     decisions: new Map<string, DecisionResult>(),
+    catalogItems: new Map<string, CatalogItem>(),
+    observedModes: [],
+    catalogReaderTenants: [],
   };
 }
 
@@ -326,11 +371,12 @@ export function buildStubServer(overrides: Partial<ApiConfig> = {}): StubServer 
   return { app, state };
 }
 
-/** Seed a tenant-scoped decision into the stub store. */
+/** Seed a tenant-scoped decision into the stub store (with optional field overrides). */
 export function seedDecision(
   state: StubState,
   tenantId: string,
   decisionId: string,
+  overrides: Record<string, unknown> = {},
 ): DecisionResult {
   const decision = DecisionResultSchema.parse({
     decisionId,
@@ -339,9 +385,24 @@ export function seedDecision(
     action: "HOLD",
     policy: { policyId: "greedy-v1", version: "1" },
     at: 1_234,
+    ...overrides,
   });
   state.decisions.set(`${tenantId}|${decisionId}`, decision);
   return decision;
+}
+
+/**
+ * Seed a tenant-scoped catalog item into the stub store (expansion reads).
+ * Accepts the schema INPUT shape (labels/attributes/schema defaults optional).
+ */
+export function seedCatalogItem(
+  state: StubState,
+  tenantId: string,
+  item: Record<string, unknown>,
+): CatalogItem {
+  const parsed = CatalogItemSchema.parse(item);
+  state.catalogItems.set(`${tenantId}|${parsed.itemId}`, parsed);
+  return parsed;
 }
 
 export function authHeaders(key: string, extra: Record<string, string> = {}): Record<string, string> {
@@ -384,16 +445,31 @@ export async function injectJson(
   return { status: res.statusCode, body, headers: res.headers as Record<string, unknown> };
 }
 
-/** Assert the ONE typed error envelope shape (ERROR-MODEL LAW). */
-export function expectErrorEnvelope(status: number, body: unknown, code: string): void {
+/**
+ * Assert the ONE typed error envelope shape (ERROR-MODEL LAW, S2-001):
+ * { error: { class, code, message, param?, doc_url?, details? } } — the
+ * Stripe-style class is mandatory and must be one of the frozen five;
+ * code/message stay mandatory as before.
+ */
+export function expectErrorEnvelope(
+  status: number,
+  body: unknown,
+  code: string,
+  errorClass?: ErrorClass,
+): void {
   expect(status).toBeGreaterThanOrEqual(400);
   expect(body).toBeDefined();
   const envelope = body as { error?: Record<string, unknown> };
   expect(envelope.error).toBeDefined();
   const keys = Object.keys(envelope.error ?? {}).sort();
+  expect(keys).toContain("class");
   expect(keys).toContain("code");
   expect(keys).toContain("message");
-  expect(["code", "details", "message"]).toEqual(expect.arrayContaining(keys));
+  expect(["class", "code", "details", "doc_url", "message", "param"]).toEqual(
+    expect.arrayContaining(keys),
+  );
+  expect(ERROR_CLASSES).toContain(envelope.error?.class);
+  if (errorClass !== undefined) expect(envelope.error?.class).toBe(errorClass);
   expect(envelope.error?.code).toBe(code);
   expect(typeof envelope.error?.message).toBe("string");
   expect((envelope.error?.message as string).length).toBeGreaterThan(0);

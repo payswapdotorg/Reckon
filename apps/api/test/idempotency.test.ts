@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { InMemoryIdempotencyStore } from "../src/idempotency.js";
 import {
   ALPHA,
   BETA,
@@ -115,7 +116,7 @@ describe("idempotency: conflicts and scoping", () => {
     await stub.app.close();
   });
 
-  it("same key with a DIFFERENT body → 409 IDEMPOTENCY_CONFLICT", async () => {
+  it("same key with a DIFFERENT body → 422 IDEMPOTENCY_CONFLICT (S2-001 typed invalid_request_error)", async () => {
     const key = "conflict-key-1";
     const first = await injectJson(stub.app, "POST", "/v1/decisions", {
       payload: validDecisionRequest({ idempotencyKey: key, requestId: "req-A" }),
@@ -126,10 +127,12 @@ describe("idempotency: conflicts and scoping", () => {
       payload: validDecisionRequest({ idempotencyKey: key, requestId: "req-B" }),
       headers: authHeaders(ALPHA),
     });
-    expect(second.status).toBe(409);
-    expectErrorEnvelope(second.status, second.body, "IDEMPOTENCY_CONFLICT");
-    const details = (second.body as { error: { details?: { idempotencyKey?: string } } }).error.details;
-    expect(details?.idempotencyKey).toBe(key);
+    expect(second.status).toBe(422);
+    expectErrorEnvelope(second.status, second.body, "IDEMPOTENCY_CONFLICT", "invalid_request_error");
+    const error = (second.body as { error: { details?: { idempotencyKey?: string }; param?: string } }).error;
+    expect(error.details?.idempotencyKey).toBe(key);
+    expect(error.param).toBe("idempotency-key");
+    expect(stub.state.decisionCalls).toBe(1);
   });
 
   it("the same key on a different route is independent (no 409, no replay)", async () => {
@@ -190,5 +193,78 @@ describe("idempotency: conflicts and scoping", () => {
     } finally {
       await app.close();
     }
+  });
+});
+
+describe("idempotency: S2-001 full semantics", () => {
+  it("replays carry Idempotent-Replayed: true (plus the legacy lowercase header)", async () => {
+    const stub = buildStubServer();
+    try {
+      const key = "s2-replayed-header-1";
+      const first = await injectJson(stub.app, "POST", "/v1/decisions", {
+        payload: validDecisionRequest({ idempotencyKey: key }),
+        headers: authHeaders(ALPHA),
+      });
+      expect(first.status).toBe(200);
+      expect(first.headers["idempotent-replayed"]).toBeUndefined(); // first response is not a replay
+      const second = await injectJson(stub.app, "POST", "/v1/decisions", {
+        payload: validDecisionRequest({ idempotencyKey: key }),
+        headers: authHeaders(ALPHA),
+      });
+      expect(second.status).toBe(200);
+      expect(second.headers["idempotent-replayed"]).toBe("true");
+      expect(second.headers["idempotent-replay"]).toBe("true");
+      expect(stub.state.decisionCalls).toBe(1);
+    } finally {
+      await stub.app.close();
+    }
+  });
+
+  it("24h window: a stored response older than the window is forgotten (fresh execution, even with a different body)", async () => {
+    let now = 1_000_000;
+    const stub = buildStubServer({ clock: () => now });
+    try {
+      const key = "window-key-1";
+      const first = await injectJson(stub.app, "POST", "/v1/decisions", {
+        payload: validDecisionRequest({ idempotencyKey: key, requestId: "req-A" }),
+        headers: authHeaders(ALPHA),
+      });
+      expect(first.status).toBe(200);
+
+      // Advance JUST inside the window: still a replay.
+      now += 24 * 60 * 60 * 1000 - 1;
+      const stillReplay = await injectJson(stub.app, "POST", "/v1/decisions", {
+        payload: validDecisionRequest({ idempotencyKey: key, requestId: "req-A" }),
+        headers: authHeaders(ALPHA),
+      });
+      expect(stillReplay.status).toBe(200);
+      expect(stillReplay.headers["idempotent-replayed"]).toBe("true");
+      expect(stub.state.decisionCalls).toBe(1);
+
+      // Advance PAST the window: the key is forgotten — even a DIFFERENT
+      // body executes fresh (no 422).
+      now += 2;
+      const fresh = await injectJson(stub.app, "POST", "/v1/decisions", {
+        payload: validDecisionRequest({ idempotencyKey: key, requestId: "req-B" }),
+        headers: authHeaders(ALPHA),
+      });
+      expect(fresh.status).toBe(200);
+      expect(fresh.headers["idempotent-replayed"]).toBeUndefined();
+      expect(stub.state.decisionCalls).toBe(2);
+    } finally {
+      await stub.app.close();
+    }
+  });
+
+  it("InMemoryIdempotencyStore: custom window + clock drive eviction", async () => {
+    let now = 500;
+    const store = new InMemoryIdempotencyStore({ clock: () => now, windowMs: 100 });
+    await store.store("tenant", "POST /v1/x", "key-1", "digest-1", { statusCode: 200, body: { ok: true } });
+    expect(store.size).toBe(1);
+    now += 99;
+    expect((await store.lookup("tenant", "POST /v1/x", "key-1"))?.requestDigest).toBe("digest-1");
+    now += 1;
+    expect(await store.lookup("tenant", "POST /v1/x", "key-1")).toBeUndefined();
+    expect(store.size).toBe(0);
   });
 });

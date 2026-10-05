@@ -18,3 +18,6 @@ export * from "./agents.js";
 export * from "./organizations.js";
 export * from "./plans.js";
 export * from "./serialization.js";
+// S2-001: developer-platform API contracts (Stripe-style hardening) —
+// additive extension; no existing exported shape above changes.
+export * from "./api-platform.js";

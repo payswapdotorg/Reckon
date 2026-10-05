@@ -178,6 +178,12 @@ export function deterministicHandlers(state: HarnessState): HandlerPorts {
         return item;
       },
     },
+    // S2-001: catalog read port for response expansion — the SDK harness
+    // does not exercise expansions, so the reader answers empty (null).
+    catalogReader: {
+      getItem: async () => null,
+      getRealization: async () => null,
+    },
     realizationIngest: {
       ingest: async (realization: Realization) => {
         state.realizationCalls += 1;

@@ -157,7 +157,7 @@ describe("W3-002 SDK — idempotency through the client", () => {
     await harness.app.close();
   });
 
-  it("surfaces 409 when the same key is reused with a different body", async () => {
+  it("surfaces 422 when the same key is reused with a different body", async () => {
     const harness = buildHarness();
     const client = createReckonClient({ baseUrl: "http://reckon.test", apiKey: "sdk-alpha", fetchImpl: harness.fetch });
     await client.plans.create(planInput({ planId: "plan-1" }), { idempotencyKey: "key-409" });
@@ -165,7 +165,7 @@ describe("W3-002 SDK — idempotency through the client", () => {
     await expect(client.plans.create(different, { idempotencyKey: "key-409" })).rejects.toMatchObject({
       name: "ReckonIdempotencyConflictError",
       code: "IDEMPOTENCY_CONFLICT",
-      statusCode: 409,
+      statusCode: 422,
     });
     await harness.app.close();
   });

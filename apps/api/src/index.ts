@@ -8,15 +8,16 @@
 export { buildServer } from "./server.js";
 export { loadConfigFromEnv, parseApiKeyList, keyStoreFrom, DEFAULT_API_VERSION } from "./config.js";
 export type { ApiConfig } from "./config.js";
-export { KeyStore } from "./auth.js";
+export { KeyStore, mintKeyConfig } from "./auth.js";
 export type { KeyAuthenticator, StaticKeyConfig } from "./auth.js";
 export { InMemoryIdempotencyStore } from "./idempotency.js";
 export type {
   IdempotencyStore,
+  InMemoryIdempotencyStoreOptions,
   StoredIdempotent,
   StoredIdempotentResponse,
 } from "./idempotency.js";
-export { ApiError, ConfigError, ERROR_CODES, errorEnvelope, notWired } from "./errors.js";
+export { ApiError, ConfigError, ERROR_CODES, errorEnvelope, notWired, setDocsBaseUrl } from "./errors.js";
 export type { ErrorCode, ErrorEnvelope } from "./errors.js";
 export { ROUTE_SCOPES } from "./types.js";
 export type { AuthContext, Parsed, SafeParseResult, SchemaIssue, Scope, Validator } from "./types.js";
@@ -24,6 +25,7 @@ export { notWiredDefaults } from "./ports.js";
 export type {
   CandidatesHandler,
   CatalogItemIngestHandler,
+  CatalogReader,
   DecisionHandler,
   DecisionStore,
   ExperienceResolveHandler,
@@ -36,6 +38,15 @@ export type {
 } from "./ports.js";
 export { ReplanRequestSchema, ResolveRequestSchema, ResolveResponseSchema } from "./envelopes.js";
 export type { ReplanRequest, ResolveRequest, ResolveResponse } from "./envelopes.js";
+// S2-001 developer-platform surface.
+export { DEFAULT_API_VERSION_REGISTRY, assertRegistryCoherent, resolveRequestVersion } from "./versioning.js";
+export type { ResolvedApiVersion } from "./versioning.js";
+export { createRateLimiter } from "./rate-limit.js";
+export type { RateLimiterConfig, RequestRateLimiter } from "./rate-limit.js";
+export { fetchSizeFor, paginationMeta, parsePaginationParams, slicePage } from "./pagination.js";
+export type { Page, ParsedPaginationParams } from "./pagination.js";
+export { parseExpansion, wantsExpand, wantsNestedExpand } from "./expansion.js";
+export type { ExpandPath } from "./expansion.js";
 export { transportBackedOutcomeIngest, wireOutcomeTransport } from "./outcome-transport.js";
 export type {
   OutcomeTransportWiring,

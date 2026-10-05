@@ -9,6 +9,7 @@ import type {
   OutcomeEvent,
   PreferenceDelta,
   Realization,
+  TenantScope,
 } from "@reckon/contracts";
 import { notWired } from "./errors.js";
 import type { ReplanRequest, ResolveRequest, ResolveResponse } from "./envelopes.js";
@@ -122,6 +123,16 @@ export interface CatalogItemIngestHandler {
   ingest(item: CatalogItem, auth: AuthContext): Promise<CatalogItem>;
 }
 
+/**
+ * Catalog READ port (S2-001 expansion surface): tenant-scoped lookups
+ * powering `?expand[]=…item` reference resolution. Tenant-scoped by
+ * interface so expansions can never read across tenants (TENANT LAW).
+ */
+export interface CatalogReader {
+  getItem(tenant: TenantScope, itemId: string): Promise<CatalogItem | null>;
+  getRealization(tenant: TenantScope, realizationId: string): Promise<Realization | null>;
+}
+
 export interface RealizationIngestHandler {
   ingest(realization: Realization, auth: AuthContext): Promise<Realization>;
 }
@@ -144,6 +155,8 @@ export interface HandlerPorts {
   preferenceIngest: PreferenceIngestHandler;
   planHandler: PlanHandler;
   catalogItemIngest: CatalogItemIngestHandler;
+  /** S2-001: catalog reads for response expansion (NotWired default until a composition mounts it). */
+  catalogReader: CatalogReader;
   realizationIngest: RealizationIngestHandler;
   candidatesHandler: CandidatesHandler;
   experienceResolver: ExperienceResolveHandler;
@@ -182,6 +195,10 @@ export function notWiredDefaults(): HandlerPorts {
       listRecent: async () => notWired("PlanHandler", "listRecent"),
     },
     catalogItemIngest: { ingest: async () => notWired("CatalogItemIngestHandler", "ingest") },
+    catalogReader: {
+      getItem: async () => notWired("CatalogReader", "getItem"),
+      getRealization: async () => notWired("CatalogReader", "getRealization"),
+    },
     realizationIngest: { ingest: async () => notWired("RealizationIngestHandler", "ingest") },
     candidatesHandler: { submit: async () => notWired("CandidatesHandler", "submit") },
     experienceResolver: { resolve: async () => notWired("ExperienceResolveHandler", "resolve") },

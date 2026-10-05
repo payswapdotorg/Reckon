@@ -596,6 +596,13 @@ export async function buildProductionServer(
       // handoff §4 — so there is nothing to persist here).
       submit: async (set) => set,
     },
+    // S2-001: catalog reads for `?expand[]=…item` reference resolution —
+    // the SAME PgCatalogStore the ingest routes write through, so an
+    // expanded item is the persisted truth (not a second read model).
+    catalogReader: {
+      getItem: async (tenant, itemId) => catalog.getItem(tenant, itemId),
+      getRealization: async (tenant, realizationId) => catalog.getRealization(tenant, realizationId),
+    },
     experienceResolver: createRuntimeExperienceResolver(),
   };
 
@@ -605,6 +612,9 @@ export async function buildProductionServer(
     handlers,
     idempotencyStore: idempotency,
     logger: options.logger,
+    // S2-001: the composition clock drives the idempotency window (and
+    // the opt-in rate limiter) in production — host time authority.
+    clock: () => clock.now(),
     observability: {
       sink: observability,
       clock: () => clock.now(),

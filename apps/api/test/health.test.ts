@@ -37,6 +37,7 @@ describe("GET /readyz", () => {
     "preferenceIngest",
     "planHandler",
     "catalogItemIngest",
+    "catalogReader",
     "realizationIngest",
     "candidatesHandler",
     "experienceResolver",
