@@ -248,7 +248,7 @@ describe("W3-009 cross-domain E2E — four-domain vertical through the real runt
         expect(
           records.filter((record) => record.kind === "integration-capability" && record.available).length,
         ).toBe(7);
-        expect(records.filter((record) => record.kind === "integration-capability")).toHaveLength(12);
+        expect(records.filter((record) => record.kind === "integration-capability")).toHaveLength(13);
         expect(records.filter((record) => record.kind === "error")).toHaveLength(0);
       } finally {
         await app.destroy();

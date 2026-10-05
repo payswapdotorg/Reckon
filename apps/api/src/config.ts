@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import type { EvidenceClass, Id } from "@reckon/contracts";
+import type { ApiVersionEntry, EvidenceClass, Id } from "@reckon/contracts";
 import type { ObservabilitySink } from "@reckon/observability";
 import type { ObservabilityClock } from "@reckon/observability";
 import type { KeyAuthenticator, StaticKeyConfig } from "./auth.js";
@@ -7,6 +7,7 @@ import { KeyStore } from "./auth.js";
 import { ConfigError } from "./errors.js";
 import type { IdempotencyStore } from "./idempotency.js";
 import { InMemoryIdempotencyStore } from "./idempotency.js";
+import type { RateLimiterConfig } from "./rate-limit.js";
 import type { PartialHandlerPorts } from "./ports.js";
 import { ROUTE_SCOPES } from "./types.js";
 import type { Scope } from "./types.js";
@@ -48,6 +49,16 @@ export interface ApiConfig {
   readonly logger?: boolean;
   /** W3-004: emit decision/outcome/scheduler/error records to a sink. */
   readonly observability?: ObservabilityConfig;
+  /** S2-001: registered API versions (default: the shipped registry with the pinned default). */
+  readonly apiVersions?: readonly ApiVersionEntry[];
+  /** S2-001: pinned default API version for requests without X-Reckon-Version. */
+  readonly defaultApiVersion?: string;
+  /** S2-001: per-key rate limit (absent = rate limiting disabled). */
+  readonly rateLimit?: RateLimiterConfig;
+  /** S2-001: injected clock (idempotency window, rate-limit windows; default Date.now). */
+  readonly clock?: () => number;
+  /** S2-001: docs URL base for error doc_url values (default: the pinned contracts base). */
+  readonly docsBaseUrl?: string;
 }
 
 /**
@@ -94,11 +105,24 @@ export function loadConfigFromEnv(env: Record<string, string | undefined>): ApiC
   const file = env.RECKON_API_KEYS_FILE;
   const raw = file !== undefined && file !== "" ? readFileSync(file, "utf8") : env.RECKON_API_KEYS;
   const keys = raw !== undefined && raw !== "" ? parseApiKeyList(raw) : [];
+  const rateLimitMax = parseOptionalInteger(env.RECKON_RATE_LIMIT_MAX, "RECKON_RATE_LIMIT_MAX");
+  const rateLimitWindowMs = parseOptionalInteger(env.RECKON_RATE_LIMIT_WINDOW_MS, "RECKON_RATE_LIMIT_WINDOW_MS");
   return {
     apiVersion: env.RECKON_API_VERSION ?? DEFAULT_API_VERSION,
     keys,
     logger: env.RECKON_LOG === "1",
+    ...(rateLimitMax !== undefined
+      ? { rateLimit: { limit: rateLimitMax, ...(rateLimitWindowMs !== undefined ? { windowMs: rateLimitWindowMs } : {}) } }
+      : {}),
   };
+}
+
+function parseOptionalInteger(raw: string | undefined, name: string): number | undefined {
+  if (raw === undefined || raw === "") return undefined;
+  if (!/^[0-9]+$/.test(raw)) {
+    throw new ConfigError(`${name} must be an integer, got '${raw}'`);
+  }
+  return Number(raw);
 }
 
 /**

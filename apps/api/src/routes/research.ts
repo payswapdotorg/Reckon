@@ -4,6 +4,7 @@ import { IdSchema } from "@reckon/contracts";
 import { ApiError, ERROR_CODES } from "../errors.js";
 import { authPreHandler, requireAuth, runContractRoute } from "./shared.js";
 import type { RouteDeps } from "./shared.js";
+import { fetchSizeFor, paginationMeta, parsePaginationParams, slicePage } from "../pagination.js";
 
 /**
  * Research job surface (UI-008): the durable FIFO queue per ADR-004
@@ -63,40 +64,40 @@ export function registerResearchRoutes(app: FastifyInstance, deps: RouteDeps): v
     },
   );
 
-  app.get<{ Querystring: { limit?: string; state?: string } }>(
+  // S2-001: cursor pagination (limit 1..100 default 20, starting_after,
+  // has_more + next_cursor; ordering newest-first — stable). The state
+  // filter stays composable with pagination (the cursor slices the
+  // filtered list).
+  app.get(
     "/v1/research/jobs",
     { preHandler: [authPreHandler(deps, "research")] },
     async (request, reply) => {
       const auth = requireAuth(request);
-      const rawLimit = request.query.limit;
-      let limit = 20;
-      if (rawLimit !== undefined && rawLimit !== "") {
-        const parsed = Number(rawLimit);
-        if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100) {
-          throw new ApiError(
-            ERROR_CODES.VALIDATION_ERROR,
-            400,
-            `limit must be an integer 1..100, got '${rawLimit}'`,
-            { limit: rawLimit },
-          );
-        }
-        limit = parsed;
-      }
-      const state = request.query.state;
-      if (state !== undefined && state !== "" && !STATES.has(state)) {
+      const query = request.query as Record<string, unknown>;
+      const params = parsePaginationParams(query);
+      const state = firstQueryValue(query["state"]);
+      if (state !== undefined && !STATES.has(state)) {
         throw new ApiError(
           ERROR_CODES.VALIDATION_ERROR,
           400,
           `state must be one of queued|leased|done|failed, got '${state}'`,
           { state },
+          "state",
         );
       }
       const jobs = await deps.handlers.researchHandler.list(
         auth,
-        limit,
-        state === "" || state === undefined ? undefined : (state as "queued" | "leased" | "done" | "failed"),
+        fetchSizeFor(params),
+        state as "queued" | "leased" | "done" | "failed" | undefined,
       );
-      reply.code(200).send({ jobs });
+      const page = slicePage(jobs, params, (job) => job.jobId);
+      reply.code(200).send({ jobs: page.items, ...paginationMeta(page) });
     },
   );
+}
+
+function firstQueryValue(raw: unknown): string | undefined {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (value === undefined || value === "") return undefined;
+  return typeof value === "string" ? value : String(value);
 }

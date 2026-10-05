@@ -1,4 +1,5 @@
 import type { FastifyRequest } from "fastify";
+import type { KeyMode } from "@reckon/contracts";
 
 /**
  * Structural view of a zod schema's `safeParse`, used so that apps/api can
@@ -38,12 +39,18 @@ export type Scope = (typeof ROUTE_SCOPES)[number];
  * come EXCLUSIVELY from the API key — never from the request body. The raw
  * key is never retained; only its sha256 hash (`keyHash`) is kept, and it is
  * safe for correlation/logs.
+ *
+ * S2-001: `mode` is the key-scoped mode (live vs test) propagated to every
+ * handler — sk_test_/pk_test_ keys (and legacy keys pinned `mode: "test"`)
+ * run in test mode. Live/test behavioral separation is S2-003's surface;
+ * this field is the seam it plugs into.
  */
 export interface AuthContext {
   readonly tenantId: string;
   readonly workspaceId?: string;
   readonly scopes: ReadonlySet<Scope>;
   readonly keyHash: string;
+  readonly mode: KeyMode;
 }
 
 declare module "fastify" {
@@ -54,5 +61,11 @@ declare module "fastify" {
      * invariant violation.
      */
     reckonAuth?: AuthContext;
+    /**
+     * The RESOLVED API version for this request (pinned default, or the
+     * validated X-Reckon-Version header value). Set by the /v1 preHandler;
+     * echoed on every /v1 response as the x-reckon-version header.
+     */
+    reckonApiVersion?: string;
   }
 }

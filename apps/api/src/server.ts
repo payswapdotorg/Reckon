@@ -1,14 +1,17 @@
 import { fastify } from "fastify";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { ApiVersionSchema } from "@reckon/contracts";
 import { ObservabilityRecorder } from "@reckon/observability";
 import { KeyStore } from "./auth.js";
 import { DEFAULT_API_VERSION } from "./config.js";
 import type { ApiConfig } from "./config.js";
-import { ApiError, ERROR_CODES, errorEnvelope } from "./errors.js";
+import { ApiError, ERROR_CODES, errorEnvelope, setDocsBaseUrl } from "./errors.js";
 import { InMemoryIdempotencyStore } from "./idempotency.js";
 import { observedDecisionHandler, observedOutcomeIngest, recordRouteErrorSafely } from "./observability.js";
 import { notWiredDefaults } from "./ports.js";
 import type { HandlerPorts, PartialHandlerPorts } from "./ports.js";
+import { createRateLimiter } from "./rate-limit.js";
+import { DEFAULT_API_VERSION_REGISTRY, assertRegistryCoherent, withRegisteredDefault } from "./versioning.js";
 import { registerAgentRoutes } from "./routes/agents.js";
 import { registerCandidateRoutes } from "./routes/candidates.js";
 import { registerCatalogRoutes } from "./routes/catalog.js";
@@ -29,28 +32,49 @@ import type { RouteDeps } from "./routes/shared.js";
  */
 export function buildServer(config: ApiConfig): FastifyInstance {
   const keyStore = config.keyStore ?? new KeyStore(config.keys ?? []);
-  const idempotency = config.idempotencyStore ?? new InMemoryIdempotencyStore();
+  const clock = config.clock ?? (() => Date.now());
+  const idempotency = config.idempotencyStore ?? new InMemoryIdempotencyStore({ clock });
   const portStatus = new Map<string, "wired" | "not-wired">();
   const handlers = resolveHandlers(config.handlers, portStatus);
+
+  // S2-001 — developer-platform hardening composition:
+  //   version registry + pinned default (asserted coherent at boot),
+  //   per-key rate limiter (opt-in), docs URL base for error doc_url,
+  //   shared clock for the idempotency window.
+  //
+  // `config.apiVersion` stays the free-form BUILD LABEL (health
+  // reporting — pre-S2-001 semantics preserved). Version NEGOTIATION has
+  // its own pin: `config.defaultApiVersion`, falling back to the label
+  // when it is a valid version string (one env var pins both), else the
+  // shipped default.
+  const buildLabel = config.apiVersion ?? DEFAULT_API_VERSION;
+  const negotiationDefault =
+    config.defaultApiVersion ??
+    (ApiVersionSchema.safeParse(buildLabel).success ? buildLabel : DEFAULT_API_VERSION);
+  const versionRegistry =
+    config.apiVersions ?? withRegisteredDefault(DEFAULT_API_VERSION_REGISTRY, negotiationDefault);
+  assertRegistryCoherent(versionRegistry, negotiationDefault);
+  setDocsBaseUrl(config.docsBaseUrl);
+  const rateLimiter = config.rateLimit !== undefined ? createRateLimiter(config.rateLimit, clock) : undefined;
 
   // W3-004 observability composition: wrap the WIRED decision/outcome
   // handler ports with record-emitting wrappers (route contracts frozen),
   // and emit an integration-capability record per handler port (wired =
   // available). Latency comes from the injected clock.
   const observability = config.observability;
-  const clock = observability?.clock ?? (() => Date.now());
+  const obsClock = observability?.clock ?? clock;
   const recorder =
     observability !== undefined
       ? new ObservabilityRecorder({
           sink: observability.sink,
-          clock,
+          clock: obsClock,
           ...(observability.idGenerator !== undefined ? { idGenerator: observability.idGenerator } : {}),
           ...(observability.evidenceClass !== undefined ? { evidenceClass: observability.evidenceClass } : {}),
         })
       : undefined;
   if (recorder !== undefined) {
     if (portStatus.get("decisionHandler") === "wired") {
-      handlers.decisionHandler = observedDecisionHandler(handlers.decisionHandler, { recorder, clock });
+      handlers.decisionHandler = observedDecisionHandler(handlers.decisionHandler, { recorder, clock: obsClock });
     }
     if (portStatus.get("outcomeIngest") === "wired") {
       handlers.outcomeIngest = observedOutcomeIngest(handlers.outcomeIngest, { recorder });
@@ -69,7 +93,11 @@ export function buildServer(config: ApiConfig): FastifyInstance {
     keyStore,
     idempotency,
     handlers,
-    apiVersion: config.apiVersion ?? DEFAULT_API_VERSION,
+    apiVersion: buildLabel,
+    versionRegistry,
+    defaultApiVersion: negotiationDefault,
+    ...(rateLimiter !== undefined ? { rateLimiter } : {}),
+    clock,
   };
 
   const app: FastifyInstance = fastify({ logger: config.logger ?? false });
@@ -110,7 +138,12 @@ export function buildServer(config: ApiConfig): FastifyInstance {
       }
     }
     if (error instanceof ApiError) {
-      reply.code(error.statusCode).send(errorEnvelope(error.code, error.message, error.details));
+      if (error.retryAfterSeconds !== undefined) {
+        reply.header("retry-after", String(error.retryAfterSeconds));
+      }
+      reply
+        .code(error.statusCode)
+        .send(errorEnvelope(error.code, error.message, error.details, error.param));
       return;
     }
     const statusCode = typeof error.statusCode === "number" ? error.statusCode : 500;

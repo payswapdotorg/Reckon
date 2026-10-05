@@ -128,7 +128,7 @@ export class ReckonNotFoundError extends ReckonSdkError {
   }
 }
 
-/** 409 IDEMPOTENCY_CONFLICT — same idempotency key, different request body. */
+/** 422 IDEMPOTENCY_CONFLICT (S2-001) — same idempotency key, different request body. */
 export class ReckonIdempotencyConflictError extends ReckonSdkError {
   constructor(message: string, options: ReckonSdkErrorOptions = {}) {
     super("IDEMPOTENCY_CONFLICT", message, options);

@@ -1,0 +1,24 @@
+{
+  "name": "@reckon/docs",
+  "version": "0.1.0",
+  "description": "Reckon docs portal (S1-004) — Stripe-style developer documentation: \"Serve your first recommendation\" quickstart with integration-option tabs (hosted endpoint / SDK / streaming), core-concepts vertical, API reference discipline (auth, errors, idempotency, expand, pagination, versioning), webhook event catalog + HMAC verification, and SDK pages. Content is typed data validated against @reckon/contracts; styling is a single-accent light theme with no runtime deps beyond Next/React.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "pnpm --filter @reckon/contracts build && next build --webpack",
+    "start": "next start",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@reckon/contracts": "workspace:*",
+    "next": "16.3.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0"
+  }
+}

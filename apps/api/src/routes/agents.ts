@@ -4,6 +4,7 @@ import { ApiError, ERROR_CODES } from "../errors.js";
 import { assertResponseTenant } from "../tenant.js";
 import { authPreHandler, requireAuth, runContractRoute, validateHandlerResponse } from "./shared.js";
 import type { RouteDeps } from "./shared.js";
+import { fetchSizeFor, paginationMeta, parsePaginationParams, slicePage } from "../pagination.js";
 
 /**
  * Agent declaration surface (UI-007): tenant scope from AUTH (catalog
@@ -43,17 +44,20 @@ export function registerAgentRoutes(app: FastifyInstance, deps: RouteDeps): void
     },
   );
 
-  app.get<{ Querystring: { limit?: string } }>(
+  // S2-001: cursor pagination (limit 1..100 default 20, starting_after,
+  // has_more + next_cursor). Ordering: newest bodies first (stable).
+  app.get(
     "/v1/agents/bodies",
     { preHandler: [authPreHandler(deps, "agents")] },
     async (request, reply) => {
       const auth = requireAuth(request);
-      const limit = boundedLimit(request.query.limit);
-      const bodies = await deps.handlers.agentHandler.listBodies(auth, limit);
-      const parsed = bodies.map((body) =>
+      const params = parsePaginationParams(request.query as Record<string, unknown>);
+      const bodies = await deps.handlers.agentHandler.listBodies(auth, fetchSizeFor(params));
+      const validated = bodies.map((body) =>
         validateHandlerResponse(AgentBodySchema, body, CONTRACT_IDS.agentBody),
       );
-      reply.code(200).send({ bodies: parsed });
+      const page = slicePage(validated, params, (body) => body.bodyId);
+      reply.code(200).send({ bodies: page.items, ...paginationMeta(page) });
     },
   );
 
@@ -99,32 +103,23 @@ export function registerAgentRoutes(app: FastifyInstance, deps: RouteDeps): void
     },
   );
 
-  app.get<{ Querystring: { limit?: string } }>(
+  // S2-001: cursor pagination — same contract as /v1/agents/bodies.
+  app.get(
     "/v1/agents/organizations",
     { preHandler: [authPreHandler(deps, "agents")] },
     async (request, reply) => {
       const auth = requireAuth(request);
-      const limit = boundedLimit(request.query.limit);
-      const organizations = await deps.handlers.agentHandler.listOrganizations(auth, limit);
-      const parsed = organizations.map((organization) =>
+      const params = parsePaginationParams(request.query as Record<string, unknown>);
+      const organizations = await deps.handlers.agentHandler.listOrganizations(auth, fetchSizeFor(params));
+      const validated = organizations.map((organization) =>
         validateHandlerResponse(
           AgentOrganizationSchema,
           organization,
           CONTRACT_IDS.agentOrganization,
         ),
       );
-      reply.code(200).send({ organizations: parsed });
+      const page = slicePage(validated, params, (organization) => organization.organizationId);
+      reply.code(200).send({ organizations: page.items, ...paginationMeta(page) });
     },
   );
-}
-
-function boundedLimit(raw: string | undefined): number {
-  if (raw === undefined || raw === "") return 20;
-  const parsed = Number(raw);
-  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100) {
-    throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 400, `limit must be an integer 1..100, got '${raw}'`, {
-      limit: raw,
-    });
-  }
-  return parsed;
 }

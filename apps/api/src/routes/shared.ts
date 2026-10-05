@@ -1,30 +1,62 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { contentDigest, IdSchema } from "@reckon/contracts";
-import type { TenantScope } from "@reckon/contracts";
+import {
+  IDEMPOTENT_REPLAYED_HEADER,
+  IDEMPOTENCY_KEY_HEADER,
+  IDEMPOTENCY_WINDOW_MS,
+  IdSchema,
+  contentDigest,
+  type ApiVersionRegistry,
+  type TenantScope,
+} from "@reckon/contracts";
 import { ApiError, ERROR_CODES } from "../errors.js";
 import type { KeyAuthenticator } from "../auth.js";
-import type { IdempotencyStore } from "../idempotency.js";
+import type { IdempotencyStore, StoredIdempotent } from "../idempotency.js";
 import type { HandlerPorts } from "../ports.js";
+import type { RequestRateLimiter } from "../rate-limit.js";
 import type { AuthContext, Scope, Validator } from "../types.js";
 import { assertRequestTenant, assertResponseTenant, assertTenantHeader, peekBodyTenant } from "../tenant.js";
+import { resolveRequestVersion } from "../versioning.js";
 
 export interface RouteDeps {
   readonly keyStore: KeyAuthenticator;
   readonly idempotency: IdempotencyStore;
   readonly handlers: HandlerPorts;
   readonly apiVersion: string;
+  /** S2-001: version registry + pinned default for X-Reckon-Version negotiation. */
+  readonly versionRegistry: ApiVersionRegistry;
+  readonly defaultApiVersion: string;
+  /** S2-001: per-key rate limiter (absent = disabled). */
+  readonly rateLimiter?: RequestRateLimiter;
+  /** S2-001: injected clock (idempotency window + replay expiry). */
+  readonly clock: () => number;
 }
 
 /**
- * Auth middleware (Fastify preHandler): authenticate the bearer key,
- * enforce the route's scope, enforce the advisory tenant header, and run
- * the security-first tenant peek on the raw body. Order is fixed:
- * 401 (auth) → 403 (scope) → 403 (tenant) → 400 (validation) → 409/replay
- * (idempotency) → 501/2xx (handler).
+ * Auth middleware (Fastify preHandler), S2-001-hardened. The fixed order
+ * (documented law — later checks assume earlier ones passed):
+ *
+ *   401 authenticate (bearer key; pk_ keys rejected as typed
+ *      authentication_error)
+ *   → 429 rate limit (per-key fixed window, when configured)
+ *   → 400 API version (X-Reckon-Version vs the registry)
+ *   → 403 scope (route family)
+ *   → 403 tenant header + security-first body tenant peek
+ *   → (route) 400 validation → 422/replay idempotency → 501/2xx handler
  */
 export function authPreHandler(deps: RouteDeps, scope: Scope) {
-  return async (request: FastifyRequest): Promise<void> => {
+  return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
     const auth = deps.keyStore.authenticate(request.headers.authorization);
+    request.reckonAuth = auth;
+    if (deps.rateLimiter !== undefined) {
+      deps.rateLimiter.check(auth.keyHash);
+    }
+    const resolvedVersion = resolveRequestVersion(
+      deps.versionRegistry,
+      deps.defaultApiVersion,
+      firstHeader(request.headers["x-reckon-version"]),
+    );
+    request.reckonApiVersion = resolvedVersion.version;
+    reply.header("x-reckon-version", resolvedVersion.version);
     if (!auth.scopes.has(scope)) {
       throw new ApiError(
         ERROR_CODES.INSUFFICIENT_SCOPE,
@@ -35,8 +67,12 @@ export function authPreHandler(deps: RouteDeps, scope: Scope) {
     }
     assertTenantHeader(auth, request);
     peekBodyTenant(auth, request.body);
-    request.reckonAuth = auth;
   };
+}
+
+function firstHeader(raw: number | string | string[] | undefined): string | undefined {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return typeof value === "string" ? value : undefined;
 }
 
 export function requireAuth(request: FastifyRequest): AuthContext {
@@ -68,7 +104,7 @@ export function formatIssue(issue: {
   return { path, message, code: String(issue.code) };
 }
 
-/** Validate a request body against a REAL imported contract schema → typed 400. */
+/** Validate a request body against a REAL imported contract schema → typed 400 (param = first issue path). */
 export function parseRequestBody<Body>(
   schema: Validator<Body>,
   request: FastifyRequest,
@@ -76,11 +112,13 @@ export function parseRequestBody<Body>(
 ): Body {
   const result = schema.safeParse(request.body);
   if (!result.success) {
+    const issues = result.error.issues.map(formatIssue);
     throw new ApiError(
       ERROR_CODES.VALIDATION_ERROR,
       400,
       `Request body failed ${contractId} validation`,
-      { schema: contractId, issues: result.error.issues.map(formatIssue) },
+      { schema: contractId, issues },
+      issues[0]?.path !== undefined && issues[0]?.path !== "" ? issues[0]?.path : undefined,
     );
   }
   return result.data;
@@ -116,8 +154,7 @@ export function resolveIdempotencyKey(
   request: FastifyRequest,
   contractId: string,
 ): string {
-  const raw = request.headers["idempotency-key"];
-  const headerKey = Array.isArray(raw) ? raw[0] : raw;
+  const headerKey = firstHeader(request.headers[IDEMPOTENCY_KEY_HEADER]);
   if (bodyKey !== undefined) {
     if (headerKey !== undefined && headerKey !== "" && headerKey !== bodyKey) {
       throw new ApiError(
@@ -125,6 +162,7 @@ export function resolveIdempotencyKey(
         400,
         "Idempotency-Key header does not match the idempotencyKey in the request body",
         { schema: contractId, header: headerKey, body: bodyKey },
+        IDEMPOTENCY_KEY_HEADER,
       );
     }
     return bodyKey;
@@ -135,6 +173,7 @@ export function resolveIdempotencyKey(
       400,
       "Idempotency-Key header is required for this operation",
       { schema: contractId },
+      IDEMPOTENCY_KEY_HEADER,
     );
   }
   const parsed = IdSchema.safeParse(headerKey);
@@ -144,6 +183,7 @@ export function resolveIdempotencyKey(
       400,
       "Idempotency-Key header is not a valid Reckon id (1-128 chars, url-safe)",
       { schema: contractId, header: headerKey },
+      IDEMPOTENCY_KEY_HEADER,
     );
   }
   return parsed.data;
@@ -167,11 +207,22 @@ export interface RouteSpec<Body, Res> {
   readonly execute: (body: Body, auth: AuthContext) => Promise<Res>;
 }
 
+/** A stored idempotent entry is a replay candidate only inside the window (absent storedAt = non-expiring). */
+function isWithinWindow(stored: StoredIdempotent, now: number): boolean {
+  if (stored.storedAt === undefined) return true;
+  return now - stored.storedAt < IDEMPOTENCY_WINDOW_MS;
+}
+
 /**
  * The full contract-route pipeline, shared by every POST route:
  * auth (done in preHandler) → body tenant check → validation → idempotency
  * replay/conflict → handler execution → response validation → response
- * tenant invariant → 200 with schema echo + idempotency-key header.
+ * tenant invariant → 200 with schema echo + idempotency headers.
+ *
+ * S2-001: replays carry BOTH `Idempotent-Replayed: true` (the new law)
+ * and the legacy lowercase `idempotent-replay: true` header; conflicts
+ * answer 422 IDEMPOTENCY_CONFLICT (typed invalid_request_error); stored
+ * responses expire after the 24h window (then the key executes fresh).
  */
 export async function runContractRoute<Body, Res>(
   deps: RouteDeps,
@@ -186,21 +237,24 @@ export async function runContractRoute<Body, Res>(
   const idempotencyKey = resolveIdempotencyKey(spec.idempotencyFromBody?.(body), request, spec.contractId);
   const routeKey = requestRouteKey(request);
   const requestDigest = contentDigest(body);
+  const now = deps.clock();
 
   const stored = await deps.idempotency.lookup(auth.tenantId, routeKey, idempotencyKey);
-  if (stored !== undefined) {
+  if (stored !== undefined && isWithinWindow(stored, now)) {
     if (stored.requestDigest !== requestDigest) {
       throw new ApiError(
         ERROR_CODES.IDEMPOTENCY_CONFLICT,
-        409,
+        422,
         `Idempotency key '${idempotencyKey}' was already used with a different request body`,
         { idempotencyKey },
+        IDEMPOTENCY_KEY_HEADER,
       );
     }
     for (const [name, value] of Object.entries(stored.response.headers ?? {})) {
       reply.header(name, value);
     }
-    reply.header("idempotency-key", idempotencyKey);
+    reply.header(IDEMPOTENCY_KEY_HEADER, idempotencyKey);
+    reply.header(IDEMPOTENT_REPLAYED_HEADER, "true");
     reply.header("idempotent-replay", "true");
     reply.code(stored.response.statusCode).send(stored.response.body);
     return;
@@ -217,7 +271,7 @@ export async function runContractRoute<Body, Res>(
   const payload = spec.transformResponse !== undefined ? spec.transformResponse(parsed) : parsed;
 
   reply.code(200);
-  reply.header("idempotency-key", idempotencyKey);
+  reply.header(IDEMPOTENCY_KEY_HEADER, idempotencyKey);
   await deps.idempotency.store(auth.tenantId, routeKey, idempotencyKey, requestDigest, {
     statusCode: 200,
     body: payload,
