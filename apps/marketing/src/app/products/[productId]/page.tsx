@@ -15,6 +15,7 @@ import {
   productPages,
   type ProductPageId,
 } from "@/lib/product-content";
+import { routeMetadata } from "@/lib/site-routes";
 
 /**
  * Reckon product pages (S1-002) — /products/<id>, one per product, all
@@ -51,16 +52,10 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   const id = resolvePage(productId);
   if (id === null) return {};
   const page = productPages[id];
-  return {
-    title: page.metadata.title,
-    description: page.metadata.description,
-    openGraph: {
-      title: page.metadata.title,
-      description: page.metadata.description,
-      siteName: "Reckon",
-      type: "website",
-    },
-  };
+  return routeMetadata({
+    ...page.metadata,
+    path: `/products/${id}`,
+  });
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {

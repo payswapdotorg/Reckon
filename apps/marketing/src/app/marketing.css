@@ -2342,6 +2342,97 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
+/* Legal pages + 404 (S5-001) — /terms, /privacy, not-found            */
+/* ------------------------------------------------------------------ */
+
+/* Legal prose — a narrow centered reading column (stripe.com legal
+   register): documents read, not dashboards. */
+
+.rk-legal-body {
+  padding-block: clamp(2.5rem, 5vw, 4rem) clamp(4rem, 8vw, 6.5rem);
+}
+
+.rk-legal-column {
+  max-width: 74ch;
+}
+
+.rk-legal-section {
+  padding-block: 1.9rem;
+  border-top: 1px solid var(--rk-line);
+}
+
+.rk-legal-section:first-child {
+  border-top: none;
+  padding-top: 0.5rem;
+}
+
+.rk-legal-heading {
+  margin: 0 0 0.9rem;
+  font-size: clamp(1.2rem, 2vw, 1.42rem);
+  font-weight: 610;
+  line-height: 1.2;
+  letter-spacing: -0.014em;
+  color: var(--rk-text);
+}
+
+.rk-legal-paragraph {
+  margin: 0 0 0.9rem;
+  font-size: 0.99rem;
+  line-height: 1.75;
+  color: var(--rk-text-secondary);
+}
+
+.rk-legal-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.rk-legal-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 1.4rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--rk-line-strong);
+}
+
+.rk-legal-updated {
+  margin: 0;
+  font-family: var(--rk-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  color: var(--rk-text-tertiary);
+}
+
+.rk-legal-updated time {
+  color: #98a29c;
+}
+
+.rk-legal-contact {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--rk-text-secondary);
+}
+
+.rk-legal-contact-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: var(--rk-accent);
+  font-weight: 560;
+}
+
+.rk-legal-contact-link:hover {
+  color: var(--rk-accent-hover);
+}
+
+/* 404 — the apology surface. The hero grammar carries it; the CTA row
+   gets a touch more air above the fold's end. */
+
+.rk-notfound-ctas {
+  margin-top: 2.6rem;
+}
+
+/* ------------------------------------------------------------------ */
 /* Reduced motion — the mesh goes still, the ticker settles instantly  */
 /* ------------------------------------------------------------------ */
 

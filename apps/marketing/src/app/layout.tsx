@@ -3,10 +3,21 @@ import type { ReactNode } from "react";
 
 import "./marketing.css";
 
+import { homeMetadata } from "@/lib/marketing-content";
+import { resolveSiteUrl } from "@/lib/site-routes";
+
+/**
+ * Root layout (S1-001) — site-wide metadata: the canonical metadataBase
+ * (NEXT_PUBLIC_SITE_URL-overridable, S5-001) every og:image/og:url and
+ * canonical resolves against, the default title/description (from the
+ * home content model), and the Twitter large-image card default. The
+ * og:image itself comes from the app/opengraph-image.tsx file convention,
+ * which covers every route in this root segment.
+ */
 export const metadata: Metadata = {
-  title: "Reckon — Recommendation infrastructure for every product",
-  description:
-    "Reckon decides what to show, say, and send next — one API call, every surface, measured end-to-end. The decision layer for feeds, digests, queues, and notifications.",
+  metadataBase: new URL(resolveSiteUrl()),
+  title: homeMetadata.title,
+  description: homeMetadata.description,
   keywords: [
     "Reckon",
     "recommendation API",
@@ -17,11 +28,13 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Reckon" }],
   openGraph: {
-    title: "Reckon — Recommendation infrastructure for every product",
-    description:
-      "One API call decides what to show, say, and send next — every surface, measured end-to-end.",
+    title: homeMetadata.title,
+    description: homeMetadata.description,
     siteName: "Reckon",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
   },
 };
 
