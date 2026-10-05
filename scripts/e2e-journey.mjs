@@ -521,7 +521,7 @@ async function runRemoteJourney(target) {
   emit(`code path wired in S5-003 and verified over a real loopback wire against the frozen surface (full-parity and no-webhook compositions) — UNTESTED-IN-PROD until the Lead runs it with RECKON_JOURNEY_API_KEY`);
   emit(`not-wired hops are attempted live, captured verbatim and named — never faked`);
 
-  /* ---------------- STEP 1 — signup (account provisioning) ---------------- */
+  /* ---------------- REMOTE HOP 1 — signup (account provisioning) ---------------- */
 
   beginStep(
     1,
@@ -548,7 +548,7 @@ async function runRemoteJourney(target) {
   setPrimary(1, `tenant ${target.tenantId} + ${redact(journeyKey)}`);
   emit("STEP 1 OK — signup hop asserted (pre-provisioned key validated + live liveness envelope)");
 
-  /* ---------------- STEP 2 — API key (one-time secret) ---------------- */
+  /* ---------------- REMOTE HOP 2 — API key (one-time secret) ---------------- */
 
   beginStep(2, "api-key (one-time secret)", "remote mode: the Stripe-grammar key route POST /v1/api-keys is attempted verbatim over the wire (the route apps/web developers-api.ts names as pending); the working secret is the Lead's issuance — the one-time display happened at provisioning time");
 
@@ -596,7 +596,7 @@ async function runRemoteJourney(target) {
   setPrimary(2, redact(journeyKey));
   emit("STEP 2 OK — api-key hop asserted (pending route named + the provisioned key authenticates over the wire)");
 
-  /* ---------------- STEP 3 — first recommendation (test mode) ---------------- */
+  /* ---------------- REMOTE HOP 3 — first recommendation (test mode) ---------------- */
 
   beginStep(3, "decision (first recommendation)", "remote mode: POST /v1/decisions over the wire with the provisioned test key and the magic item itm_test_suggest (the quickstart's canonical first call) — on a current-surface deployment the canned test-mode engine answers; composition-internal assertions (the separation-law counter) are local-mode only and are NOT faked here");
 
@@ -644,7 +644,7 @@ async function runRemoteJourney(target) {
   setPrimary(3, decisionId);
   emit("STEP 3 OK — decision hop asserted (canned envelope over the wire + read-back + wire-visible mode markers)");
 
-  /* ---------------- STEP 4 — log entry (request trail) ---------------- */
+  /* ---------------- REMOTE HOP 4 — log entry (request trail) ---------------- */
 
   beginStep(4, "request-log (log entry)", "remote mode: the request-log surface GET /v1/request-logs is attempted verbatim over the wire; the mode-scoped idempotency trail row is proven by replaying the identical request (the wire-visible trail)");
 
@@ -669,7 +669,7 @@ async function runRemoteJourney(target) {
   setPrimary(4, `${decisionId} (replayed row)`);
   emit("STEP 4 OK — request-log hop asserted (pending route named + wire-visible idempotency replay row)");
 
-  /* ---------------- STEP 5 — analytics entry ---------------- */
+  /* ---------------- REMOTE HOP 5 — analytics entry ---------------- */
 
   beginStep(5, "analytics (analytics entry)", "remote mode: an outcome reports the step-3 decision back via POST /v1/outcomes over the wire so the funnel/CTR linkage has a real row on the deployment; the pending analytics trail reads are attempted verbatim; the observability linkage record and the S3-002 computation are composition/client-side and are honestly NOT asserted over the wire");
 
@@ -715,7 +715,7 @@ async function runRemoteJourney(target) {
   setPrimary(5, `${outcomeEvent.eventId} → ${decisionId}`);
   emit("STEP 5 OK — analytics hop asserted (real outcome row over the wire + pending trail reads named; composition-internal linkage honestly not asserted)");
 
-  /* ---------------- STEP 6 — webhook event ---------------- */
+  /* ---------------- REMOTE HOP 6 — webhook event ---------------- */
 
   beginStep(6, "webhook (webhook event)", "remote mode: register an endpoint over the wire, trigger the journey's own event (POST /v1/preferences/events → preference.updated), retrieve the event and poll the delivery log — the three honest deployment states are accepted and recorded; signature verification needs the delivered bytes (a public receiver URL) and is honestly skipped unless the deployment delivers to one");
 

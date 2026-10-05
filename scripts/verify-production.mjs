@@ -188,7 +188,7 @@ const WEB_NAV_IA = [
 const DOCS_IDENTITY_MARKERS = ["Reckon Docs", "Reckon documentation"]; // apps/docs/src/app/page.tsx
 const DOCS_QUICKSTART_TABS = ["Hosted endpoint", "TypeScript SDK", "Streaming"]; // apps/docs/src/content/quickstart.ts tabs
 const MARKETING_BRAND_MARKER = "Recommendation infrastructure"; // apps/marketing/src/lib/marketing-content.ts hero
-const MARKETING_NAV_LABELS = ["Product", "Pricing", "Docs"]; // marketing-content.ts NAV_LINKS
+const MARKETING_NAV_LABELS = ["Product", "Docs", "Pricing"]; // marketing-content.ts headerNav (shipped order)
 const MARKETING_CALCULATOR_MARKERS = ['id="calculator"', "Your rate, at your volume."]; // volume-calculator.tsx + pricing-content.ts calculatorCopy
 const MARKETING_PRODUCT_PATH = "/products/recommendation-api"; // marketing-content.ts product route
 
