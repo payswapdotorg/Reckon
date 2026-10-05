@@ -9,6 +9,7 @@ import { PricingHero } from "@/components/marketing/pricing-hero";
 import { PricingTiers } from "@/components/marketing/pricing-tiers";
 import { VolumeCalculator } from "@/components/marketing/volume-calculator";
 import { pricingMetadata } from "@/lib/pricing-content";
+import { routeMetadata } from "@/lib/site-routes";
 
 /**
  * Reckon pricing page (S1-003) — the per-1k-request pricing surface in
@@ -26,16 +27,10 @@ import { pricingMetadata } from "@/lib/pricing-content";
  * root layout — see app/layout.tsx).
  */
 
-export const metadata: Metadata = {
-  title: pricingMetadata.title,
-  description: pricingMetadata.description,
-  openGraph: {
-    title: pricingMetadata.title,
-    description: pricingMetadata.description,
-    siteName: "Reckon",
-    type: "website",
-  },
-};
+export const metadata: Metadata = routeMetadata({
+  ...pricingMetadata,
+  path: "/pricing",
+});
 
 export default function PricingPage() {
   return (

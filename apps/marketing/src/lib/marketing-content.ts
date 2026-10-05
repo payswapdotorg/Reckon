@@ -23,6 +23,18 @@
  */
 export const START_NOW_HREF = "/pricing";
 
+/**
+ * Home metadata (S5-001) — the site's default title/description. Shared by
+ * the root layout (the site-wide fallback) and the home page's `metadata`
+ * export (routeMetadata builds the full OG/Twitter card from it).
+ */
+export const homeMetadata = {
+  title: "Reckon — Recommendation infrastructure for every product",
+  description:
+    "Reckon decides what to show, say, and send next — one API call, every surface, measured end-to-end. The decision layer for feeds, digests, queues, and notifications.",
+  path: "/",
+};
+
 export interface CtaLink {
   label: string;
   href: string;
@@ -323,8 +335,8 @@ export const footerColumns: FooterColumn[] = [
     links: [
       { label: "Contact sales", href: secondaryCta.href },
       { label: "Security", href: "#", placeholder: true },
-      { label: "Privacy", href: "#", placeholder: true },
-      { label: "Terms", href: "#", placeholder: true },
+      { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
     ],
   },
 ];

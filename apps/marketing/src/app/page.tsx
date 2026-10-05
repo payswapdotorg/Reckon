@@ -8,6 +8,8 @@
  */
 import "./marketing.css";
 
+import type { Metadata } from "next";
+
 import { CtaBand } from "@/components/marketing/cta-band";
 import { CodeShowcase } from "@/components/marketing/code-showcase";
 import { Hero } from "@/components/marketing/hero";
@@ -16,6 +18,11 @@ import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { SocialProof } from "@/components/marketing/social-proof";
 import { StatTicker } from "@/components/marketing/stat-ticker";
+import { homeMetadata } from "@/lib/marketing-content";
+import { routeMetadata } from "@/lib/site-routes";
+
+/** Home metadata (S5-001) — the full OG/Twitter card for "/". */
+export const metadata: Metadata = routeMetadata(homeMetadata);
 
 export default function MarketingHome() {
   return (
