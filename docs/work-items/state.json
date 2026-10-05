@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "status": "stripe-phase-final-release-prepared-65-done",
-  "implementationComplete": false,
+  "status": "stripe-phase-complete-65-done-implementation-complete",
+  "implementationComplete": true,
   "dispatchBaseSha": "0c55b0c",
   "workers": [
     {

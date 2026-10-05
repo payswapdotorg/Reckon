@@ -567,3 +567,10 @@ seam: decisions/outcomes/preferences → events through the real routes).
   (documented divergence, TL3-flagged);
 - no CORS/OpenAPI generation yet; no SDKs (S2-004 — the seam is the
   hardened API surface itself plus `packages/contracts`).
+
+## RELEASE-002 (stripe phase, 2026-10-05)
+
+Production deploy note (Lead): this release redeploys `reckon-api` unchanged-in-code
+since the wave-2 merge (webhooks + test-mode + keys surface shipped there); the
+bundle regenerated and verified this window per the S4-002 report. This note
+exists so the Vercel rootDirectory change-detection sees a fresh deploy.

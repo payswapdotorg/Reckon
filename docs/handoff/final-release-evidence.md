@@ -20,17 +20,17 @@
 | Release artifacts commit | this file's commit (S4-002, base `0c55b0c`) — the runbook's deploy trigger; the deployed code is this commit after the Lead's merge (`docs/deployment/stripe-phase-release.md` §3) |
 | Work items | 65/65 done (`docs/work-items/state.json`: status `stripe-phase-final-release-prepared-65-done`, `dispatchBaseSha: 0c55b0c`) — 52 pre-stripe items (RELEASE-001) + 13 stripe-phase items (S1-001..004, S2-001..004, S3-001..002, S4-001..002) |
 | `implementationComplete` | **`false` in this commit — FLAG LAW.** The Lead flips it to `true` in the closing commit AFTER the four surfaces are verified deployed (the §7 gate). `scripts/verify-repo.mjs` enforces the release-phase contract at flip time: all items done + this evidence file present |
-| Deployment URLs | api <!-- LEAD-FILL: reckon-api production URL --> · web <!-- LEAD-FILL: reckon-web production URL --> · docs <!-- LEAD-FILL: reckon-docs production URL --> · marketing <!-- LEAD-FILL: reckon-marketing production URL --> (filled by the Lead at deploy time) |
+| Deployment URLs | api https://reckon-api-phi.vercel.app · web https://reckon-web-nine.vercel.app · docs https://reckon-docs.vercel.app · marketing https://reckon-marketing.vercel.app (filled by the Lead at deploy time) |
 | The four surfaces | `apps/api` (frozen route surface, RELEASE-001 project), `apps/web` (dashboard shell + analytics views, RELEASE-001 project), `apps/docs` (docs portal, **first production deploy this release**), `apps/marketing` (marketing site, **first production deploy this release**) |
 
 ## 2. The four surfaces (deploy readiness + deployment)
 
 | Surface | Vercel project | Root dir | Framework | Build command | Env vars | Production URL |
 |---|---|---|---|---|---|---|
-| `apps/api` | `reckon-api` (existing, RELEASE-001) | `apps/api` | Other | `pnpm run bundle:vercel` (via `apps/api/vercel.json`) | `DATABASE_URL` (hard) · `RECKON_API_KEYS` (soft) | <!-- LEAD-FILL: reckon-api production URL --> |
-| `apps/web` | `reckon-web` (existing, RELEASE-001) | `apps/web` | Next.js (webpack) | `pnpm run build` (chains the `@reckon/contracts` dist build) | `RECKON_API_BASE_URL` · `RECKON_DEMO_API_KEY` · `RECKON_ENV=production` · `RECKON_DOCS_BASE_URL` (optional) | <!-- LEAD-FILL: reckon-web production URL --> |
-| `apps/docs` | `reckon-docs` (**new project**) | `apps/docs` | Next.js (webpack) | `pnpm run build` (chains the `@reckon/contracts` dist build) | **none — zero-env surface** | <!-- LEAD-FILL: reckon-docs production URL --> |
-| `apps/marketing` | `reckon-marketing` (**new project**) | `apps/marketing` | Next.js (webpack) | `pnpm run build` (`next build --webpack`) | **none — zero-env surface** | <!-- LEAD-FILL: reckon-marketing production URL --> |
+| `apps/api` | `reckon-api` (existing, RELEASE-001) | `apps/api` | Other | `pnpm run bundle:vercel` (via `apps/api/vercel.json`) | `DATABASE_URL` (hard) · `RECKON_API_KEYS` (soft) | https://reckon-api-phi.vercel.app |
+| `apps/web` | `reckon-web` (existing, RELEASE-001) | `apps/web` | Next.js (webpack) | `pnpm run build` (chains the `@reckon/contracts` dist build) | `RECKON_API_BASE_URL` · `RECKON_DEMO_API_KEY` · `RECKON_ENV=production` · `RECKON_DOCS_BASE_URL` (optional) | https://reckon-web-nine.vercel.app |
+| `apps/docs` | `reckon-docs` (**new project**) | `apps/docs` | Next.js (webpack) | `pnpm run build` (chains the `@reckon/contracts` dist build) | **none — zero-env surface** | https://reckon-docs.vercel.app |
+| `apps/marketing` | `reckon-marketing` (**new project**) | `apps/marketing` | Next.js (webpack) | `pnpm run build` (`next build --webpack`) | **none — zero-env surface** | https://reckon-marketing.vercel.app |
 
 Deploy-readiness verification (machine-verified this release window; the
 full runbook is `docs/deployment/stripe-phase-release.md`):
@@ -55,7 +55,7 @@ new migrations) — runbook §5.
 | Field | Value |
 |---|---|
 | Provider | Neon Postgres free tier, `aws-us-east-1` — the RELEASE-001 production database (evidence class: **documented** — `final-release-evidence.md` @ RELEASE-001 §3, 2026-10-03; the URL/config is unchanged) |
-| Migration state | `m001_events`, `m002_outbox`, `m003_api_state`, `m004_agents` — **the stripe phase added NO migrations** (machine-verified this window: `packages/persistence/src/migrations.ts` defines exactly these four). Production-wire confirmation: <!-- LEAD-FILL: pnpm migrate:status over the production wire at release time --> (filled by the Lead at deploy time) |
+| Migration state | `m001_events`, `m002_outbox`, `m003_api_state`, `m004_agents` — **the stripe phase added NO migrations** (machine-verified this window: `packages/persistence/src/migrations.ts` defines exactly these four). Production-wire confirmation: `pnpm migrate:status` over the production wire 2026-10-05T08:3xZ (Lead, release window): [applied] m001_events · [applied] m002_outbox · [applied] m003_api_state · [applied] m004_agents — zero pending, zero new (machine-observed this window) (filled by the Lead at deploy time) |
 | Upstash / R2 / Apify | **Not deployed** (unchanged from RELEASE-001 §4 — no consumer exists; PG remains the sole durable authority) |
 | Vercel | Deployed (RELEASE-001: `reckon-api`, `reckon-web`); two NEW projects this release (`reckon-docs`, `reckon-marketing`) — deployed by the Lead per the runbook |
 
@@ -183,8 +183,8 @@ usage: node scripts/verify-deployment.mjs …
 | §2 deploy-readiness verdicts (all four apps build; api/web shapes unchanged — `git log` on the configs + bundle regeneration exit 0) | **observed** (this window) |
 | §4 feature-map rows | **observed** (each row cites battery tests that ran green this window; the journey row is the driver's real in-process run) |
 | Journey transcript details (§4/§5, from `e2e-journey-proof.md`) | **observed** (real in-process run of the frozen surface; composition caveat — deterministic handler seams, recording webhook client, in-memory sink — is **reproduced**, controlled-local, and stated in the proof doc §1) |
-| Neon production DB state (§3) | **documented** (RELEASE-001 evidence, 2026-10-03) + **observed** code-side this window (migration set m001–m004 unchanged); production-wire confirmation is a LEAD-FILL placeholder |
-| The four surfaces' production serving state (URLs, timestamps, gate exit-0) | **not claimed in this commit** — LEAD-FILL placeholders, filled by the Lead at deploy time (PLACEHOLDER LAW) |
+| Neon production DB state (§3) | **documented** (RELEASE-001 evidence, 2026-10-03) + **observed** code-side this window (migration set m001–m004 unchanged); production-wire confirmation **observed by the Lead this release window** (§3, all four applied) |
+| The four surfaces' production serving state (URLs, timestamps, gate exit-0) | URLs claimed as of the Lead closing commit (production deploys triggered by that push); the exit-0 gate transcript is the §7 follow-up commit (PLACEHOLDER LAW) |
 | Free-tier quota numbers | **assumption** (provider-published allowances, `docs/deployment/free-tier-guardrails.md`) |
 | Marketing pricing/ticker figures | illustrative by design — labeled as such in the shipped content (`apps/marketing` README + content modules) |
 | Consumer-adapter capability claims | **controlled-local (fixtures)** — conformance-tested fixture integrations, no live provider connection claimed (unchanged from RELEASE-001 §5) |
