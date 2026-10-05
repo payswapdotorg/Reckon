@@ -13,11 +13,12 @@
  * the monorepo `apps/marketing` build, with ONE deliberate difference —
  * START_NOW_HREF. The preview build has a single route, so the self-serve
  * CTA anchors to the in-page start section; the monorepo build ships the
- * S1-003 placeholder route /pricing and points the CTA there.
+ * S1-003 pricing route /pricing and points the CTA there.
  */
 
 /**
- * Primary CTA target. Monorepo build: "/pricing" (S1-003 placeholder route).
+ * Primary CTA target. Monorepo build: "/pricing" — the S1-003 pricing
+ * page (per-1k-request tiers, volume calculator, comparison table).
  * Preview build: "#get-started" (the code-first section on this page).
  */
 export const START_NOW_HREF = "/pricing";
@@ -44,7 +45,7 @@ export interface NavItem {
 export const headerNav: NavItem[] = [
   { label: "Product", href: "/products/recommendation-api" },
   { label: "Docs", href: "https://docs.reckon.dev/" },
-  { label: "Pricing", href: "#", placeholder: true },
+  { label: "Pricing", href: "/pricing" },
 ];
 
 export const headerActions: { signIn: NavItem; startNow: CtaLink } = {
@@ -285,11 +286,12 @@ export const finalCta = {
   secondaryCta,
 };
 
-/** Footer — the four-surface IA (survey §1). Product + Docs surfaces are live (S1-002); Pricing (S1-003) and Dashboard (S3) still ship later. */
+/** Footer — the four-surface IA (survey §1). Product, Docs, and Pricing
+ *  surfaces are live (S1-002 + S1-003); the Dashboard (S3) still ships later. */
 export const footerSurfaces: NavItem[] = [
   { label: "Product", href: "/products/recommendation-api" },
   { label: "Docs", href: "https://docs.reckon.dev/" },
-  { label: "Pricing", href: "#", placeholder: true },
+  { label: "Pricing", href: "/pricing" },
   { label: "Dashboard", href: "#", placeholder: true },
 ];
 
