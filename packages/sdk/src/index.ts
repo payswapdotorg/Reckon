@@ -1,5 +1,6 @@
 /**
- * @reckon/sdk — the host-integration SDK for the Reckon API (W3-002).
+ * @reckon/sdk — the host-integration SDK for the Reckon API (W3-002;
+ * hardened to the full S2-001/S2-002/S2-003/S2-004 platform surface).
  *
  * Laws: no LLM anywhere; no internal database schema leakage (public types
  * are the frozen @reckon/contracts types only); every request and response
@@ -50,9 +51,14 @@ export type {
   DecisionRequestInput,
   ExperiencePlanInput,
   PlanVersionEntry,
+  ExpandedDecisionResult,
+  ExpandOptions,
   FetchLike,
   FetchRequestInit,
+  ListOptions,
   OutcomeEventInput,
+  PageOf,
+  PlanPage,
   PreferenceDeltaInput,
   RealizationInput,
   ReckonClient,
@@ -61,6 +67,16 @@ export type {
   ResolveRequestInput,
   ResolveResponse,
   ResolveResult,
+  WebhookDeliveryListOptions,
+  WebhookDeliveryPage,
+  WebhookEndpointCreateInput,
+  WebhookEndpointPage,
+} from "./client.js";
+export {
+  ExpandedDecisionResultSchema,
+  PlanPageSchema,
+  WebhookDeliveryPageSchema,
+  WebhookEndpointPageSchema,
 } from "./client.js";
 export { createInjectFetch } from "./testing.js";
 
@@ -69,8 +85,10 @@ export {
   ReckonAuthError,
   ReckonConfigError,
   ReckonIdempotencyConflictError,
+  ReckonModeMismatchError,
   ReckonNotFoundError,
   ReckonNotWiredError,
+  ReckonRateLimitError,
   ReckonResponseContractError,
   ReckonScopeError,
   ReckonServerError,
@@ -89,6 +107,33 @@ export type {
   SdkServerErrorCode,
   SdkValidationIssue,
 } from "./errors.js";
+
+// S2-004 — the webhook helpers: ONE canonical algorithm (the
+// @reckon/contracts reference implementation), re-exported plus the
+// docs-named `verifyWebhook` alias the portal snippets import.
+export {
+  generateWebhookSigningSecret,
+  signWebhookPayload,
+  verifyReckonSignature,
+  verifyWebhook,
+  WEBHOOK_EVENT_TYPES,
+  WEBHOOK_SIGNATURE_HEADER,
+  WEBHOOK_SIGNATURE_HEADER_CANONICAL,
+  WEBHOOK_SIGNATURE_TOLERANCE_SECONDS,
+  WebhookEventTypeSchema,
+  ReckonEventSchema,
+} from "./webhooks.js";
+export type {
+  ReckonEvent,
+  WebhookDeliveryView,
+  WebhookEndpointCreated,
+  WebhookEndpointCreate,
+  WebhookEndpointView,
+  WebhookEventType,
+  WebhookReplayResponse,
+  WebhookSigningSecret,
+  WebhookUrl,
+} from "./webhooks.js";
 
 // Contract types are re-exported for consumer convenience (types ONLY —
 // frozen public contracts, never internal persistence shapes).
