@@ -231,3 +231,11 @@ routes; S5-003 drift register web-2: S3-001 nav IA absent, no docs link).
 This note triggers the git-path production redeploy of current main (67b9b7b)
 so the shell matches the frozen surface (WORKSPACE_ROUTES nav IA + the
 S1-004 onboarding card's docs quickstart link).
+
+## REDEPLOY-002c (2026-10-05 23:32Z)
+
+Git-path production redeploy trigger (Lead): main 7d5d84d carries the full
+stripe-phase + TL5 tree; reckon-api redeployed live 23:29Z (verified: webhook
+family 401, typed envelopes with class/doc_url). This touch re-arms the
+reckon-web change-detection for its production redeploy (the S3-001 nav IA
++ S1-004 docs-link shell).
