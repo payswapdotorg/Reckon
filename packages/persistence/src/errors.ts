@@ -74,3 +74,19 @@ export class ResearchJobError extends PersistenceError {
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
+
+/**
+ * TL6-001: a signup arrived for an email that already belongs to an
+ * account (the typed 409 EMAIL_TAKEN source). The email is the caller's
+ * own input — no secret material rides in this error.
+ */
+export class AccountEmailTakenError extends PersistenceError {
+  readonly email: string;
+
+  constructor(email: string) {
+    super("PERSISTENCE_ACCOUNT_EMAIL_TAKEN", `an account with email '${email}' already exists`);
+    this.name = "AccountEmailTakenError";
+    this.email = email;
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}

@@ -30,6 +30,9 @@ export const SDK_SERVER_ERROR_CODES = [
   "INSUFFICIENT_SCOPE",
   "NOT_FOUND",
   "IDEMPOTENCY_CONFLICT",
+  // TL6-001: the typed 409 for a signup whose email already belongs to an
+  // account (mirrors the additive frozen-catalog entry).
+  "EMAIL_TAKEN",
   "RATE_LIMIT_EXCEEDED",
   "NOT_WIRED",
   "HANDLER_RESPONSE_INVALID",
@@ -176,6 +179,14 @@ export class ReckonIdempotencyConflictError extends ReckonSdkError {
   }
 }
 
+/** 409 EMAIL_TAKEN (TL6-001) — the signup email already belongs to an account. */
+export class ReckonEmailTakenError extends ReckonSdkError {
+  constructor(message: string, options: ReckonSdkErrorOptions = {}) {
+    super("EMAIL_TAKEN", message, options);
+    this.name = "ReckonEmailTakenError";
+  }
+}
+
 /** 429 RATE_LIMIT_EXCEEDED (S2-001) — too many requests; honor `retryAfterSeconds`. */
 export class ReckonRateLimitError extends ReckonSdkError {
   constructor(message: string, options: ReckonSdkErrorOptions = {}) {
@@ -243,6 +254,8 @@ export function mapServerError(
       return new ReckonNotFoundError(message, options);
     case "IDEMPOTENCY_CONFLICT":
       return new ReckonIdempotencyConflictError(message, options);
+    case "EMAIL_TAKEN":
+      return new ReckonEmailTakenError(message, options);
     case "RATE_LIMIT_EXCEEDED":
       return new ReckonRateLimitError(message, options);
     case "NOT_WIRED":

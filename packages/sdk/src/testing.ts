@@ -33,7 +33,11 @@ export function createInjectFetch(app: FastifyInstance): FetchLike {
         responseHeaders.set(name, value);
       }
     }
-    return new Response(response.body, {
+    // TL6-001: the fetch Response constructor REJECTS a body on the
+    // null-body statuses (204/205/304) — light-my-request returns an
+    // empty string, so strip it before constructing the Response.
+    const nullBodyStatus = response.statusCode === 204 || response.statusCode === 205 || response.statusCode === 304;
+    return new Response(nullBodyStatus ? null : response.body, {
       status: response.statusCode,
       headers: responseHeaders,
     });

@@ -25,3 +25,7 @@ export * from "./api-platform.js";
 // endpoints, delivery log) — additive extension; no existing exported
 // shape above changes.
 export * from "./webhooks.js";
+// TL6-001: self-serve API account contracts (signup/login sessions,
+// minted account keys, tier ladder, route paths) — additive extension;
+// no existing exported shape above changes.
+export * from "./accounts.js";

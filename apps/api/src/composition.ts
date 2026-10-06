@@ -36,6 +36,9 @@ import { normalizeCandidates, evaluatePolicy } from "@reckon/decision";
 import { expandExperiences } from "@reckon/experience";
 import { decide, type PlanState } from "@reckon/scheduler";
 import {
+  PgAccountKeyStore,
+  PgAccountSessionStore,
+  PgAccountStore,
   PgCatalogStore,
   PgContextStore,
   PgDecisionStore,
@@ -59,6 +62,9 @@ import type {
 } from "./ports.js";
 import { buildServer } from "./server.js";
 import type { ApiConfig } from "./config.js";
+// TL6-001: the self-serve account surface (layered auth + routes).
+import { LayeredKeyAuthenticator } from "./auth.js";
+import { registerAccountRoutes } from "./routes/account.js";
 import type { ReplanRequest, ResolveRequest, ResolveResponse } from "./envelopes.js";
 import type { AuthContext } from "./types.js";
 import { PgObservabilitySink } from "./pg-observability.js";
@@ -74,6 +80,8 @@ export interface ProductionCompositionOptions {
   /** Apply pending migrations on boot (default true — idempotent). */
   readonly migrate?: boolean;
   readonly keys: ApiConfig["keys"];
+  /** TL6-001: per-key rate limiting for the production server (flat limit + tier ladder). */
+  readonly rateLimit?: ApiConfig["rateLimit"];
   readonly apiVersion?: string;
   readonly clock?: CompositionClock;
   readonly logger?: boolean;
@@ -94,6 +102,10 @@ export interface ProductionComposition {
     readonly idempotency: PgIdempotencyStore;
     readonly agents: PgAgentStore;
     readonly researchJobs: PgResearchJobStore;
+    // TL6-001: the self-serve account surface.
+    readonly accounts: PgAccountStore;
+    readonly accountKeys: PgAccountKeyStore;
+    readonly accountSessions: PgAccountSessionStore;
   };
   close(): Promise<void>;
 }
@@ -484,6 +496,14 @@ export async function buildProductionServer(
   const idempotency = new PgIdempotencyStore(executor);
 
   const sink = new PgEventSink({ executor });
+  // TL6-001: the self-serve account surface — real durable stores (ADR-001;
+  // the composition always has persistence), the layered authenticator
+  // (static env keys FIRST, DB-minted account keys on miss) and the
+  // session-authenticated /v1/account route family.
+  const accounts = new PgAccountStore(executor, () => clock.now());
+  const accountKeys = new PgAccountKeyStore(executor, () => clock.now());
+  const accountSessions = new PgAccountSessionStore(executor, () => clock.now());
+  const keyStore = new LayeredKeyAuthenticator(options.keys ?? [], accountKeys);
   const transport = new PgOutboxTransport({
     executor,
     sink,
@@ -609,9 +629,15 @@ export async function buildProductionServer(
   const app = buildServer({
     apiVersion: options.apiVersion,
     keys: options.keys,
+    // TL6-001: the layered authenticator replaces the plain static
+    // KeyStore (static env keys answer FIRST, byte-identically; DB
+    // account keys resolve on miss).
+    keyStore,
     handlers,
     idempotencyStore: idempotency,
     logger: options.logger,
+    // TL6-001: tier-aware rate limiting when the deployment enables it.
+    ...(options.rateLimit !== undefined ? { rateLimit: options.rateLimit } : {}),
     // S2-001: the composition clock drives the idempotency window (and
     // the opt-in rate limiter) in production — host time authority.
     clock: () => clock.now(),
@@ -622,12 +648,29 @@ export async function buildProductionServer(
     },
   });
 
+  // TL6-001: mount the account routes (session-auth family) on the SAME
+  // app — a separate pipeline from the key-auth contract routes.
+  registerAccountRoutes(app, { accounts, keys: accountKeys, sessions: accountSessions });
+
   return {
     app,
     executor,
     transport,
     observability,
-    stores: { decisions, plans, catalog, preferences, contexts, events, idempotency, agents, researchJobs },
+    stores: {
+      decisions,
+      plans,
+      catalog,
+      preferences,
+      contexts,
+      events,
+      idempotency,
+      agents,
+      researchJobs,
+      accounts,
+      accountKeys,
+      accountSessions,
+    },
     async close() {
       await app.close();
       await observability.close();

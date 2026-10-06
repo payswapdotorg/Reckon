@@ -1,5 +1,5 @@
 import type { FastifyRequest } from "fastify";
-import type { KeyMode } from "@reckon/contracts";
+import type { AccountTier, KeyMode } from "@reckon/contracts";
 
 /**
  * Structural view of a zod schema's `safeParse`, used so that apps/api can
@@ -54,6 +54,10 @@ export type Scope = (typeof ROUTE_SCOPES)[number];
  * handler — sk_test_/pk_test_ keys (and legacy keys pinned `mode: "test"`)
  * run in test mode. Live/test behavioral separation is S2-003's surface;
  * this field is the seam it plugs into.
+ *
+ * TL6-001: `tier` is carried by DB-minted account keys (the paid ladder);
+ * env-configured static keys have NO tier (undefined) and keep the flat
+ * default rate limit. The tier-aware limiter branches on this field.
  */
 export interface AuthContext {
   readonly tenantId: string;
@@ -61,6 +65,8 @@ export interface AuthContext {
   readonly scopes: ReadonlySet<Scope>;
   readonly keyHash: string;
   readonly mode: KeyMode;
+  /** TL6-001: the account tier snapshot for DB-minted keys (absent for static env keys). */
+  readonly tier?: AccountTier;
 }
 
 declare module "fastify" {
@@ -77,5 +83,21 @@ declare module "fastify" {
      * echoed on every /v1 response as the x-reckon-version header.
      */
     reckonApiVersion?: string;
+    /**
+     * TL6-001: set by the /v1/account family's SESSION preHandler — the
+     * authenticated account (resolved from the reckonsess_ bearer token)
+     * plus the raw token (needed ONLY to revoke it at logout; it is never
+     * logged and never leaves the request scope).
+     */
+    reckonAccountSession?: {
+      readonly account: {
+        readonly id: string;
+        readonly email: string;
+        readonly fullName: string;
+        readonly tenantId: string;
+        readonly tier: AccountTier;
+      };
+      readonly sessionToken: string;
+    };
   }
 }

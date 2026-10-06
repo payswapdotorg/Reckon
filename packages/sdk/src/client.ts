@@ -18,6 +18,13 @@
  *   fetch/network failures and non-envelope bodies never escape.
  */
 import {
+  AccountKeyCreatedSchema,
+  AccountKeySchema,
+  AccountSessionResponseSchema,
+  CreateKeyRequestSchema,
+  LoginRequestSchema,
+  SessionTokenSchema,
+  SignupRequestSchema,
   AgentBodySchema,
   AgentOrganizationSchema,
   ApiVersionSchema,
@@ -46,6 +53,10 @@ import {
   X_RECKON_VERSION_HEADER,
 } from "@reckon/contracts";
 import type {
+  Account,
+  AccountKey,
+  AccountKeyCreated,
+  AccountSessionResponse,
   CandidateSet,
   CatalogItem,
   DecisionResult,
@@ -155,6 +166,23 @@ export type AgentOrganizationInput = z.input<typeof AgentOrganizationSchema>;
 export type CatalogItemInput = z.input<typeof CatalogItemSchema>;
 export type RealizationInput = z.input<typeof RealizationSchema>;
 export type CandidateSetInput = z.input<typeof CandidateSetSchema>;
+
+/* ------------------------------------------------------------------ *
+ * TL6-001 — self-serve account surface (session-token auth)           *
+ * ------------------------------------------------------------------ */
+
+/** POST /v1/account/signup input (email, password min 8, fullName, workspaceName). */
+export type SignupInput = z.input<typeof SignupRequestSchema>;
+/** POST /v1/account/login input (email + password). */
+export type LoginInput = z.input<typeof LoginRequestSchema>;
+/** POST /v1/account/keys input (which kind of key to mint). */
+export type CreateAccountKeyInput = z.input<typeof CreateKeyRequestSchema>;
+
+/** The account-keys list envelope ({ keys: [...] }). */
+const AccountKeyListSchema = z.object({ keys: z.array(AccountKeySchema) });
+
+/** A 204 no-content response parses as void — the schema only ever sees a non-204 body. */
+const VoidResponseSchema = z.undefined();
 
 /**
  * API-level request/response envelopes for the routes that have no single
@@ -506,6 +534,30 @@ export interface ReckonClient {
     /** Auto-paginating async iterator over every delivery (accepts the endpoint_id/event_id filters). */
     list(options?: WebhookDeliveryListOptions): AsyncIterable<WebhookDeliveryView>;
   };
+  /**
+   * TL6-001: the self-serve account surface. These routes are
+   * SESSION-authenticated: each method takes the session token (from
+   * signup/login) as its auth parameter — the client's apiKey is NOT
+   * used for this family.
+   */
+  readonly account: {
+    /** POST /v1/account/signup — 201: the account + its FIRST session (token shown once). */
+    signup(request: SignupInput, options?: CallOptions): Promise<AccountSessionResponse>;
+    /** POST /v1/account/login — 200: a fresh session (token shown once; 401 on bad credentials). */
+    login(request: LoginInput, options?: CallOptions): Promise<AccountSessionResponse>;
+    /** POST /v1/account/logout — 204; the session token is revoked. */
+    logout(sessionToken: string, options?: CallOptions): Promise<void>;
+    /** GET /v1/account/keys — the account's keys, newest first (metadata only; secrets are never re-shown). */
+    listAccountKeys(sessionToken: string, options?: CallOptions): Promise<readonly AccountKey[]>;
+    /** POST /v1/account/keys — mint a key; the RAW key appears in the response EXACTLY ONCE. */
+    createAccountKey(
+      sessionToken: string,
+      request: CreateAccountKeyInput,
+      options?: CallOptions,
+    ): Promise<AccountKeyCreated>;
+    /** DELETE /v1/account/keys/{keyId} — revoke (204); the key stops authenticating immediately. */
+    revokeAccountKey(sessionToken: string, keyId: string, options?: CallOptions): Promise<void>;
+  };
 }
 
 /* ------------------------------------------------------------------ *
@@ -620,8 +672,35 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
   }
 
   /**
+   * TL6-001: session-token auth for the /v1/account family — the bearer
+   * credential is the reckonsess_ token (validated before it is sent);
+   * it overrides the client's apiKey header for these calls only.
+   */
+  function sessionAuthHeaders(sessionToken: string, options?: CallOptions): Record<string, string> {
+    const parsed = SessionTokenSchema.safeParse(sessionToken);
+    if (!parsed.success) {
+      throw new ReckonConfigError(
+        "session token is not a well-formed reckonsess_… token (issued once at signup or login)",
+        { issues: toSdkValidationIssues(parsed.error) },
+      );
+    }
+    return {
+      authorization: `Bearer ${sessionToken}`,
+      ...(options?.idempotencyKey !== undefined
+        ? { "idempotency-key": headerIdempotencyKey(options.idempotencyKey) }
+        : {}),
+      ...(options?.headers ?? {}),
+    };
+  }
+
+  /**
    * The single request pipeline: request validation → fetch → JSON decode →
    * typed error mapping (never raw failures) → response contract validation.
+   *
+   * TL6-001: `allowNoContent` supports the 204-no-content routes
+   * (account logout / key revoke): a 204 carries no body and no
+   * content-type, so it resolves to `undefined` without JSON parsing;
+   * any OTHER 2xx status still runs the full contract validation.
    */
   async function request<B, R>(spec: {
     method: "GET" | "POST" | "DELETE";
@@ -631,6 +710,7 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
     responseSchema: Parseable<R>;
     responseContract: string;
     headers?: Record<string, string>;
+    allowNoContent?: boolean;
   }): Promise<R> {
     let bodyToSend: B | undefined;
     if (spec.requestSchema !== undefined && spec.requestBody !== undefined) {
@@ -664,6 +744,12 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
       });
     } catch (cause) {
       throw new ReckonTransportError("SDK_TRANSPORT_ERROR", `request to ${spec.path} failed at the transport layer`, { cause, statusCode: undefined });
+    }
+
+    // TL6-001: a 204 carries no body and no content-type — resolve void.
+    if (spec.allowNoContent === true && response.status === 204) {
+      noteResponseMode(response);
+      return undefined as R;
     }
 
     const contentType = response.headers.get("content-type") ?? "";
@@ -1079,6 +1165,81 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
             .listPage({ ...callOptions, startingAfter })
             .then((page) => ({ items: page.deliveries, has_more: page.has_more, next_cursor: page.next_cursor })),
         ),
+    },
+    // TL6-001: the self-serve account surface — session-token auth via the
+    // per-method sessionToken parameter; every response is zod-parsed
+    // against the frozen account contracts.
+    account: {
+      signup: async (signupRequest, callOptions) =>
+        request<z.output<typeof SignupRequestSchema>, AccountSessionResponse>({
+          method: "POST",
+          path: "/v1/account/signup",
+          requestSchema: SignupRequestSchema,
+          requestBody: signupRequest,
+          responseSchema: AccountSessionResponseSchema,
+          responseContract: "reckon.api.account-session-response (signup)",
+          headers: {
+            ...(callOptions?.idempotencyKey !== undefined
+              ? { "idempotency-key": headerIdempotencyKey(callOptions.idempotencyKey) }
+              : {}),
+            ...(callOptions?.headers ?? {}),
+          },
+        }),
+      login: async (loginRequest, callOptions) =>
+        request<z.output<typeof LoginRequestSchema>, AccountSessionResponse>({
+          method: "POST",
+          path: "/v1/account/login",
+          requestSchema: LoginRequestSchema,
+          requestBody: loginRequest,
+          responseSchema: AccountSessionResponseSchema,
+          responseContract: "reckon.api.account-session-response (login)",
+          headers: {
+            ...(callOptions?.idempotencyKey !== undefined
+              ? { "idempotency-key": headerIdempotencyKey(callOptions.idempotencyKey) }
+              : {}),
+            ...(callOptions?.headers ?? {}),
+          },
+        }),
+      logout: async (sessionToken, callOptions) => {
+        await request<unknown, void>({
+          method: "POST",
+          path: "/v1/account/logout",
+          responseSchema: VoidResponseSchema,
+          responseContract: "reckon.api.account-logout (204 no content)",
+          allowNoContent: true,
+          headers: sessionAuthHeaders(sessionToken, callOptions),
+        });
+      },
+      listAccountKeys: async (sessionToken, callOptions) =>
+        (
+          await request<unknown, { keys: AccountKey[] }>({
+            method: "GET",
+            path: "/v1/account/keys",
+            responseSchema: AccountKeyListSchema,
+            responseContract: "reckon.api.account-key (list)",
+            headers: sessionAuthHeaders(sessionToken, callOptions),
+          })
+        ).keys,
+      createAccountKey: async (sessionToken, keyRequest, callOptions) =>
+        request<z.output<typeof CreateKeyRequestSchema>, AccountKeyCreated>({
+          method: "POST",
+          path: "/v1/account/keys",
+          requestSchema: CreateKeyRequestSchema,
+          requestBody: keyRequest,
+          responseSchema: AccountKeyCreatedSchema,
+          responseContract: "reckon.api.account-key-created (raw key shown once)",
+          headers: sessionAuthHeaders(sessionToken, callOptions),
+        }),
+      revokeAccountKey: async (sessionToken, keyId, callOptions) => {
+        await request<unknown, void>({
+          method: "DELETE",
+          path: `/v1/account/keys/${encodeURIComponent(keyId)}`,
+          responseSchema: VoidResponseSchema,
+          responseContract: "reckon.api.account-key (revoke, 204 no content)",
+          allowNoContent: true,
+          headers: sessionAuthHeaders(sessionToken, callOptions),
+        });
+      },
     },
   };
   return client;

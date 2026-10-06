@@ -213,6 +213,51 @@ export const MIGRATIONS: readonly Migration[] = [
          ON agent_organizations (tenant_id, workspace_id, stored_at DESC)`,
     ],
   },
+  {
+    // TL6-001: self-serve API accounts — signup/login credentials (scrypt at
+    // rest), minted account keys (ONLY sha256 hashes stored; the raw value is
+    // returned exactly once at mint) and 7-day bearer sessions (hashes at
+    // rest). No raw password/token/key material is ever persisted.
+    id: "m005_accounts",
+    name: "self-serve API accounts, account keys and account sessions (TL6-001)",
+    sql: [
+      `CREATE TABLE IF NOT EXISTS accounts (
+  id            TEXT PRIMARY KEY,
+  email         TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  full_name     TEXT NOT NULL,
+  tenant_id     TEXT NOT NULL,
+  tier          TEXT NOT NULL CHECK (tier IN ('free','pro','enterprise')),
+  created_at    BIGINT NOT NULL
+)`,
+      `CREATE INDEX IF NOT EXISTS accounts_tenant
+         ON accounts (tenant_id)`,
+      `CREATE TABLE IF NOT EXISTS account_keys (
+  id           TEXT PRIMARY KEY,
+  account_id   TEXT NOT NULL REFERENCES accounts(id),
+  key_hash     TEXT NOT NULL UNIQUE,
+  tenant_id    TEXT NOT NULL,
+  workspace_id TEXT,
+  kind         TEXT NOT NULL CHECK (kind IN ('secret','publishable')),
+  mode         TEXT NOT NULL CHECK (mode IN ('live','test')),
+  tier         TEXT NOT NULL CHECK (tier IN ('free','pro','enterprise')),
+  scopes       JSONB NOT NULL,
+  created_at   BIGINT NOT NULL,
+  last_used_at BIGINT,
+  revoked_at   BIGINT
+)`,
+      `CREATE INDEX IF NOT EXISTS account_keys_account
+         ON account_keys (account_id, created_at DESC)`,
+      `CREATE TABLE IF NOT EXISTS account_sessions (
+  token_hash TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL REFERENCES accounts(id),
+  expires_at BIGINT NOT NULL,
+  created_at BIGINT NOT NULL
+)`,
+      `CREATE INDEX IF NOT EXISTS account_sessions_account
+         ON account_sessions (account_id)`,
+    ],
+  },
 ];
 
 function migrationChecksum(migration: Migration): string {
