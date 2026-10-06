@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-import { resolveSiteUrl } from "@/lib/site-routes.js";
+import { OG_IMAGE_ALT, resolveSiteUrl } from "@/lib/site-routes.js";
 
 /**
  * Open Graph social card (S5-002) — next/og ImageResponse, 1200×630.
@@ -21,8 +21,7 @@ import { resolveSiteUrl } from "@/lib/site-routes.js";
  * the path explicitly (see src/lib/site-routes.ts OG_IMAGE_PATH).
  */
 
-export const alt =
-  "Reckon Docs — provider-neutral recommendation infrastructure. Serve your first recommendation in about five minutes.";
+export const alt = OG_IMAGE_ALT;
 
 export const size = { width: 1200, height: 630 };
 

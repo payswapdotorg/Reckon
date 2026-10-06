@@ -175,6 +175,19 @@ export const OG_IMAGE_HEIGHT = 630;
 /** The social card image MIME type (app/opengraph-image.tsx). */
 export const OG_IMAGE_TYPE = "image/png";
 
+/**
+ * The social card image's alt text (og:image:alt) — one shared card, so
+ * one shared description. Single-sourced here and consumed both by the
+ * app/opengraph-image.tsx file convention (its `alt` export) and by
+ * routeMetadata()'s per-route images entry — a nested page's `openGraph`
+ * replaces the root segment's wholesale, so the per-route images (not
+ * the file convention) are what actually ship on every route below the
+ * root; the alt must ride along with them (S5-002 re-issue hardening:
+ * og:image:alt on every card, not just the root).
+ */
+export const OG_IMAGE_ALT =
+  "Reckon Docs — provider-neutral recommendation infrastructure. Serve your first recommendation in about five minutes.";
+
 export const SITE_NAME = "Reckon Docs";
 
 export const SITE_LOCALE = "en_US";
@@ -202,7 +215,7 @@ export interface RouteMetadataResult {
     siteName: string;
     type: "website";
     locale: string;
-    images: Array<{ url: string; width: number; height: number; type: string }>;
+    images: Array<{ url: string; width: number; height: number; type: string; alt: string }>;
   };
   twitter: {
     card: "summary_large_image";
@@ -215,10 +228,11 @@ export interface RouteMetadataResult {
  * Build one route's `metadata` export: canonical alternates, an Open
  * Graph card (title, description, absolute url, siteName, and the social
  * card image at OG_IMAGE_PATH — the route app/opengraph-image.tsx
- * serves) and a Twitter summary_large_image card (twitter:image
- * auto-fills from the og images). The root layout's "%s · Reckon Docs"
- * title template applies to the returned plain title on nested routes;
- * the home route's "Reckon Docs" title is already the default.
+ * serves, with its og:image:alt) and a Twitter summary_large_image card
+ * (twitter:image auto-fills from the og images). The root layout's
+ * "%s · Reckon Docs" title template applies to the returned plain title
+ * on nested routes; the home route's "Reckon Docs" title is already the
+ * default.
  */
 export function routeMetadata(
   input: RouteMetadataInput,
@@ -241,6 +255,7 @@ export function routeMetadata(
           width: OG_IMAGE_WIDTH,
           height: OG_IMAGE_HEIGHT,
           type: OG_IMAGE_TYPE,
+          alt: OG_IMAGE_ALT,
         },
       ],
     },

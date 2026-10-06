@@ -13,6 +13,7 @@ import { PAGINATION_HEADINGS } from "../src/content/api-reference/pagination.js"
 import { VERSIONING_HEADINGS } from "../src/content/api-reference/versioning.js";
 import { WEBHOOKS_HEADINGS } from "../src/content/webhooks.js";
 import { SDKS_HEADINGS } from "../src/content/sdks.js";
+import { CHANGELOG_HEADINGS } from "../src/content/changelog.js";
 import { QUICKSTART_STEPS } from "../src/content/quickstart.js";
 import { SDKS_PHILOSOPHY, SDK_PY_TARGET, SDK_TS_TARGET, SDK_TS_TODAY } from "../src/content/sdks.js";
 import {
@@ -105,6 +106,10 @@ describe("docs information architecture", () => {
 });
 
 describe("per-page TOC anchors", () => {
+  // The eleven TOC-bearing pages: the ten sidebar-IA content pages plus
+  // the changelog feed (S5-002) — the "heading ids are unique within
+  // every page" law covers every page with an on-this-page rail, no
+  // exceptions (the home route is a hero page without a rail).
   const headingSets: readonly (readonly TocEntry[])[] = [
     QUICKSTART_HEADINGS,
     CONCEPTS_HEADINGS,
@@ -116,6 +121,7 @@ describe("per-page TOC anchors", () => {
     VERSIONING_HEADINGS,
     WEBHOOKS_HEADINGS,
     SDKS_HEADINGS,
+    CHANGELOG_HEADINGS,
   ];
 
   it("heading ids are unique within every page", () => {

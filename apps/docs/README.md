@@ -30,9 +30,12 @@ architecture mirrors docs.stripe.com, per
   classes stated, nothing invented).
 - **SEO / social / crawl completeness (S5-002)** — per-route Open Graph +
   Twitter cards on every page (via the shared `routeMetadata()` builder
-  in `src/lib/site-routes.ts`, fed by `src/content/route-meta.ts`), a
-  1200×630 social card from the `app/opengraph-image.tsx` file
-  convention (next/og `ImageResponse` — the approach proven green under
+  in `src/lib/site-routes.ts`, fed by `src/content/route-meta.ts` — each
+  card declares its og image **with `og:image:alt`**, single-sourced as
+  `OG_IMAGE_ALT` so the file convention and the per-route cards describe
+  the same shared image with the same alt), a 1200×630 social card from
+  the `app/opengraph-image.tsx` file convention (next/og
+  `ImageResponse` — the approach proven green under
   `next build --webpack` by the S5-001 marketing app on the same
   workspace-pinned Next 16.3.8; **no static PNG fallback needed**),
   `sitemap.xml` + `robots.txt` (`app/sitemap.ts` / `app/robots.ts`,

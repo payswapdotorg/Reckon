@@ -31,6 +31,7 @@ import { DOCS_SECTIONS } from "../src/content/navigation.js";
 import { DOCS_ROUTE_META, routeMetaFor } from "../src/content/route-meta.js";
 import {
   DEFAULT_SITE_URL,
+  OG_IMAGE_ALT,
   OG_IMAGE_HEIGHT,
   OG_IMAGE_PATH,
   OG_IMAGE_WIDTH,
@@ -233,10 +234,26 @@ describe("per-route Open Graph + Twitter cards", () => {
           width: OG_IMAGE_WIDTH,
           height: OG_IMAGE_HEIGHT,
           type: "image/png",
+          alt: OG_IMAGE_ALT,
         },
       ]);
     }
     expect([OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT]).toEqual([1200, 630]);
+  });
+
+  it("every card carries a non-empty og:image:alt (the shared card's alt)", () => {
+    // og:image:alt is an Open Graph card property: a page's declared
+    // images must describe the image for screen readers / link
+    // unfurlers. The alt rides on the per-route images entry because a
+    // nested page's openGraph replaces the root segment's wholesale.
+    expect(OG_IMAGE_ALT.trim().length).toBeGreaterThan(0);
+    expect(OG_IMAGE_ALT).toContain("Reckon Docs");
+    for (const entry of DOCS_ROUTE_META) {
+      const metadata = routeMetadata(entry, DEFAULT_SITE_URL);
+      const image = metadata.openGraph.images[0];
+      expect(image.alt, `${entry.path} og:image:alt`).toBe(OG_IMAGE_ALT);
+      expect(image.alt.trim().length).toBeGreaterThan(0);
+    }
   });
 
   it("the og image file convention exists and serves the declared size", () => {
@@ -246,6 +263,9 @@ describe("per-route Open Graph + Twitter cards", () => {
       `export const size = { width: ${OG_IMAGE_WIDTH}, height: ${OG_IMAGE_HEIGHT} };`,
     );
     expect(source).toMatch(/export const alt =/);
+    // single-sourced alt: the file convention and the per-route cards
+    // describe the SAME shared image with the SAME alt string
+    expect(source).toContain("export const alt = OG_IMAGE_ALT;");
     expect(source).toMatch(/export const contentType = "image\/png";/);
   });
 
