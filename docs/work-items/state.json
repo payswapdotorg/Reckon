@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "status": "stripe-phase-complete-65-done-implementation-complete",
-  "implementationComplete": true,
+  "status": "tl6-active-ad-lane-roadmap",
+  "implementationComplete": false,
   "dispatchBaseSha": "0c55b0c",
   "workers": [
     {
@@ -379,7 +379,7 @@
         "P1-003",
         "P1-004"
       ],
-      "note": "COMPLETE 2026-10-02: decomposed per FINAL TL HANDOFF into P1-001..004, all merged to main (06d2094, 354fa33) \u2014 real PG persistence, real API composition, durable outcome transport, deployment configuration. Core 36-item program 36/36 done."
+      "note": "COMPLETE 2026-10-02: decomposed per FINAL TL HANDOFF into P1-001..004, all merged to main (06d2094, 354fa33) — real PG persistence, real API composition, durable outcome transport, deployment configuration. Core 36-item program 36/36 done."
     },
     {
       "id": "P1-001",
@@ -518,7 +518,7 @@
       ],
       "title": "Public demo tenant (explicitly labeled demonstration data)",
       "status": "done",
-      "notes": "DONE 2026-10-03T01:4xZ: demo tenant seeded over the PUBLIC wire (seed-demo vs https://reckon-api-phi.vercel.app: 7 steps seeded, 6 skipped \u2014 idempotent re-run tolerated, rehearsal data durable in Neon). Plans workspace serves live demo data."
+      "notes": "DONE 2026-10-03T01:4xZ: demo tenant seeded over the PUBLIC wire (seed-demo vs https://reckon-api-phi.vercel.app: 7 steps seeded, 6 skipped — idempotent re-run tolerated, rehearsal data durable in Neon). Plans workspace serves live demo data."
     },
     {
       "id": "DEPLOY-003",
@@ -528,7 +528,7 @@
       ],
       "title": "Post-deploy proof (Gates M/N: public reachability + external smoke test)",
       "status": "done",
-      "notes": "DONE 2026-10-03T01:4xZ: GATE-N PASS over public internet \u2014 external-smoke: healthz 200, readyz 12 ports wired, decision QUEUE dec-b9676feb4773be939e2fea86 + durable read-back, outcome smoke-1790991250-ev durable transport accepted, evidence retrieval across requests, web 200 Reckon. Gate M public reachability + Gate N external smoke both green."
+      "notes": "DONE 2026-10-03T01:4xZ: GATE-N PASS over public internet — external-smoke: healthz 200, readyz 12 ports wired, decision QUEUE dec-b9676feb4773be939e2fea86 + durable read-back, outcome smoke-1790991250-ev durable transport accepted, evidence retrieval across requests, web 200 Reckon. Gate M public reachability + Gate N external smoke both green."
     },
     {
       "id": "RELEASE-001",
@@ -546,8 +546,8 @@
       "owner": "S1",
       "dependsOn": [],
       "status": "done",
-      "title": "Marketing home \u2014 stripe.com-class site shell (apps/marketing): gradient-mesh split hero, live-stat ticker, product grid with outcome-phrased headlines, quantified social proof, dual CTA (Start now / Contact sales), code-first marketing artifacts",
-      "notes": "Survey: docs/surveys/stripe-com-survey.md sections 2 + 5. Quality bar non-negotiable. | Delivered 2026-10-05: narrative-harvest rebuild from worker sessions (pods reaped, PAT dead) \u2014 Lead-station verified full battery (build/typecheck/1157-tests/verify-repo) on integrate/stripe-phase-wave1 @ fca605d+; push to main pending PAT reissue."
+      "title": "Marketing home — stripe.com-class site shell (apps/marketing): gradient-mesh split hero, live-stat ticker, product grid with outcome-phrased headlines, quantified social proof, dual CTA (Start now / Contact sales), code-first marketing artifacts",
+      "notes": "Survey: docs/surveys/stripe-com-survey.md sections 2 + 5. Quality bar non-negotiable. | Delivered 2026-10-05: narrative-harvest rebuild from worker sessions (pods reaped, PAT dead) — Lead-station verified full battery (build/typecheck/1157-tests/verify-repo) on integrate/stripe-phase-wave1 @ fca605d+; push to main pending PAT reissue."
     },
     {
       "id": "S1-002",
@@ -556,7 +556,7 @@
         "S1-001"
       ],
       "status": "done",
-      "title": "Product pages \u2014 Recommendation API / Personalization / Scheduling / Analytics (one page per product, Stripe product-page grammar)"
+      "title": "Product pages — Recommendation API / Personalization / Scheduling / Analytics (one page per product, Stripe product-page grammar)"
     },
     {
       "id": "S1-003",
@@ -565,7 +565,7 @@
         "S1-001"
       ],
       "status": "done",
-      "title": "Pricing page \u2014 per-1k-request tiers + volume calculator + 'everything included' comparison table + enterprise track",
+      "title": "Pricing page — per-1k-request tiers + volume calculator + 'everything included' comparison table + enterprise track",
       "notes": "Delivered: stripe-phase wave-4, lane deb05e8 (pricing page, battery at lane 86 files/1502 tests), merged ff4f9bb. Status flipped done by S4-002 state finalization (the wave-4 merge delivered the surface; state.json lagged at the wave-2 snapshot)."
     },
     {
@@ -573,16 +573,16 @@
       "owner": "S1",
       "dependsOn": [],
       "status": "done",
-      "title": "Docs portal (apps/docs) \u2014 'Serve your first recommendation' quickstart with integration-option tabs (hosted endpoint / SDK / streaming), API reference skeleton (Authentication / Errors / Idempotency / Expand / Pagination / Versioning), webhooks guide, runnable code samples",
-      "notes": " | Delivered 2026-10-05: narrative-harvest rebuild from worker sessions (pods reaped, PAT dead) \u2014 Lead-station verified full battery (build/typecheck/1157-tests/verify-repo) on integrate/stripe-phase-wave1 @ fca605d+; push to main pending PAT reissue."
+      "title": "Docs portal (apps/docs) — 'Serve your first recommendation' quickstart with integration-option tabs (hosted endpoint / SDK / streaming), API reference skeleton (Authentication / Errors / Idempotency / Expand / Pagination / Versioning), webhooks guide, runnable code samples",
+      "notes": " | Delivered 2026-10-05: narrative-harvest rebuild from worker sessions (pods reaped, PAT dead) — Lead-station verified full battery (build/typecheck/1157-tests/verify-repo) on integrate/stripe-phase-wave1 @ fca605d+; push to main pending PAT reissue."
     },
     {
       "id": "S2-001",
       "owner": "S2",
       "dependsOn": [],
       "status": "done",
-      "title": "API hardening Stripe-style \u2014 sk_/pk_ key model, versioned API surface, idempotency-key semantics, response expansion, cursor pagination, typed error catalog with stable codes",
-      "notes": "Owned: packages/contracts, apps/api. Public contract changes coordinate with frozen contracts discipline (AGENTS.md). | Delivered 2026-10-05: narrative-harvest rebuild from worker sessions (pods reaped, PAT dead) \u2014 Lead-station verified full battery (build/typecheck/1157-tests/verify-repo) on integrate/stripe-phase-wave1 @ fca605d+; push to main pending PAT reissue."
+      "title": "API hardening Stripe-style — sk_/pk_ key model, versioned API surface, idempotency-key semantics, response expansion, cursor pagination, typed error catalog with stable codes",
+      "notes": "Owned: packages/contracts, apps/api. Public contract changes coordinate with frozen contracts discipline (AGENTS.md). | Delivered 2026-10-05: narrative-harvest rebuild from worker sessions (pods reaped, PAT dead) — Lead-station verified full battery (build/typecheck/1157-tests/verify-repo) on integrate/stripe-phase-wave1 @ fca605d+; push to main pending PAT reissue."
     },
     {
       "id": "S2-002",
@@ -591,7 +591,7 @@
         "S2-001"
       ],
       "status": "done",
-      "title": "Recommendation webhooks \u2014 event catalog (recommendation.delivered, model.drift.detected, schedule.executed\u2026), HMAC signatures, replay endpoint, delivery logs"
+      "title": "Recommendation webhooks — event catalog (recommendation.delivered, model.drift.detected, schedule.executed…), HMAC signatures, replay endpoint, delivery logs"
     },
     {
       "id": "S2-003",
@@ -600,7 +600,7 @@
         "S2-001"
       ],
       "status": "done",
-      "title": "Test mode \u2014 test keys, canned scenarios, test/live separation semantics"
+      "title": "Test mode — test keys, canned scenarios, test/live separation semantics"
     },
     {
       "id": "S2-004",
@@ -609,7 +609,7 @@
         "S2-001"
       ],
       "status": "done",
-      "title": "Reference SDKs (TypeScript + Python) \u2014 typed client over the hardened API with the docs quickstart runnable through them",
+      "title": "Reference SDKs (TypeScript + Python) — typed client over the hardened API with the docs quickstart runnable through them",
       "notes": "Delivered: stripe-phase wave-4, lane 84c3e42 (TS client extensions + sdks/python reference client + docs lockstep, battery at lane 88 files/1463 tests + 1 skip), merged ff4f9bb. The python suite runs in the battery against the REAL API over HTTP (packages/sdk/test/python-sdk.test.ts; self-skips only on missing python3/requests). Status flipped done by S4-002 state finalization."
     },
     {
@@ -619,7 +619,7 @@
         "S2-001"
       ],
       "status": "done",
-      "title": "Dashboard shell (apps/web extension) \u2014 nav IA (Home / Recommendations / Models / Data Sources / Analytics / Developers / Settings), API-keys manager, request logs, events console, test/live toggle"
+      "title": "Dashboard shell (apps/web extension) — nav IA (Home / Recommendations / Models / Data Sources / Analytics / Developers / Settings), API-keys manager, request logs, events console, test/live toggle"
     },
     {
       "id": "S3-002",
@@ -629,7 +629,7 @@
         "S2-002"
       ],
       "status": "done",
-      "title": "Dashboard analytics views \u2014 CTR lift, latency percentiles, drift indicators, funnels",
+      "title": "Dashboard analytics views — CTR lift, latency percentiles, drift indicators, funnels",
       "notes": "Delivered: stripe-phase wave-4, lane 894a9da (ctr-lift/latency-p99/drift/funnel pure libs + /analytics views with evidence-class badges + not-wired honesty, battery at lane 88 files/1552 tests), merged ff4f9bb. Status flipped done by S4-002 state finalization."
     },
     {
@@ -641,7 +641,7 @@
         "S3-001"
       ],
       "status": "done",
-      "title": "End-to-end journey proof \u2014 signup \u2192 API key \u2192 first recommendation call \u2192 log entry \u2192 analytics entry \u2192 webhook event, demonstrated and captured",
+      "title": "End-to-end journey proof — signup → API key → first recommendation call → log entry → analytics entry → webhook event, demonstrated and captured",
       "notes": "Delivered: journey lane 3485621, merged 0c55b0c (repeatable driver scripts/e2e-journey.mjs, 6/6 hops exit 0; captured evidence docs/handoff/e2e-journey-proof.md; 8-test lockstep apps/api/test/e2e-journey-map.test.ts; battery at merge 95 files/1673 tests + 1 skip). Status flipped done by S4-002 state finalization."
     },
     {
@@ -661,13 +661,107 @@
         "S4-001"
       ],
       "status": "done",
-      "title": "Final release \u2014 production deploy of all four surfaces, final-release evidence refresh, implementationComplete=true (Stripe phase)",
+      "title": "Final release — production deploy of all four surfaces, final-release evidence refresh, implementationComplete=true (Stripe phase)",
       "notes": "Delivered (this commit, work/s4-002-final-release from base 0c55b0c): deploy-readiness verified for all four surfaces (all four build; api/web shapes unchanged by the stripe phase), deployment runbook docs/deployment/stripe-phase-release.md, release gate scripts/verify-deployment.mjs + tests/deployment/verify-deployment.test.ts lockstep, final-release evidence refresh docs/handoff/final-release-evidence.md, this state finalization (65/65 done). FLAG LAW: implementationComplete stays false in this commit; the Lead flips it to true in the closing commit AFTER the four surfaces are verified deployed (scripts/verify-deployment.mjs gate, runbook section 4). PLACEHOLDER LAW: production URLs/timestamps are LEAD-FILL placeholders in the evidence doc; the deploy itself happens post-merge."
+    },
+    {
+      "id": "TL6-001",
+      "owner": "W3",
+      "dependsOn": [
+        "W3-011",
+        "S4-002"
+      ],
+      "title": "API accounts + self-serve keys + tier enforcement",
+      "status": "done",
+      "evidence": "Merged to main in 97d9fcf; production deploy trigger 20c29cb."
+    },
+    {
+      "id": "TL6-002",
+      "owner": "W3",
+      "dependsOn": [
+        "TL6-001"
+      ],
+      "title": "Production webhook mount: PostgreSQL stores, encrypted signing secrets, production composition, readyz registration, and hop-6 proof",
+      "status": "queued"
+    },
+    {
+      "id": "TL6-003",
+      "owner": "UI",
+      "dependsOn": [
+        "TL6-001"
+      ],
+      "title": "Dashboard authentication + self-service keys: signup/login, protected routes, key create/revoke",
+      "status": "queued"
+    },
+    {
+      "id": "AD-001",
+      "owner": "TL3",
+      "dependsOn": [
+        "W3-008",
+        "CONTRACT-001"
+      ],
+      "title": "Ad memory architecture and canonical ad-memory contracts",
+      "status": "queued"
+    },
+    {
+      "id": "AD-002",
+      "owner": "W1",
+      "dependsOn": [
+        "AD-001",
+        "W1-003",
+        "W3-003"
+      ],
+      "title": "Personal Ad Memory persistence, retention, expiry, provenance, consent and forget semantics",
+      "status": "queued"
+    },
+    {
+      "id": "AD-003",
+      "owner": "W3",
+      "dependsOn": [
+        "AD-001",
+        "AD-002"
+      ],
+      "title": "Ad retrieval API/SDK: semantic + structured query over retained/available ads",
+      "status": "queued"
+    },
+    {
+      "id": "AD-004",
+      "owner": "W2",
+      "dependsOn": [
+        "AD-001",
+        "AD-003"
+      ],
+      "title": "Contextual ad selection and format/timing integration through existing Decision + Experience + Scheduler kernels",
+      "status": "queued"
+    },
+    {
+      "id": "AD-005",
+      "owner": "UI",
+      "dependsOn": [
+        "AD-003",
+        "AD-004"
+      ],
+      "title": "Ad Memory + Ad Query user experience with provenance, retention and permission controls",
+      "status": "queued"
+    },
+    {
+      "id": "AD-006",
+      "owner": "TL3+W3",
+      "dependsOn": [
+        "AD-002",
+        "AD-003",
+        "AD-004",
+        "AD-005"
+      ],
+      "title": "Ad-lane E2E, privacy/rights proof, production evidence and deployment verification",
+      "status": "queued"
     }
   ],
   "workerBranches": {
     "W1": "w1/first-wave",
     "W2": "w2/first-wave",
     "W3": "w3/first-wave"
-  }
+  },
+  "activeHandoff": "docs/handoff/TL6-FINAL-HANDOFF.md",
+  "lastReconciledAt": "2026-10-06T13:58:00Z"
 }
