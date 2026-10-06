@@ -5,7 +5,8 @@ This is the first operational entrypoint for any fresh clone.
 ## Read order
 
 1. `AGENTS.md`
-2. `docs/handoff/TL3-HANDOFF.md`
+2. `docs/handoff/TL6-FINAL-HANDOFF.md`
+3. `docs/handoff/TL3-HANDOFF.md`
 3. `docs/architecture/architecture-lock.md`
 4. `docs/architecture/reckon-frozen-architecture.md`
 5. `docs/architecture/contracts.md`
@@ -24,7 +25,7 @@ No knowledge outside this repository is required to understand the approved prod
 
 ## Repository truth
 
-At takeover time the repository contains architecture/governance and scaffolding, not a production implementation represented as complete.
+The active phase is authoritative in `docs/handoff/TL6-FINAL-HANDOFF.md` and `docs/work-items/state.json`. Historical handoffs remain useful context but cannot override the active state. Implementation state is never inferred from an older release marker.
 
 Implementation state is authoritative only when supported by repository commits, tests, runtime evidence and the work-item state.
 
