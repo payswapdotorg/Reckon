@@ -6,6 +6,8 @@ The repository is the only canonical source for Reckon architecture and implemen
 
 Do not rely on chat summaries, issue descriptions, screenshots, worker claims, generated reports, or test counts without verifying the repository and the actual commands/evidence.
 
+For an active phase, read `docs/handoff/TL6-FINAL-HANDOFF.md` and `docs/work-items/state.json`. Those repository artifacts define the active mission and status; historical documents cannot override them.
+
 ## Roles
 
 ### Tech Lead (TL3)
