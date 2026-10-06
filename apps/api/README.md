@@ -585,3 +585,15 @@ family unregistered; pk_live_ probes got the generic unknown-key message).
 This note triggers the git-path production redeploy of current main (67b9b7b:
 TL4 complete + S5-001 + S5-003 + S5-002) so the wire matches the frozen
 surface. Re-verify with scripts/verify-production.mjs after deploy.
+
+## TL6-001 production deployment note (Lead, 2026-10-06)
+
+Main `97d9fcf` merges the account surface: `/v1/account/*` routes
+(signup/login/logout, keys list/mint-show-once/revoke), the
+`LayeredKeyAuthenticator` (static env keys first, DB account-key fallback),
+tier-aware rate limits, and the `m005_accounts` migration (applied on boot by
+the composition's idempotent migrate step — no manual step). New env vars,
+all optional with frozen defaults: `RECKON_TIER_RATE_LIMITS`
+(`free:60,pro:600,enterprise:` — empty tier value = unlimited). The
+`RECKON_API_KEYS` static map keeps byte-identical behavior and precedence
+over DB-minted keys.
