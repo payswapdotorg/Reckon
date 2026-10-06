@@ -102,3 +102,22 @@ sequence below extends the repository state (see `docs/handoff/FINAL-TL-HANDOFF.
 - **Gate Q — Operational honesty**: the UI visibly distinguishes observed / controlled-local / fixture /
   simulated / counterfactual evidence.
 - **Gate R — Release**: only after K–Q may `implementationComplete` become `true`.
+
+
+## Active phase: TL6 + Personal Ad Memory
+
+The previous 65-item Stripe-phase program is complete. The active implementation phase is recorded in `docs/work-items/state.json` and `docs/handoff/TL6-FINAL-HANDOFF.md`.
+
+| Work item | Owner | Status | Scope |
+|---|---|---|---|
+| TL6-001 | W3 | ✅ done | API accounts, self-service keys, sessions, tier enforcement |
+| TL6-002 | W3 | ⏳ queued | Production webhook PostgreSQL stores, encrypted signing secrets, production mount, `/readyz`, hop-6 proof |
+| TL6-003 | UI | ⏳ queued | Dashboard signup/login, protected routes, self-service key management |
+| AD-001 | TL3 | ⏳ queued | Ad Memory architecture and canonical contracts |
+| AD-002 | W1 | ⏳ queued | Personal Ad Memory persistence, retention, expiry, provenance, consent, forget |
+| AD-003 | W3 | ⏳ queued | Ad retrieval API/SDK for retained/current ads |
+| AD-004 | W2 | ⏳ queued | Contextual ad selection through existing decision/experience/scheduler kernels |
+| AD-005 | UI | ⏳ queued | Ad Memory + Ad Query UX |
+| AD-006 | TL3+W3 | ⏳ queued | Ad E2E, privacy/rights proof, production evidence and deployment verification |
+
+`docs/work-items/state.json` is the authoritative machine-readable ledger. This table is a navigation aid and must not diverge from it.
