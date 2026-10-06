@@ -47,6 +47,9 @@ if (config.keys === undefined || config.keys.length === 0) {
 const composition: ProductionComposition = await buildProductionServer({
   connectionString: databaseUrl,
   keys: config.keys,
+  // TL6-001: tier-aware rate limiting (RECKON_RATE_LIMIT_MAX enables the
+  // limiter; RECKON_TIER_RATE_LIMITS sets the per-tier ladder).
+  ...(config.rateLimit !== undefined ? { rateLimit: config.rateLimit } : {}),
   apiVersion: config.apiVersion,
   logger: config.logger,
 });

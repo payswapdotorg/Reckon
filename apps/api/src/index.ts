@@ -6,10 +6,19 @@
  * root used by tests and hosts.
  */
 export { buildServer } from "./server.js";
-export { loadConfigFromEnv, parseApiKeyList, keyStoreFrom, DEFAULT_API_VERSION } from "./config.js";
-export type { ApiConfig } from "./config.js";
-export { KeyStore, mintKeyConfig } from "./auth.js";
-export type { KeyAuthenticator, StaticKeyConfig } from "./auth.js";
+export {
+  loadConfigFromEnv,
+  parseApiKeyList,
+  parseTierRateLimits,
+  keyStoreFrom,
+  DEFAULT_API_VERSION,
+} from "./config.js";
+export type { ApiConfig, TierRateLimits } from "./config.js";
+export { KeyStore, LayeredKeyAuthenticator, mintKeyConfig } from "./auth.js";
+export type { KeyAuthenticator, StaticKeyConfig, AccountKeyLookup } from "./auth.js";
+// TL6-001: the self-serve account route family (session-authenticated).
+export { registerAccountRoutes } from "./routes/account.js";
+export type { AccountRouteDeps } from "./routes/account.js";
 export { InMemoryIdempotencyStore } from "./idempotency.js";
 export type {
   IdempotencyStore,

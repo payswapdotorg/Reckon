@@ -1,5 +1,12 @@
 import { readFileSync } from "node:fs";
-import type { ApiVersionEntry, EvidenceClass, Id } from "@reckon/contracts";
+import {
+  ACCOUNT_TIERS,
+  ACCOUNT_TIER_RATE_LIMIT_DEFAULTS,
+  type AccountTier,
+  type ApiVersionEntry,
+  type EvidenceClass,
+  type Id,
+} from "@reckon/contracts";
 import type { ObservabilitySink } from "@reckon/observability";
 import type { ObservabilityClock } from "@reckon/observability";
 import type { KeyAuthenticator, StaticKeyConfig } from "./auth.js";
@@ -64,6 +71,14 @@ export interface ApiConfig {
   readonly defaultApiVersion?: string;
   /** S2-001: per-key rate limit (absent = rate limiting disabled). */
   readonly rateLimit?: RateLimiterConfig;
+  /**
+   * TL6-001: per-tier rate limits (free/pro/enterprise per minute; null =
+   * unlimited). Applied when rate limiting is enabled (RECKON_RATE_LIMIT_MAX)
+   * — DB-minted keys carry their tier; static env keys keep the flat
+   * `rateLimit.limit`. Absent here → the frozen defaults (free 60,
+   * pro 600, enterprise unlimited) apply via the same env parse.
+   */
+  readonly tierRateLimits?: TierRateLimits;
   /** S2-001: injected clock (idempotency window, rate-limit windows; default Date.now). */
   readonly clock?: () => number;
   /** S2-001: docs URL base for error doc_url values (default: the pinned contracts base). */
@@ -125,12 +140,29 @@ export function loadConfigFromEnv(env: Record<string, string | undefined>): ApiC
   const keys = raw !== undefined && raw !== "" ? parseApiKeyList(raw) : [];
   const rateLimitMax = parseOptionalInteger(env.RECKON_RATE_LIMIT_MAX, "RECKON_RATE_LIMIT_MAX");
   const rateLimitWindowMs = parseOptionalInteger(env.RECKON_RATE_LIMIT_WINDOW_MS, "RECKON_RATE_LIMIT_WINDOW_MS");
+  // TL6-001: ALWAYS parsed — a malformed tier spec fails fast at boot
+  // even when rate limiting is currently disabled (honest config law).
+  // The parsed ladder rides the config ONLY when the env var is set;
+  // when unset the config shape stays byte-identical to pre-TL6-001 and
+  // the limiter itself applies the frozen tier defaults.
+  const tierLimitsSpec = env.RECKON_TIER_RATE_LIMITS;
+  const tierLimits =
+    tierLimitsSpec !== undefined && tierLimitsSpec.trim() !== "" ? parseTierRateLimits(tierLimitsSpec) : undefined;
   return {
     apiVersion: env.RECKON_API_VERSION ?? DEFAULT_API_VERSION,
     keys,
     logger: env.RECKON_LOG === "1",
     ...(rateLimitMax !== undefined
-      ? { rateLimit: { limit: rateLimitMax, ...(rateLimitWindowMs !== undefined ? { windowMs: rateLimitWindowMs } : {}) } }
+      ? {
+          rateLimit: {
+            limit: rateLimitMax,
+            ...(rateLimitWindowMs !== undefined ? { windowMs: rateLimitWindowMs } : {}),
+            // TL6-001: the tier ladder rides the enabled limiter when the
+            // deployment pins it; the flat limit stays the default for
+            // tierless (static) keys either way.
+            ...(tierLimits !== undefined ? { tierLimits } : {}),
+          },
+        }
       : {}),
   };
 }
@@ -141,6 +173,60 @@ function parseOptionalInteger(raw: string | undefined, name: string): number | u
     throw new ConfigError(`${name} must be an integer, got '${raw}'`);
   }
   return Number(raw);
+}
+
+/** TL6-001: the complete per-tier limit ladder (null = unlimited). */
+export type TierRateLimits = Readonly<Record<AccountTier, number | null>>;
+
+/**
+ * TL6-001 — RECKON_TIER_RATE_LIMITS (per-minute, per tier):
+ *
+ *   free:60,pro:600,enterprise:
+ *
+ * - an EMPTY value after a colon = UNLIMITED for that tier;
+ * - unset/empty overall → the FROZEN defaults (free 60, pro 600,
+ *   enterprise unlimited);
+ * - a tier omitted from a partial spec keeps its frozen default;
+ * - malformed input (unknown tier, non-integer limit, duplicate tier,
+ *   zero limit) fails FAST with a ConfigError.
+ */
+export function parseTierRateLimits(raw: string | undefined): TierRateLimits {
+  const result: Record<AccountTier, number | null> = { ...ACCOUNT_TIER_RATE_LIMIT_DEFAULTS };
+  if (raw === undefined || raw.trim() === "") return result;
+  const seen = new Set<AccountTier>();
+  for (const entry of raw.split(",")) {
+    const piece = entry.trim();
+    if (piece === "") continue;
+    const separator = piece.indexOf(":");
+    if (separator <= 0) {
+      throw new ConfigError(
+        `RECKON_TIER_RATE_LIMITS entry '${piece}': expected '<tier>:<limit>' (empty limit = unlimited), e.g. 'free:60,pro:600,enterprise:'`,
+      );
+    }
+    const tierName = piece.slice(0, separator).trim();
+    const value = piece.slice(separator + 1).trim();
+    if (!(ACCOUNT_TIERS as readonly string[]).includes(tierName)) {
+      throw new ConfigError(
+        `RECKON_TIER_RATE_LIMITS: unknown tier '${tierName}' (expected one of ${ACCOUNT_TIERS.join(", ")})`,
+      );
+    }
+    const tier = tierName as AccountTier;
+    if (seen.has(tier)) {
+      throw new ConfigError(`RECKON_TIER_RATE_LIMITS: duplicate tier '${tier}'`);
+    }
+    seen.add(tier);
+    if (value === "") {
+      result[tier] = null; // unlimited
+      continue;
+    }
+    if (!/^[0-9]+$/.test(value) || Number(value) < 1) {
+      throw new ConfigError(
+        `RECKON_TIER_RATE_LIMITS entry '${piece}': limit must be an integer >= 1 or empty (unlimited)`,
+      );
+    }
+    result[tier] = Number(value);
+  }
+  return result;
 }
 
 /**

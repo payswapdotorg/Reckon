@@ -32,6 +32,7 @@ export {
   StateIdConflictError,
   StoredRecordParseError,
   ResearchJobError,
+  AccountEmailTakenError,
 } from "./errors.js";
 export { PgEventSink, PgEventQueries, rowToStoredOutcomeEvent, tenantColumns } from "./event-sink.js";
 export type { PgEventSinkOptions, EventQueryOptions } from "./event-sink.js";
@@ -41,6 +42,21 @@ export { PgIdempotencyStore } from "./idempotency-store.js";
 export type { StoredIdempotent, StoredIdempotentResponse } from "./idempotency-store.js";
 export { PgAgentStore } from "./agent-store.js";
 export type { StoredAgentBody, StoredAgentOrganization } from "./agent-store.js";
+// TL6-001: the self-serve account surface (accounts, minted keys, sessions).
+export {
+  PgAccountStore,
+  PgAccountKeyStore,
+  PgAccountSessionStore,
+} from "./account-store.js";
+export type {
+  AccountRecord,
+  CreateAccountInput,
+  AccountKeyView,
+  MintedAccountKey,
+  MintAccountKeyRequest,
+  StoredAccountKeyAuth,
+  ValidatedAccountSession,
+} from "./account-store.js";
 export {
   PgDecisionStore,
   PgPlanStore,

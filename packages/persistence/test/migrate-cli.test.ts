@@ -65,8 +65,8 @@ describe("reckon-migrate CLI (real PostgreSQL)", () => {
     const { io, lines } = captureIo();
     const code = await runMigrateCli(["status"], { DATABASE_URL: CLI_URI }, io);
     expect(code).toBe(0);
-    expect(lines.out.filter((l) => l.startsWith("[pending]")).length).toBe(4);
-    expect(lines.out.some((l) => l.includes("4 of 4 migrations pending"))).toBe(true);
+    expect(lines.out.filter((l) => l.startsWith("[pending]")).length).toBe(5);
+    expect(lines.out.some((l) => l.includes("5 of 5 migrations pending"))).toBe(true);
     expect(lines.err).toEqual([]);
   });
 
@@ -80,8 +80,9 @@ describe("reckon-migrate CLI (real PostgreSQL)", () => {
       "m002_outbox",
       "m003_api_state",
       "m004_agents",
+      "m005_accounts",
     ]);
-    expect(lines.out.some((l) => l.includes("applied 4 of 4 migrations; schema is current"))).toBe(true);
+    expect(lines.out.some((l) => l.includes("applied 5 of 5 migrations; schema is current"))).toBe(true);
     expect(lines.err).toEqual([]);
   });
 
@@ -89,17 +90,17 @@ describe("reckon-migrate CLI (real PostgreSQL)", () => {
     const { io, lines } = captureIo();
     const code = await runMigrateCli(["apply"], { DATABASE_URL: CLI_URI }, io);
     expect(code).toBe(0);
-    expect(lines.out.some((l) => l.includes("schema is current (4 migrations, 0 applied by this run)"))).toBe(
+    expect(lines.out.some((l) => l.includes("schema is current (5 migrations, 0 applied by this run)"))).toBe(
       true,
     );
-    expect(lines.out.filter((l) => l.startsWith("[applied]")).length).toBe(4);
+    expect(lines.out.filter((l) => l.startsWith("[applied]")).length).toBe(5);
   });
 
   it("status after apply → exit 0, all applied, no pending note", async () => {
     const { io, lines } = captureIo();
     const code = await runMigrateCli(["status"], { DATABASE_URL: CLI_URI }, io);
     expect(code).toBe(0);
-    expect(lines.out.filter((l) => l.startsWith("[applied]")).length).toBe(4);
+    expect(lines.out.filter((l) => l.startsWith("[applied]")).length).toBe(5);
     expect(lines.out.some((l) => l.includes("pending"))).toBe(false);
   });
 
@@ -161,7 +162,7 @@ describe("reckon-migrate CLI (real PostgreSQL)", () => {
       flagged.io,
     );
     expect(code).toBe(0);
-    expect(flagged.lines.out.filter((l) => l.startsWith("[applied]")).length).toBe(4);
+    expect(flagged.lines.out.filter((l) => l.startsWith("[applied]")).length).toBe(5);
   });
 
   it("help → exit 0 with usage text; no arguments → help", async () => {

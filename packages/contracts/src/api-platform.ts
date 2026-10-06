@@ -351,6 +351,7 @@ export const ErrorClassSchema = z.enum(ERROR_CLASSES);
  * | INSUFFICIENT_SCOPE        | permission_error       | 403  | no     | key lacks the route's scope |
  * | NOT_FOUND                 | invalid_request_error  | 404  | no     | unknown id inside the authenticated tenant |
  * | IDEMPOTENCY_CONFLICT      | invalid_request_error  | 422  | yes    | Idempotency-Key reused with a different request body |
+ * | EMAIL_TAKEN               | invalid_request_error  | 409  | yes    | TL6-001: signup email already belongs to an account |
  * | RATE_LIMIT_EXCEEDED       | rate_limit_error       | 429  | no     | too many requests; honor Retry-After |
  * | NOT_WIRED                 | api_error              | 501  | no     | operation has no mounted handler (composition, not client, fault) |
  * | HANDLER_RESPONSE_INVALID  | api_error              | 500  | no     | handler output failed its frozen response contract |
@@ -408,6 +409,14 @@ export const ERROR_CATALOG = {
     httpStatus: 422,
     docSlug: "idempotency-conflict",
     description: "An Idempotency-Key was reused with a different request body.",
+  },
+  // TL6-001: additive catalog entry (adding a code is the documented
+  // additive change; the class/status of EXISTING codes are untouched).
+  EMAIL_TAKEN: {
+    errorClass: "invalid_request_error",
+    httpStatus: 409,
+    docSlug: "email-taken",
+    description: "The signup email is already registered to an existing account.",
   },
   RATE_LIMIT_EXCEEDED: {
     errorClass: "rate_limit_error",

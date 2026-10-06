@@ -58,11 +58,16 @@ export interface RouteDeps {
  */
 export function authPreHandler(deps: RouteDeps, scope: Scope) {
   return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
-    const auth = deps.keyStore.authenticate(request.headers.authorization);
+    // TL6-001: the authenticator seam may be async (the DB account-key
+    // fallback); awaiting a sync result is a no-op, so the static KeyStore
+    // path is byte-identical.
+    const auth = await deps.keyStore.authenticate(request.headers.authorization);
     request.reckonAuth = auth;
     reply.header(X_RECKON_MODE_HEADER, auth.mode);
     if (deps.rateLimiter !== undefined) {
-      deps.rateLimiter.check(auth.keyHash);
+      // TL6-001: tier-aware check — DB-minted keys carry their tier's
+      // limit; static (tierless) keys keep the flat default limit.
+      deps.rateLimiter.check(auth.keyHash, auth.tier);
     }
     const resolvedVersion = resolveRequestVersion(
       deps.versionRegistry,
