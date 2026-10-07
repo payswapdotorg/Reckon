@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "tl6-active-ad-lane-roadmap",
+  "status": "tl6-ad-simulation-ladder",
   "implementationComplete": false,
   "dispatchBaseSha": "0c55b0c",
   "workers": [
@@ -755,6 +755,86 @@
       ],
       "title": "Ad-lane E2E, privacy/rights proof, production evidence and deployment verification",
       "status": "queued"
+    },
+    {
+      "id": "SIM-001",
+      "owner": "TL3",
+      "dependsOn": [
+        "TL6-002",
+        "TL6-003"
+      ],
+      "title": "Define Reckon-Complete conformance profile and simulation harness",
+      "status": "queued"
+    },
+    {
+      "id": "SIM-002",
+      "owner": "W1",
+      "dependsOn": [
+        "SIM-001"
+      ],
+      "title": "Level 1-4 simulations: static catalog, simple content feed, storefront, notifications",
+      "status": "queued"
+    },
+    {
+      "id": "SIM-003",
+      "owner": "W2",
+      "dependsOn": [
+        "SIM-001"
+      ],
+      "title": "Level 5-8 simulations: media feed, ad-supported media, marketplace, travel/booking",
+      "status": "queued"
+    },
+    {
+      "id": "SIM-004",
+      "owner": "W3",
+      "dependsOn": [
+        "SIM-001"
+      ],
+      "title": "Level 9-12 simulations: food delivery, mobility, social feed, finance/offer system",
+      "status": "queued"
+    },
+    {
+      "id": "SIM-005",
+      "owner": "W1",
+      "dependsOn": [
+        "SIM-002",
+        "SIM-003",
+        "SIM-004"
+      ],
+      "title": "Level 13-16 simulations: healthcare, education, B2B SaaS, enterprise workflow",
+      "status": "queued"
+    },
+    {
+      "id": "SIM-006",
+      "owner": "W2",
+      "dependsOn": [
+        "SIM-003",
+        "SIM-004"
+      ],
+      "title": "Level 17-20 simulations: multi-agent operations, multi-surface realtime, resource-constrained orchestration, adversarial/uncertain environments",
+      "status": "queued"
+    },
+    {
+      "id": "SIM-007",
+      "owner": "W3",
+      "dependsOn": [
+        "SIM-002",
+        "SIM-003",
+        "SIM-004",
+        "SIM-005",
+        "SIM-006"
+      ],
+      "title": "API-only onboarding benchmark and integration-effort scorecard across all simulated systems",
+      "status": "queued"
+    },
+    {
+      "id": "SIM-008",
+      "owner": "TL3+W1+W2+W3",
+      "dependsOn": [
+        "SIM-007"
+      ],
+      "title": "Reckon-Complete upgrade wave: eliminate recurring integration friction revealed by simulations",
+      "status": "queued"
     }
   ],
   "workerBranches": {
@@ -763,5 +843,11 @@
     "W3": "w3/first-wave"
   },
   "activeHandoff": "docs/handoff/TL6-FINAL-HANDOFF.md",
-  "lastReconciledAt": "2026-10-06T13:58:00Z"
+  "lastReconciledAt": "2026-10-07T04:35:00Z",
+  "simulationProgram": {
+    "definition": "Reckon-Complete means a host system can integrate Reckon through the public API/contracts, with no custom changes to Reckon core and no provider-specific logic leaking into the kernel, and can exercise the full decision loop plus declared capabilities.",
+    "ladderDoc": "docs/simulations/reckon-complete-ladder.md",
+    "scorecard": "docs/simulations/reckon-complete-scorecard.md",
+    "status": "queued"
+  }
 }
