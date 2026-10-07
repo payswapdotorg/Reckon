@@ -440,3 +440,24 @@ At each merge, reconcile:
 If they disagree, stop treating the status as complete until the repository is reconciled.
 
 The final release is a repository state, not a chat statement.
+
+
+## Reckon-Complete simulation program
+
+The next platform-upgrade program is defined in docs/simulations/reckon-complete-ladder.md and tracked in docs/work-items/state.json as SIM-001 through SIM-008.
+
+The TL and three workers must use the ladder to discover recurring integration friction across increasingly difficult host systems. The objective is not to build twenty unrelated adapters; it is to make the common public API/SDK/capability-manifest surface increasingly sufficient so a new host can become Reckon-Complete with minimal host-side engineering.
+
+Simulation rule: measure before changing the platform, upgrade recurring gaps at the common layer, then replay earlier levels to prove integration effort fell.
+
+The simulation ladder is:
+
+static catalog → content feed → e-commerce → notifications → media → ad-supported media → marketplace → travel → food delivery → mobility → social → finance → healthcare → education → B2B SaaS → enterprise workflows → multi-agent → multi-surface realtime → resource-constrained → adversarial/uncertain
+
+The target API-only onboarding flow is:
+
+capability manifest → connect host authorities → declare objectives/constraints/delivery capabilities → standard API/SDK → receive decisions/experiences/plans/actions → return outcomes → retrieve evidence → conformance → Reckon-Complete
+
+The host must not import Reckon internals, and host-owned identity/catalog/rights/delivery/policy remain outside Reckon.
+
+Use the simulation program to drive actual platform upgrades. Do not declare a system Reckon-Complete because the scenario passes with fixtures; completion requires the relevant evidence class and public-surface verification required by the profile.
