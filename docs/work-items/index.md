@@ -121,3 +121,21 @@ The previous 65-item Stripe-phase program is complete. The active implementation
 | AD-006 | TL3+W3 | ⏳ queued | Ad E2E, privacy/rights proof, production evidence and deployment verification |
 
 `docs/work-items/state.json` is the authoritative machine-readable ledger. This table is a navigation aid and must not diverge from it.
+
+
+## Reckon-Complete simulation program
+
+Canonical specification: docs/simulations/reckon-complete-ladder.md. Machine status: docs/work-items/state.json.
+
+| ID | Owner | Status | Scope |
+|---|---|---|---|
+| SIM-001 | TL3 | ⏳ queued | Define Reckon-Complete profile and common simulation harness |
+| SIM-002 | W1 | ⏳ queued | Levels 1–4 simulations |
+| SIM-003 | W2 | ⏳ queued | Levels 5–8 simulations |
+| SIM-004 | W3 | ⏳ queued | Levels 9–12 simulations + API-only measurement |
+| SIM-005 | W1 | ⏳ queued | Levels 13–16 simulations |
+| SIM-006 | W2 | ⏳ queued | Levels 17–20 simulation environments and agent/runtime stress |
+| SIM-007 | W3 | ⏳ queued | Cross-ladder API-only onboarding benchmark and integration-effort scorecard |
+| SIM-008 | TL3+W1+W2+W3 | ⏳ queued | Upgrade common platform primitives revealed by simulations; replay ladder |
+
+Completion is not 'all scenarios pass'. The goal is measurable reduction in host-side engineering required to reach Reckon-Complete through the public API/SDK and capability-manifest model.
