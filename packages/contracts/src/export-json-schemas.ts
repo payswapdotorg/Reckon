@@ -22,6 +22,11 @@ import {
   ContextSnapshotSchema,
   CatalogItemSchema,
   RealizationSchema,
+  AdMemoryRecordSchema,
+  AdQueryRequestSchema,
+  AdQueryResultSchema,
+  AdForgetRequestSchema,
+  AdForgetResultSchema,
 } from "./index.js";
 
 const OUT_DIR = join(import.meta.dirname, "..", "schemas");
@@ -38,6 +43,13 @@ const targets: Record<string, z.ZodTypeAny> = {
   "context-snapshot.schema.json": ContextSnapshotSchema,
   "catalog-item.schema.json": CatalogItemSchema,
   "realization.schema.json": RealizationSchema,
+  // AD-001 (ADR-005): Personal Ad Memory / Ad Query contracts — additive
+  // registrations; every target above is unchanged.
+  "ad-memory-record.schema.json": AdMemoryRecordSchema,
+  "ad-query-request.schema.json": AdQueryRequestSchema,
+  "ad-query-result.schema.json": AdQueryResultSchema,
+  "ad-forget-request.schema.json": AdForgetRequestSchema,
+  "ad-forget-result.schema.json": AdForgetResultSchema,
 };
 
 mkdirSync(OUT_DIR, { recursive: true });

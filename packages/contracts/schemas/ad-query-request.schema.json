@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "default": "reckon.ad-query-request",
+      "type": "string",
+      "const": "reckon.ad-query-request"
+    },
+    "schemaVersion": {
+      "default": "0.1.0",
+      "type": "string"
+    },
+    "queryId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "tenant": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+        },
+        "workspaceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+        }
+      },
+      "required": [
+        "tenantId"
+      ]
+    },
+    "subject": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "user",
+            "audience",
+            "account",
+            "session"
+          ]
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "kind",
+        "ref"
+      ]
+    },
+    "mode": {
+      "default": "both",
+      "type": "string",
+      "enum": [
+        "remembered",
+        "available",
+        "both"
+      ]
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "filters": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "terms": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "labels": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "advertiserRefs": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "campaignRefs": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "surfaces": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "encounteredFrom": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "encounteredUntil": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "limit": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "properties": {
+        "contextId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+        }
+      },
+      "required": [
+        "contextId"
+      ]
+    },
+    "at": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    }
+  },
+  "required": [
+    "queryId",
+    "tenant",
+    "subject",
+    "at"
+  ],
+  "$id": "https://reckon.dev/schemas/ad-query-request.schema.json"
+}

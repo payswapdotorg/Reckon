@@ -29,3 +29,14 @@ export * from "./webhooks.js";
 // minted account keys, tier ladder, route paths) — additive extension;
 // no existing exported shape above changes.
 export * from "./accounts.js";
+// AD-001: Personal Ad Memory + Ad Query contracts (canonical ad memory
+// record, retention/provenance/permission state, forget semantics,
+// query request/result, remembered-vs-available candidates, mapping
+// into the existing CandidateSet) — additive extension; no existing
+// exported shape above changes. See ADR-005.
+export * from "./ads.js";
+// AD-001: Personal Ad Memory / Ad Query contracts (retained-ad records,
+// observed-only encounter evidence, provenance separation, retention
+// basis, rights, query modes, forget/expiry semantics, ad→CandidateSet
+// mapping) — additive extension; no existing exported shape above changes.
+export * from "./ads.js";
