@@ -1,17 +1,24 @@
 /**
  * Sidebar — reference §2/§6: dark fixed left rail (~250px, full viewport
- * height) with brand block, grouped SidebarNav and a footer separated by a
- * hairline. Below tablet width (§8) it becomes an off-canvas drawer with
+ * height) with brand block, grouped SidebarNav and a footer separated by
+ * a hairline. Below tablet width (§8) it becomes an off-canvas drawer with
  * overlay, slide transition (~250ms), Escape-to-close and close-on-navigate.
  *
  * Client component: drawer state + pathname-driven nav active state.
+ *
+ * TL6-003: the footer workspace block renders the studio SESSION state —
+ * the signed-in account (initials avatar, email, tier, sign-out) or the
+ * signed-out state with the sign-in/create-account links. The raw
+ * session token never reaches this component (httpOnly cookie).
  */
 "use client";
 
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { useEffect } from "react";
 import { SidebarNav } from "@/components/ui/sidebar-nav";
 import { Badge } from "@/components/ui/badge";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { ModeBadge } from "./mode-badge.js";
 import { ModeToggle } from "./mode-toggle.js";
 import { useNavDrawer } from "./nav-drawer.js";
@@ -19,12 +26,23 @@ import styles from "./sidebar.module.css";
 
 export interface SidebarProps {
   /** Honest, non-secret environment label (e.g. "local"). */
-  envLabel: string;
+  readonly envLabel: string;
   /** Honest, non-secret API host the studio points at (e.g. "127.0.0.1:8080"). */
-  apiHostLabel: string;
+  readonly apiHostLabel: string;
+  /** Display-safe signed-in account metadata, or null (TL6-003). */
+  readonly account: { readonly email: string; readonly fullName: string; readonly tier: string } | null;
 }
 
-export function Sidebar({ envLabel, apiHostLabel }: SidebarProps) {
+/** Initials for the avatar block (e.g. "Ada Founder" → "AF"). */
+function initialsOf(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter((part) => part.length > 0);
+  if (parts.length === 0) return "R";
+  const first = parts[0]?.charAt(0) ?? "";
+  const last = parts.length > 1 ? parts[parts.length - 1]?.charAt(0) ?? "" : "";
+  return (first + last).toUpperCase() || "R";
+}
+
+export function Sidebar({ envLabel, apiHostLabel, account }: SidebarProps) {
   const { isOpen, close } = useNavDrawer();
   const pathname = usePathname();
 
@@ -79,14 +97,47 @@ export function Sidebar({ envLabel, apiHostLabel }: SidebarProps) {
           <SidebarNav />
         </div>
         <div className={styles.footer}>
-          <div className={styles.workspace}>
-            <span className={styles.workspaceAvatar} aria-hidden="true">
-              RS
-            </span>
-            <span className={styles.workspaceText}>
-              <span className={styles.workspaceName}>Reckon Studio</span>
-              <span className={styles.workspaceSub}>demo workspace</span>
-            </span>
+          {account !== null ? (
+            <div className={styles.workspace}>
+              <span className={styles.workspaceAvatar} aria-hidden="true">
+                {initialsOf(account.fullName)}
+              </span>
+              <span className={styles.workspaceText}>
+                <span className={styles.workspaceName} title={account.email}>
+                  {account.email}
+                </span>
+                <span className={styles.workspaceSub}>
+                  <Badge uppercase>{account.tier}</Badge>
+                </span>
+              </span>
+            </div>
+          ) : (
+            <div className={styles.workspace}>
+              <span className={styles.workspaceAvatar} aria-hidden="true">
+                ·
+              </span>
+              <span className={styles.workspaceText}>
+                <span className={styles.workspaceName}>Not signed in</span>
+                <span className={styles.workspaceSub}>account keys need a session</span>
+              </span>
+            </div>
+          )}
+          <div className={styles.sessionRow}>
+            {account !== null ? (
+              <SignOutButton />
+            ) : (
+              <span className={styles.sessionLinks}>
+                <Link className={styles.sessionLink} href="/login">
+                  Sign in
+                </Link>
+                <span aria-hidden="true" className={styles.sessionDot}>
+                  ·
+                </span>
+                <Link className={styles.sessionLink} href="/signup">
+                  Create account
+                </Link>
+              </span>
+            )}
           </div>
           <div className={styles.statusRow}>
             <ModeBadge />

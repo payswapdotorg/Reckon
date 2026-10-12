@@ -1,0 +1,19 @@
+/* Settings page (TL6-003) — the pending-surfaces note inside the
+ * honest-placeholder card. */
+
+.pendingNote {
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+}
+
+.pendingLink {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.pendingLink:hover {
+  text-decoration: underline;
+}

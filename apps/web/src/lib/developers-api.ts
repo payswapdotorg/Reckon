@@ -30,19 +30,30 @@
 
 /* ================================================================== *
  * Pending developer-platform routes (named verbatim in honest states)
+ *
+ * TL6-003: the DASHBOARD's key management moved to the ACCOUNT lane
+ * (lib/account-api.ts → /v1/account/**, session-authenticated) — no
+ * function in this module attempts a key route anymore. The constant
+ * below is retained as INERT LOCKSTEP DATA: apps/api's journey-lockstep
+ * battery (test/e2e-journey-map.test.ts) consumes it as the naming pin
+ * that keeps the journey doc, the journey driver and the shipped route
+ * vocabulary in agreement — `POST /v1/api-keys` genuinely remains a
+ * pending (absent) route on the API surface, which is exactly what the
+ * constant states. It is NOT a call path.
  * ================================================================== */
-
-export const PENDING_API_KEY_ROUTES = {
-  list: "GET /v1/api-keys",
-  create: "POST /v1/api-keys",
-  revoke: "DELETE /v1/api-keys/{id}",
-} as const;
 
 export const PENDING_REQUEST_LOG_ROUTE = "GET /v1/request-logs";
 
 export const PENDING_EVENT_ROUTES = {
   list: "GET /v1/events",
   replay: "POST /v1/events/{id}/replay",
+} as const;
+
+/** Inert lockstep data (see above): the still-pending Stripe-grammar key routes. */
+export const PENDING_API_KEY_ROUTES = {
+  list: "GET /v1/api-keys",
+  create: "POST /v1/api-keys",
+  revoke: "DELETE /v1/api-keys/{id}",
 } as const;
 
 /* ================================================================== *
@@ -74,29 +85,6 @@ export type SurfaceAttempt = { readonly ok: true; readonly body: unknown } | { r
 export interface PaginationEnvelope {
   readonly has_more: boolean;
   readonly next_cursor: string | null;
-}
-
-/** One API key row as the keys surface is expected to report it. */
-export interface ApiKeyRecord {
-  readonly id: string;
-  readonly name: string;
-  /** Key prefix including the kind/mode vocabulary, e.g. "sk_test_…9f2K". */
-  readonly prefix: string;
-  readonly mode: "live" | "test";
-  readonly kind: "secret" | "publishable";
-  readonly created_at: string;
-  readonly last_used_at: string | null;
-}
-
-/** A newly created key — the ONLY time the full secret exists. */
-export interface CreatedApiKey extends ApiKeyRecord {
-  /** The full secret (sk_…/pk_…). Shown exactly once, never stored. */
-  readonly secret: string;
-}
-
-export interface ApiKeysPage {
-  readonly keys: readonly ApiKeyRecord[];
-  readonly pagination: PaginationEnvelope | null;
 }
 
 /** One request-log row (the S2-001 request trail). */
@@ -296,58 +284,6 @@ export function parsePaginationEnvelope(value: unknown): PaginationEnvelope | nu
   return { has_more: hasMore, next_cursor: nextCursor };
 }
 
-function parseApiKeyRecord(value: unknown): ApiKeyRecord | null {
-  if (!isRecord(value)) return null;
-  const id = asNonEmptyString(value["id"]);
-  const name = asNonEmptyString(value["name"]);
-  const prefix = asNonEmptyString(value["prefix"]);
-  const mode = value["mode"];
-  const kind = value["kind"];
-  const createdAt = asIsoString(value["created_at"]);
-  const lastUsedAt = value["last_used_at"];
-  if (
-    id === null ||
-    name === null ||
-    prefix === null ||
-    createdAt === null ||
-    (mode !== "live" && mode !== "test") ||
-    (kind !== "secret" && kind !== "publishable") ||
-    (lastUsedAt !== null && typeof lastUsedAt !== "string")
-  ) {
-    return null;
-  }
-  return {
-    id,
-    name,
-    prefix,
-    mode,
-    kind,
-    created_at: createdAt,
-    last_used_at: lastUsedAt,
-  };
-}
-
-export function parseApiKeysPage(value: unknown): ApiKeysPage | null {
-  if (!isRecord(value) || !Array.isArray(value["data"])) return null;
-  const keys: ApiKeyRecord[] = [];
-  for (const row of value["data"]) {
-    const record = parseApiKeyRecord(row);
-    if (record === null) return null;
-    keys.push(record);
-  }
-  const pagination = value["pagination"] === undefined ? null : parsePaginationEnvelope(value["pagination"]);
-  if (value["pagination"] !== undefined && pagination === null) return null;
-  return { keys, pagination };
-}
-
-export function parseCreatedApiKey(value: unknown): CreatedApiKey | null {
-  const record = parseApiKeyRecord(value);
-  if (record === null) return null;
-  const secret = asNonEmptyString(value instanceof Object ? (value as Record<string, unknown>)["secret"] : undefined);
-  if (secret === null) return null;
-  return { ...record, secret };
-}
-
 function parseRequestLogRecord(value: unknown): RequestLogRecord | null {
   if (!isRecord(value)) return null;
   const id = asNonEmptyString(value["id"]);
@@ -421,71 +357,6 @@ function shapeError(pendingRoute: string): SurfaceFailure {
     pendingRoute,
     httpStatus: 200,
   };
-}
-
-/** GET /v1/api-keys — list the account's keys. */
-export async function listApiKeys(
-  endpoint: SurfaceEndpoint,
-  fetchImpl: FetchLike,
-): Promise<SurfaceResult<ApiKeysPage>> {
-  const result = await attemptSurfaceCall(endpoint, PENDING_API_KEY_ROUTES.list, "/v1/api-keys", { method: "GET" }, fetchImpl);
-  if (!result.ok) return result;
-  const page = parseApiKeysPage(result.body);
-  if (page === null) return { ok: false, failure: shapeError(PENDING_API_KEY_ROUTES.list) };
-  return { ok: true, data: page };
-}
-
-export interface CreateApiKeyInput {
-  readonly name: string;
-  readonly kind: "secret" | "publishable";
-  readonly mode: "live" | "test";
-}
-
-/** POST /v1/api-keys — create a key; the response carries the full secret exactly once. */
-export async function createApiKey(
-  endpoint: SurfaceEndpoint,
-  input: CreateApiKeyInput,
-  fetchImpl: FetchLike,
-): Promise<SurfaceResult<CreatedApiKey>> {
-  const result = await attemptSurfaceCall(
-    endpoint,
-    PENDING_API_KEY_ROUTES.create,
-    "/v1/api-keys",
-    {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: input.name, kind: input.kind, mode: input.mode }),
-    },
-    fetchImpl,
-  );
-  if (!result.ok) return result;
-  const created = parseCreatedApiKey(result.body);
-  if (created === null) {
-    return {
-      ok: false,
-      failure: {
-        outcome: "error",
-        detail:
-          `${PENDING_API_KEY_ROUTES.create} answered 200 but the body did not match the expected ` +
-          `created-key shape ({ id, name, prefix, mode, kind, created_at, secret }) — the response was withheld rather than guessed.`,
-        pendingRoute: PENDING_API_KEY_ROUTES.create,
-        httpStatus: 200,
-      },
-    };
-  }
-  return { ok: true, data: created };
-}
-
-/** DELETE /v1/api-keys/{id} — revoke a key. */
-export async function revokeApiKey(
-  endpoint: SurfaceEndpoint,
-  keyId: string,
-  fetchImpl: FetchLike,
-): Promise<SurfaceResult<{ revoked: true }>> {
-  const pendingRoute = PENDING_API_KEY_ROUTES.revoke.replace("{id}", keyId);
-  const result = await attemptSurfaceCall(endpoint, pendingRoute, `/v1/api-keys/${encodeURIComponent(keyId)}`, { method: "DELETE" }, fetchImpl);
-  if (!result.ok) return result;
-  return { ok: true, data: { revoked: true as const } };
 }
 
 /** GET /v1/request-logs?starting_after=…&limit=… — the cursor-paginated request trail. */

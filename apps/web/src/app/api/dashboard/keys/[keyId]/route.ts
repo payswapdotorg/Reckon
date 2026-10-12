@@ -1,10 +1,18 @@
 /**
- * DELETE /api/dashboard/keys/{keyId} — the studio's server-side proxy
- * for key revocation (S3-001). Attempts the REAL DELETE
- * /v1/api-keys/{id} through the honest seam and returns the typed
- * outcome (same contract as the create proxy; never a fake success).
+ * DELETE /api/dashboard/keys/{keyId} — the studio's server-side proxy for
+ * key revocation (TL6-003, rewired to the ACCOUNT API). Attempts the REAL
+ * DELETE /v1/account/keys/{keyId} with the cookie's session and returns
+ * the typed outcome (same contract as the mint proxy; never a fake
+ * success):
+ *
+ *   200 { ok: true, revoked: true } — only on a real 204
+ *   400 { ok: false, failure }      — missing/empty key id
+ *   401 { ok: false, failure }      — no/expired session (cookies cleared)
+ *   404 → 502 { ok: false, failure }— the API's typed NOT_FOUND (httpStatus carried)
+ *   501/502/503 { ok: false, failure }
  */
-import { fetchRevokeApiKey } from "@/lib/developers-surface";
+import { attemptRevokeKey, clearStudioSessionCookies } from "@/lib/account-surface";
+import { proxyFailureResponse } from "@/lib/account-proxy";
 
 export async function DELETE(
   _request: Request,
@@ -13,19 +21,28 @@ export async function DELETE(
   const { keyId } = await params;
   if (typeof keyId !== "string" || keyId.trim().length === 0) {
     return Response.json(
-      { ok: false, failure: { outcome: "error", detail: "A key id is required.", pendingRoute: "DELETE /v1/api-keys/{id}", httpStatus: null } },
+      {
+        ok: false,
+        failure: {
+          outcome: "error",
+          detail: "A key id is required.",
+          code: "REQUEST_INVALID",
+          param: null,
+          pendingRoute: "DELETE /v1/account/keys/{keyId}",
+          httpStatus: null,
+        },
+      },
       { status: 400 },
     );
   }
 
-  const result = await fetchRevokeApiKey(keyId.trim());
+  const result = await attemptRevokeKey(keyId.trim());
   if (result.ok) {
     return Response.json({ ok: true, revoked: true });
   }
-  const status = result.failure.outcome === "unconfigured" || result.failure.outcome === "unreachable"
-    ? 503
-    : result.failure.outcome === "not-wired"
-      ? 501
-      : 502;
-  return Response.json({ ok: false, failure: result.failure }, { status });
+  if (result.failure.outcome === "unauthenticated") {
+    // The session is dead server-side — the cookies now lie; clear them.
+    await clearStudioSessionCookies();
+  }
+  return proxyFailureResponse(result.failure);
 }

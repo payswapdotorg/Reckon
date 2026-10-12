@@ -1,0 +1,183 @@
+/* Auth forms (TL6-003) — login + the progressive two-step signup.
+ * Field language mirrors create-key-dialog.module.css (palette §5
+ * controls); the notice banners use the §7 honest-state treatments:
+ * info = neutral secondary tint, warning = the degraded tint. */
+
+.formCard {
+  max-width: 460px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.stepHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stepTrail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+  flex-wrap: wrap;
+}
+
+.stepTrailParts {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stepTrailCurrent {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.stepSeparator {
+  color: var(--border);
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--foreground);
+}
+
+.input {
+  padding: 9px 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--input);
+  background-color: var(--card);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--foreground);
+  transition: border-color var(--transition);
+  width: 100%;
+}
+
+.input:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+  border-color: var(--ring);
+}
+
+.inputInvalid {
+  border-color: var(--destructive);
+}
+
+.fieldError {
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--destructive);
+}
+
+.fieldHint {
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+}
+
+.notice {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  line-height: 19px;
+}
+
+.noticeIcon {
+  flex: none;
+  margin-top: 1px;
+}
+
+.noticeTitle {
+  font-weight: 600;
+}
+
+.noticeDetail {
+  color: var(--muted-foreground);
+  margin-top: 2px;
+}
+
+.noticeInfo {
+  background-color: var(--secondary);
+  border: 1px solid var(--border);
+}
+
+.noticeWarn {
+  background-color: var(--destructive-tint);
+  border: 1px solid var(--destructive-border-soft);
+}
+
+.noticeAction {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.noticeAction:hover {
+  text-decoration: underline;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.actionsSplit {
+  justify-content: space-between;
+}
+
+.altRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+}
+
+.altLink {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.altLink:hover {
+  text-decoration: underline;
+}
+
+.trustRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+}
+
+.trustIcon {
+  flex: none;
+  margin-top: 1px;
+  color: var(--muted-foreground);
+}

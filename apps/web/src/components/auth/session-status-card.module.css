@@ -1,0 +1,91 @@
+/* SessionStatusCard (TL6-003) — the account-access surface. Rows mirror
+ * account-status-card's dl rhythm; the signed-out CTA row uses the
+ * primary emerald for the signup action (the progressive next step). */
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rowKey {
+  font-size: 12px;
+  line-height: 17px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted-foreground);
+}
+
+.rowValue {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.accountName {
+  font-weight: 600;
+}
+
+.accountEmail {
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.tierNote,
+.sessionNote {
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+}
+
+.signedOutRow {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.signedOutNote {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted-foreground);
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background-color: var(--secondary);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.ctaRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.actionsRow {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}

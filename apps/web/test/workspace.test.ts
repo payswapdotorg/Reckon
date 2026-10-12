@@ -247,6 +247,19 @@ describe("app-router tree matches the registry (smoke)", () => {
     expect(existsSync(join(appRoot, "api/dashboard/keys/route.ts"))).toBe(true);
     expect(existsSync(join(appRoot, "api/dashboard/keys/[keyId]/route.ts"))).toBe(true);
   });
+
+  it("the TL6-003 account-proxy route handlers and auth pages exist", () => {
+    for (const handler of [
+      "api/dashboard/account/signup/route.ts",
+      "api/dashboard/account/login/route.ts",
+      "api/dashboard/account/logout/route.ts",
+      "api/dashboard/account/expire/route.ts",
+    ]) {
+      expect(existsSync(join(appRoot, handler)), `missing ${handler}`).toBe(true);
+    }
+    expect(existsSync(join(appRoot, "login/page.tsx"))).toBe(true);
+    expect(existsSync(join(appRoot, "signup/page.tsx"))).toBe(true);
+  });
 });
 
 describe("UI-002 base components exist (smoke)", () => {
@@ -322,6 +335,31 @@ describe("S3-001 dashboard components exist (smoke)", () => {
   });
 });
 
+describe("TL6-003 auth components exist (smoke)", () => {
+  const authComponents = [
+    "auth/login-form.tsx",
+    "auth/signup-form.tsx",
+    "auth/sign-out-button.tsx",
+    "auth/session-status-card.tsx",
+    "developers/account-surface-state.tsx",
+  ] as const;
+
+  it.each(authComponents)("src/components/%s exists", (relative) => {
+    expect(existsSync(join(componentsRoot, relative)), `missing ${relative}`).toBe(true);
+  });
+
+  it("the auth component CSS modules exist (colocated)", () => {
+    const cssModules = [
+      "auth/auth-form.module.css",
+      "auth/sign-out-button.module.css",
+      "auth/session-status-card.module.css",
+    ] as const;
+    for (const relative of cssModules) {
+      expect(existsSync(join(componentsRoot, relative)), `missing ${relative}`).toBe(true);
+    }
+  });
+});
+
 describe("SDK seam + §29 law guards", () => {
   it("lib/reckon-client.ts exists, is server-only and only consumes @reckon/sdk", () => {
     const source = readFileSync(join(here, "../src/lib/reckon-client.ts"), "utf8");
@@ -367,5 +405,91 @@ describe("SDK seam + §29 law guards", () => {
     };
     walk(srcRoot);
     expect(violations, `domain-internal imports found: ${violations.join(", ")}`).toEqual([]);
+  });
+});
+
+describe("TL6-003 account/session law guards", () => {
+  it("the pure account client carries NO server-only import and NO env access", () => {
+    const source = readFileSync(join(here, "../src/lib/account-api.ts"), "utf8");
+    expect(source).not.toMatch(/import\s+"server-only"/);
+    expect(source).not.toMatch(/process\.env/);
+  });
+
+  it("the pure account client validates against the FROZEN contracts (no parallel wire model)", () => {
+    const source = readFileSync(join(here, "../src/lib/account-api.ts"), "utf8");
+    expect(source).toMatch(/from "@reckon\/contracts"/);
+    expect(source).toMatch(/AccountSessionResponseSchema/);
+    expect(source).toMatch(/AccountKeySchema/);
+    expect(source).toMatch(/AccountKeyCreatedSchema/);
+  });
+
+  it("the account seam is server-only, composes the pure client and pins the cookie law", () => {
+    const source = readFileSync(join(here, "../src/lib/account-surface.ts"), "utf8");
+    expect(source).toMatch(/import "server-only"/);
+    expect(source).toMatch(/from "\.\/account-api(\.js)?"/);
+    // The session cookie MUST be httpOnly (the reckonsess_ token never
+    // reaches client JS) and its lifetime mirrors the frozen contract.
+    expect(source).toMatch(/httpOnly:\s*true/);
+    expect(source).toMatch(/SESSION_TTL_MS/);
+  });
+
+  it("the auth view module is pure (no env, no server-only)", () => {
+    const source = readFileSync(join(here, "../src/lib/auth-view.ts"), "utf8");
+    expect(source).not.toMatch(/import\s+"server-only"/);
+    expect(source).not.toMatch(/process\.env/);
+  });
+
+  it("the keys proxies consume the ACCOUNT lane — the demo-key lane never rides key management", () => {
+    const createProxy = readFileSync(join(appRoot, "api/dashboard/keys/route.ts"), "utf8");
+    const revokeProxy = readFileSync(join(appRoot, "api/dashboard/keys/[keyId]/route.ts"), "utf8");
+    for (const source of [createProxy, revokeProxy]) {
+      expect(source).toMatch(/account-surface/);
+      expect(source).not.toMatch(/developers-surface/);
+      expect(source).not.toMatch(/RECKON_DEMO_API_KEY/);
+    }
+  });
+
+  it("the demo-key lane keeps NO key-management call path (regression: static demo keys stay separated)", () => {
+    const pure = readFileSync(join(here, "../src/lib/developers-api.ts"), "utf8");
+    const seam = readFileSync(join(here, "../src/lib/developers-surface.ts"), "utf8");
+    // The account family owns key management. The demo lane's ONLY
+    // /v1/api-keys reference is the INERT lockstep constant (consumed by
+    // apps/api's journey-lockstep battery as the doc↔driver naming pin);
+    // there is no attempt function, no seam export and no fetch that
+    // targets a key route.
+    expect(pure).toMatch(/PENDING_API_KEY_ROUTES/);
+    expect(pure).toMatch(/Inert lockstep data/);
+    expect(pure).not.toMatch(/export (async )?function (listApiKeys|createApiKey|revokeApiKey)\b/);
+    expect(seam).not.toMatch(/\/v1\/api-keys/);
+    expect(seam).not.toMatch(/fetchApiKeys|fetchCreateApiKey|fetchRevokeApiKey/);
+    // The demo lane keeps its real surfaces: request logs + events.
+    expect(pure).toMatch(/\/v1\/request-logs/);
+  });
+
+  it("the session token never crosses into render surfaces as executable code (display-safe metadata only)", () => {
+    // Comments that EXPLAIN the law are fine; executable references to
+    // the session-token vocabulary in components/pages are not. Strip
+    // comments, then assert the remainder never mentions the token.
+    const stripComments = (source: string): string =>
+      source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    const violations: string[] = [];
+    const walk = (dir: string): void => {
+      for (const name of readdirSync(dir)) {
+        const full = join(dir, name);
+        if (statSync(full).isDirectory()) {
+          walk(full);
+        } else if (/\.tsx?$/.test(name)) {
+          const source = readFileSync(full, "utf8");
+          if (/sessionToken|reckonsess_/.test(stripComments(source))) {
+            violations.push(full);
+          }
+        }
+      }
+    };
+    walk(join(srcRoot, "components"));
+    walk(join(srcRoot, "app"));
+    // The server-only seam (lib/account-surface.ts) is the one place the
+    // token exists; render surfaces receive display-safe metadata only.
+    expect(violations, `session-token references in render surfaces: ${violations.join(", ")}`).toEqual([]);
   });
 });

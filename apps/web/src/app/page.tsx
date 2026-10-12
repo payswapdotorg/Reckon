@@ -27,6 +27,7 @@ import { LoopSignalsCards } from "@/components/overview/loop-signals-card";
 import { NextActionHero } from "@/components/overview/next-action-hero";
 import { SystemStatusCard } from "@/components/system-status-card";
 import { WorkspacePage } from "@/components/workspace-page";
+import { getStudioAccountDisplay } from "@/lib/account-surface";
 import { getReckonApiDisplayConfig } from "@/lib/reckon-client";
 import { probeReckonApi } from "@/lib/reckon-status";
 import { loadNextAction, normalizeDecisionId } from "@/lib/overview-data";
@@ -57,16 +58,17 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams;
   const decisionId = normalizeDecisionId(params.decision);
 
-  const [config, probe, result] = await Promise.all([
+  const [config, probe, result, account] = await Promise.all([
     getReckonApiDisplayConfig(),
     probeReckonApi(),
     loadNextAction(decisionId),
+    getStudioAccountDisplay(),
   ]);
 
   return (
     <WorkspacePage title={home.title} subtitle={home.subtitle}>
-      <AccountStatusCard config={config} probe={probe} />
-      <OnboardingCard quickstartHref={quickstartHref()} />
+      <AccountStatusCard config={config} probe={probe} account={account} />
+      <OnboardingCard quickstartHref={quickstartHref()} account={account} />
       <NextActionHero result={result} config={config} probe={probe} />
       <DecisionActivityCard result={result} />
       <LoopSignalsCards result={result} />

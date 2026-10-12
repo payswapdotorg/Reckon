@@ -1,120 +1,153 @@
 /**
- * API-keys view models + flows (S3-001) — PURE logic, unit-tested in
- * test/api-keys-view.test.ts.
+ * API-keys view models + flows (TL6-003, rewired to the account API) —
+ * PURE logic, unit-tested in test/api-keys-view.test.ts.
  *
- * Two laws live here:
+ * The wire shape changed with the account lane (TL6-001): an account key
+ * is { keyId, kind, mode, tier, createdAt, lastUsedAt, revokedAt } —
+ * epoch-ms timestamps, NO name, NO prefix (the list NEVER carries key
+ * material). This module renders exactly that.
  *
- *  1. THE ONCE-ONLY SECRET (the Stripe pattern). A created key's full
- *     secret exists in exactly ONE state of the create flow (`created`).
+ * Two laws live here (unchanged from S3-001, re-proven for the account lane):
+ *
+ *  1. THE ONCE-ONLY SECRET (the Stripe pattern). A minted key's RAW
+ *     value exists in exactly ONE state of the mint flow (`created`).
  *     Acknowledging ("I've stored it") moves the flow to `stored`, which
- *     carries only the non-secret summary — there is NO transition back
- *     into `created`, so the secret can never be re-displayed. Closing
- *     the dialog from `created` also discards the secret.
+ *     carries ONLY the non-secret metadata — not even a prefix fragment
+ *     of the secret survives. There is NO transition back into
+ *     `created`; closing the dialog from `created` discards the secret.
  *
  *  2. HONEST DEGRADATION (Gate Q). The flow's `failed` state carries the
- *     observed surface failure verbatim (unconfigured / unreachable /
- *     not-wired / error) — including the pending API route — and never
- *     fabricates a key, a secret, or a success.
+ *     observed account-surface failure verbatim (unauthenticated /
+ *     unreachable / not-wired / error) — including the pending API
+ *     route — and never fabricates a key, a secret, or a success.
  */
 
-import type { ApiKeyRecord, CreatedApiKey, SurfaceFailure } from "./developers-api.js";
+import type { AccountKey, AccountKeyCreated } from "@reckon/contracts";
+import type { AccountSurfaceFailure } from "./account-api.js";
 
 /* ================================================================== *
- * Key row view model
+ * Key row view model (the account-lane wire shape)
  * ================================================================== */
 
+/** The sk_/pk_ + test/live vocabulary a key's kind+mode spell (presentation of KNOWN fields — never secret material). */
+export type TokenVocabulary = "sk_test" | "sk_live" | "pk_test" | "pk_live";
+
+export function tokenVocabulary(kind: "secret" | "publishable", mode: "live" | "test"): TokenVocabulary {
+  const prefix = kind === "secret" ? "sk" : "pk";
+  return `${prefix}_${mode}` as TokenVocabulary;
+}
+
 export interface ApiKeyRowView {
+  /** The key's id (key_…). */
   readonly id: string;
-  readonly name: string;
-  readonly prefix: string;
-  readonly mode: "live" | "test";
   readonly kind: "secret" | "publishable";
+  readonly mode: "live" | "test";
+  readonly tier: "free" | "pro" | "enterprise";
+  /** The vocabulary chip (sk_test …) — derived from kind+mode, not from secret material. */
+  readonly token: TokenVocabulary;
+  readonly kindLabel: "Secret key" | "Publishable key";
   /** "Not used yet" when the API reports null — explicit, never blank. */
   readonly lastUsedLabel: string;
   readonly createdLabel: string;
+  readonly revoked: boolean;
+  readonly revokedLabel: string | null;
   /** True when the key's mode matches the dashboard's current mode. */
   readonly matchesMode: boolean;
 }
 
-export function apiKeyRowView(
-  record: ApiKeyRecord,
+export function accountKeyRowView(
+  record: AccountKey,
   currentMode: "live" | "test",
-  formatTime: (iso: string) => string = (iso) => iso,
+  formatTime: (ms: number) => string = (ms) => new Date(ms).toISOString(),
 ): ApiKeyRowView {
   return {
-    id: record.id,
-    name: record.name,
-    prefix: record.prefix,
-    mode: record.mode,
+    id: record.keyId,
     kind: record.kind,
-    lastUsedLabel: record.last_used_at === null ? "Not used yet" : formatTime(record.last_used_at),
-    createdLabel: formatTime(record.created_at),
+    mode: record.mode,
+    tier: record.tier,
+    token: tokenVocabulary(record.kind, record.mode),
+    kindLabel: record.kind === "secret" ? "Secret key" : "Publishable key",
+    lastUsedLabel: record.lastUsedAt === null ? "Not used yet" : formatTime(record.lastUsedAt),
+    createdLabel: formatTime(record.createdAt),
+    revoked: record.revokedAt !== null,
+    revokedLabel: record.revokedAt === null ? null : `Revoked ${formatTime(record.revokedAt)}`,
     matchesMode: record.mode === currentMode,
   };
 }
 
 /**
- * The keys table lists the keys for the dashboard's CURRENT mode first
- * (Stripe's keys page is mode-scoped), newest first, and marks the rest
- * as other-mode rows (kept visible so operators can see the whole key
- * inventory honestly).
+ * The keys table lists current-mode keys first (Stripe's keys page is
+ * mode-scoped), newest first, with revoked keys kept visible at the end
+ * of their group (the API reports them with revokedAt set — the operator
+ * sees the whole inventory honestly).
  */
-export function apiKeyRowsView(
-  records: readonly ApiKeyRecord[],
+export function accountKeyRowsView(
+  records: readonly AccountKey[],
   currentMode: "live" | "test",
-  formatTime?: (iso: string) => string,
+  formatTime?: (ms: number) => string,
 ): readonly ApiKeyRowView[] {
-  const rows = records.map((record) => apiKeyRowView(record, currentMode, formatTime));
+  const rows = records.map((record) => accountKeyRowView(record, currentMode, formatTime));
   return [...rows].sort((a, b) => {
     if (a.matchesMode !== b.matchesMode) return a.matchesMode ? -1 : 1;
-    return a.name.localeCompare(b.name);
+    if (a.revoked !== b.revoked) return a.revoked ? 1 : -1;
+    const recordA = records.find((record) => record.keyId === a.id);
+    const recordB = records.find((record) => record.keyId === b.id);
+    const createdA = recordA?.createdAt ?? 0;
+    const createdB = recordB?.createdAt ?? 0;
+    if (createdA !== createdB) return createdB - createdA;
+    return a.id.localeCompare(b.id);
   });
 }
 
 /* ================================================================== *
- * Create-key flow (the once-only secret machine)
+ * Mint-key flow (the once-only secret machine — account lane)
  * ================================================================== */
 
-export type CreateKeyFlowState =
+/** The non-secret summary of a minted key (what survives acknowledgment). */
+export interface MintedKeySummary {
+  readonly keyId: string;
+  readonly kind: "secret" | "publishable";
+  readonly mode: "live" | "test";
+  readonly tier: "free" | "pro" | "enterprise";
+  readonly token: TokenVocabulary;
+}
+
+export type MintKeyFlowState =
   | { readonly phase: "closed" }
-  | { readonly phase: "naming" }
-  | { readonly phase: "submitting"; readonly name: string; readonly kind: "secret" | "publishable" }
-  | { readonly phase: "created"; readonly key: CreatedApiKey }
-  | { readonly phase: "stored"; readonly key: Omit<CreatedApiKey, "secret"> }
+  | { readonly phase: "choosing" }
+  | { readonly phase: "submitting"; readonly kind: "secret" | "publishable"; readonly mode: "live" | "test" }
+  | { readonly phase: "created"; readonly key: AccountKeyCreated }
+  | { readonly phase: "stored"; readonly summary: MintedKeySummary }
   | {
       readonly phase: "failed";
-      readonly failure: SurfaceFailure;
-      readonly name: string;
+      readonly failure: AccountSurfaceFailure;
       readonly kind: "secret" | "publishable";
+      readonly mode: "live" | "test";
     };
 
-export type CreateKeyFlowEvent =
+export type MintKeyFlowEvent =
   | { readonly type: "OPEN" }
   | { readonly type: "CLOSE" }
-  | { readonly type: "SUBMIT"; readonly name: string; readonly kind: "secret" | "publishable" }
-  | { readonly type: "RESULT"; readonly result: { ok: true; key: CreatedApiKey } | { ok: false; failure: SurfaceFailure } }
+  | { readonly type: "SUBMIT"; readonly kind: "secret" | "publishable"; readonly mode: "live" | "test" }
+  | {
+      readonly type: "RESULT";
+      readonly result: { ok: true; key: AccountKeyCreated } | { ok: false; failure: AccountSurfaceFailure };
+    }
   | { readonly type: "SECRET_STORED" }
   | { readonly type: "RETRY" };
-
-export const KEY_NAME_MAX_LENGTH = 64;
-
-/** Key names: non-empty, trimmed, bounded. */
-export function isValidKeyName(name: string): boolean {
-  const trimmed = name.trim();
-  return trimmed.length > 0 && trimmed.length <= KEY_NAME_MAX_LENGTH;
-}
 
 /**
  * The pure transition. Once-only invariants (asserted by tests):
  *  - `created` is reachable ONLY from `submitting` via RESULT ok;
- *  - leaving `created` (SECRET_STORED or CLOSE) drops the secret;
+ *  - leaving `created` (SECRET_STORED or CLOSE) drops the secret — the
+ *    stored summary carries NO fragment of it (not even a prefix);
  *  - `stored`/`failed` can never transition into a state holding a secret.
  */
-export function nextCreateKeyFlowState(state: CreateKeyFlowState, event: CreateKeyFlowEvent): CreateKeyFlowState {
+export function nextMintKeyFlowState(state: MintKeyFlowState, event: MintKeyFlowEvent): MintKeyFlowState {
   switch (event.type) {
     case "OPEN": {
-      if (state.phase === "closed" || state.phase === "failed") {
-        return { phase: "naming" };
+      if (state.phase === "closed" || state.phase === "failed" || state.phase === "stored") {
+        return { phase: "choosing" };
       }
       return state;
     }
@@ -125,13 +158,16 @@ export function nextCreateKeyFlowState(state: CreateKeyFlowState, event: CreateK
     }
 
     case "SUBMIT": {
-      if (state.phase !== "naming") {
+      if (state.phase !== "choosing") {
         return state;
       }
-      if (!isValidKeyName(event.name)) {
+      if (event.kind !== "secret" && event.kind !== "publishable") {
         return state;
       }
-      return { phase: "submitting", name: event.name.trim(), kind: event.kind };
+      if (event.mode !== "live" && event.mode !== "test") {
+        return state;
+      }
+      return { phase: "submitting", kind: event.kind, mode: event.mode };
     }
 
     case "RESULT": {
@@ -141,22 +177,30 @@ export function nextCreateKeyFlowState(state: CreateKeyFlowState, event: CreateK
       if (event.result.ok) {
         return { phase: "created", key: event.result.key };
       }
-      return { phase: "failed", failure: event.result.failure, name: state.name, kind: state.kind };
+      return { phase: "failed", failure: event.result.failure, kind: state.kind, mode: state.mode };
     }
 
     case "SECRET_STORED": {
       if (state.phase !== "created") {
         return state;
       }
-      // The secret is NOT carried over — summary only.
-      const { secret: _secret, ...summary } = state.key;
-      return { phase: "stored", key: summary };
+      // The secret is NOT carried over — metadata summary only (no fragment).
+      return {
+        phase: "stored",
+        summary: {
+          keyId: state.key.keyId,
+          kind: state.key.kind,
+          mode: state.key.mode,
+          tier: state.key.tier,
+          token: tokenVocabulary(state.key.kind, state.key.mode),
+        },
+      };
     }
 
     case "RETRY": {
       if (state.phase === "failed") {
-        // Retry the same name/kind without retyping.
-        return { phase: "submitting", name: state.name, kind: state.kind };
+        // Retry the same kind/mode without re-choosing.
+        return { phase: "submitting", kind: state.kind, mode: state.mode };
       }
       return state;
     }
@@ -169,11 +213,11 @@ export function nextCreateKeyFlowState(state: CreateKeyFlowState, event: CreateK
 }
 
 /**
- * The one place the full secret may be read. `null` in every phase except
+ * The one place the RAW key may be read. `null` in every phase except
  * `created` — the machine's guarantee, one accessor.
  */
-export function visibleSecret(state: CreateKeyFlowState): string | null {
-  return state.phase === "created" ? state.key.secret : null;
+export function visibleMintedSecret(state: MintKeyFlowState): string | null {
+  return state.phase === "created" ? state.key.key : null;
 }
 
 /* ================================================================== *
@@ -183,23 +227,23 @@ export function visibleSecret(state: CreateKeyFlowState): string | null {
 /** Stable destructive-action id for key revocation. */
 export const REVOKE_API_KEY_ACTION_ID = "revoke-api-key";
 
-export function revokeActionFor(record: ApiKeyRecord) {
+export function revokeActionFor(record: AccountKey) {
   return {
     id: REVOKE_API_KEY_ACTION_ID,
     label: "Revoke API key",
-    context: `${record.prefix} (${record.name})`,
+    context: `${tokenVocabulary(record.kind, record.mode)} ${record.keyId}`,
   };
 }
 
 /**
  * The honest revoke outcome view: what the API actually said, in
- * operator language, with the pending route named when not wired.
+ * operator language, with the route named when it is not wired.
  */
-export function revokeOutcomeView(failure: SurfaceFailure): { title: string; detail: string } {
+export function revokeOutcomeView(failure: AccountSurfaceFailure): { title: string; detail: string } {
   switch (failure.outcome) {
-    case "unconfigured":
+    case "unauthenticated":
       return {
-        title: "Not revoked — studio not configured",
+        title: "Not revoked — the session is no longer valid",
         detail: failure.detail,
       };
     case "unreachable":
@@ -209,7 +253,7 @@ export function revokeOutcomeView(failure: SurfaceFailure): { title: string; det
       };
     case "not-wired":
       return {
-        title: "Not revoked — key management is not wired yet",
+        title: "Not revoked — the account surface is not wired on this API",
         detail: failure.detail,
       };
     case "error":

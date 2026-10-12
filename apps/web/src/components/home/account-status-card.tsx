@@ -4,6 +4,11 @@
  * card) plus the account mode badge and the operator quick links into
  * the dashboard sections.
  *
+ * TL6-003: the strip now carries the SESSION row — the display-safe
+ * signed-in identity from the studio's session cookie, or the honest
+ * signed-out state with the signup/sign-in links. Never the raw token
+ * (httpOnly).
+ *
  * Server component except the mode badge (a tiny client island — the
  * toggle state is account-level client state).
  */
@@ -19,6 +24,8 @@ import styles from "./account-status-card.module.css";
 export interface AccountStatusCardProps {
   readonly config: ReckonApiDisplayConfig;
   readonly probe: ReckonApiProbe;
+  /** Display-safe signed-in account metadata, or null (TL6-003). */
+  readonly account: { readonly email: string; readonly fullName: string; readonly tier: string } | null;
 }
 
 const QUICK_LINKS: readonly { readonly href: string; readonly label: string; readonly hint: string; readonly icon: typeof Sparkles }[] = [
@@ -29,7 +36,7 @@ const QUICK_LINKS: readonly { readonly href: string; readonly label: string; rea
   { href: "/analytics", label: "Analytics", hint: "S3-002", icon: ChartLine },
 ];
 
-export function AccountStatusCard({ config, probe }: AccountStatusCardProps) {
+export function AccountStatusCard({ config, probe, account }: AccountStatusCardProps) {
   return (
     <Card>
       <CardHeader>
@@ -43,6 +50,28 @@ export function AccountStatusCard({ config, probe }: AccountStatusCardProps) {
       </CardHeader>
       <CardContent>
         <dl className={styles.rows}>
+          <div className={styles.row}>
+            <dt className={styles.rowKey}>Studio session</dt>
+            <dd className={styles.rowValue}>
+              {account !== null ? (
+                <>
+                  <span className={styles.sessionName}>{account.fullName}</span>
+                  <code className={styles.sessionEmail}>{account.email}</code>
+                  <Badge uppercase>{account.tier}</Badge>
+                </>
+              ) : (
+                <>
+                  <span className={styles.sessionOut}>Not signed in</span>
+                  <Link href="/signup" className={styles.sessionLink}>
+                    Create account
+                  </Link>
+                  <Link href="/login" className={styles.sessionLink}>
+                    Sign in
+                  </Link>
+                </>
+              )}
+            </dd>
+          </div>
           <div className={styles.row}>
             <dt className={styles.rowKey}>API endpoint</dt>
             <dd className={styles.rowValue}>

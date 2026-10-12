@@ -3,6 +3,10 @@
  * pure developer-platform client (`developers-api.ts`) with the studio's
  * server environment.
  *
+ * TL6-003: the KEY-management attempts moved to the ACCOUNT lane
+ * (lib/account-surface.ts → /v1/account/**, session-authenticated).
+ * This seam keeps the request-log and webhook-event surfaces.
+ *
  * Laws (same as lib/reckon-client.ts):
  *  - `import "server-only"`: RECKON_DEMO_API_KEY resolves exclusively in
  *    server components / route handlers, so no secret can reach a client
@@ -19,12 +23,8 @@
 import "server-only";
 
 import {
-  createApiKey,
-  listApiKeys,
   listEvents,
   listRequestLogs,
-  revokeApiKey,
-  type CreateApiKeyInput,
   type EventsPage,
   type SurfaceEndpoint,
   type SurfaceResult,
@@ -34,21 +34,6 @@ import { DEFAULT_RECKON_API_BASE_URL } from "./reckon-client.js";
 function endpointFromEnv(): SurfaceEndpoint {
   const baseUrl = process.env.RECKON_API_BASE_URL?.trim() || DEFAULT_RECKON_API_BASE_URL;
   return { baseUrl, apiKey: process.env.RECKON_DEMO_API_KEY?.trim() ?? "" };
-}
-
-/** List the account's API keys (GET /v1/api-keys). */
-export function fetchApiKeys(): Promise<SurfaceResult<import("./developers-api").ApiKeysPage>> {
-  return listApiKeys(endpointFromEnv(), fetch);
-}
-
-/** Create an API key (POST /v1/api-keys) — the response carries the full secret exactly once. */
-export function fetchCreateApiKey(input: CreateApiKeyInput): Promise<SurfaceResult<import("./developers-api").CreatedApiKey>> {
-  return createApiKey(endpointFromEnv(), input, fetch);
-}
-
-/** Revoke an API key (DELETE /v1/api-keys/{id}). */
-export function fetchRevokeApiKey(keyId: string): Promise<SurfaceResult<{ revoked: true }>> {
-  return revokeApiKey(endpointFromEnv(), keyId, fetch);
 }
 
 /** List request logs (GET /v1/request-logs), cursor-paginated the S2-001 way. */
@@ -68,9 +53,6 @@ export function fetchEvents(
 // Re-export the outcome vocabulary so server components can type against
 // it without importing the pure module separately.
 export type {
-  ApiKeyRecord,
-  ApiKeysPage,
-  CreatedApiKey,
   EventRecord,
   EventsPage,
   RequestLogRecord,

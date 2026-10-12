@@ -1,14 +1,17 @@
 /**
- * CreateKeyDialog — the create-key flow (S3-001): the Stripe pattern.
- * The dialog collects a name + key kind, submits to the studio's
- * server-side proxy (POST /api/dashboard/keys → the real POST
- * /v1/api-keys attempt), and on a REAL success shows the full secret
- * EXACTLY ONCE with a copy button and the "store it now" warning.
+ * CreateKeyDialog — the account-key mint flow (TL6-003, rewired to
+ * POST /v1/account/keys): the Stripe pattern. The dialog collects the
+ * key kind (the mint mode rides the dashboard's test/live toggle — the
+ * API mints unnamed keys: kind and mode only, no name), submits to the
+ * studio's session proxy, and on a REAL success shows the RAW key
+ * EXACTLY ONCE with a copy affordance and the "store it now" warning.
  *
  * The flow's state machine lives in lib/api-keys-view.ts (pure, tested):
  * this component only renders it — the once-only law is enforced by the
  * machine, not by discipline. Failures render the honest outcome
- * (unconfigured / unreachable / not-wired / error) — never a fake key.
+ * (unauthenticated / unreachable / not-wired / error) — never a fake
+ * key. An observed 401 reports the expired session to the manager
+ * (which routes to /login?reason=expired).
  */
 "use client";
 
@@ -18,34 +21,42 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useDashboardMode } from "@/components/shell/mode-provider";
 import {
-  KEY_NAME_MAX_LENGTH,
-  isValidKeyName,
-  nextCreateKeyFlowState,
-  visibleSecret,
-  type CreateKeyFlowState,
+  nextMintKeyFlowState,
+  visibleMintedSecret,
+  type MintKeyFlowState,
 } from "@/lib/api-keys-view";
+import type { AccountSurfaceFailure } from "@/lib/account-api";
 import styles from "./create-key-dialog.module.css";
 
 export interface CreateKeyDialogProps {
   readonly open: boolean;
   readonly onClose: () => void;
+  /** Reports mint completion (refresh) or an expired session (route to login). */
+  readonly onSettled: (expired: boolean) => void;
 }
 
-export function CreateKeyDialog({ open, onClose }: CreateKeyDialogProps) {
+interface ProxyCreatedKey {
+  readonly keyId: string;
+  readonly kind: "secret" | "publishable";
+  readonly mode: "live" | "test";
+  readonly tier: "free" | "pro" | "enterprise";
+  readonly createdAt: number;
+  readonly lastUsedAt: number | null;
+  readonly revokedAt: number | null;
+  readonly key: string;
+}
+
+export function CreateKeyDialog({ open, onClose, onSettled }: CreateKeyDialogProps) {
   const { mode } = useDashboardMode();
-  const [flow, setFlow] = useState<CreateKeyFlowState>({ phase: "closed" });
-  const [name, setName] = useState("");
+  const [flow, setFlow] = useState<MintKeyFlowState>({ phase: "closed" });
   const [kind, setKind] = useState<"secret" | "publishable">("secret");
-  const [nameTouched, setNameTouched] = useState(false);
   const [copied, setCopied] = useState(false);
 
   // Reset transient form state whenever the dialog opens.
   useEffect(() => {
     if (open) {
-      setFlow({ phase: "naming" });
-      setName("");
+      setFlow({ phase: "choosing" });
       setKind("secret");
-      setNameTouched(false);
       setCopied(false);
     } else {
       // Closing ALWAYS discards a held secret (once-only law).
@@ -53,40 +64,34 @@ export function CreateKeyDialog({ open, onClose }: CreateKeyDialogProps) {
     }
   }, [open]);
 
-  const nameInvalid = nameTouched && !isValidKeyName(name);
-
   async function submit() {
-    if (!isValidKeyName(name)) {
-      setNameTouched(true);
-      return;
-    }
-    setFlow({ phase: "submitting", name: name.trim(), kind });
+    setFlow({ phase: "submitting", kind, mode });
     try {
       const response = await fetch("/api/dashboard/keys", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), kind, mode }),
+        body: JSON.stringify({ kind, mode }),
       });
       const body: unknown = await response.json();
+      const created = response.ok && isCreatedKey(body) ? body : null;
+      // Settle AT the transition (never inside a state updater): a real
+      // mint refreshes the server-rendered list behind the dialog; an
+      // observed 401 hands over to the expired-session flow.
+      let expired = false;
+      if (created === null) {
+        expired = asFailure(body).outcome === "unauthenticated";
+      }
+      if (created !== null) {
+        onSettled(false);
+      } else if (expired) {
+        onSettled(true);
+      }
       setFlow((current) =>
-        nextCreateKeyFlowState(current, {
+        nextMintKeyFlowState(current, {
           type: "RESULT",
           result:
-            response.ok && isCreatedKey(body)
-              ? {
-                  ok: true,
-                  key: {
-                    id: body.key.id,
-                    name: body.key.name,
-                    prefix: body.key.prefix,
-                    mode: body.key.mode,
-                    kind: body.key.kind,
-                    created_at: body.key.created_at,
-                    // A freshly created key has, factually, never been used.
-                    last_used_at: body.key.last_used_at ?? null,
-                    secret: body.key.secret,
-                  },
-                }
+            created !== null
+              ? { ok: true, key: created.key }
               : { ok: false, failure: asFailure(body) },
         }),
       );
@@ -94,14 +99,16 @@ export function CreateKeyDialog({ open, onClose }: CreateKeyDialogProps) {
       // The proxy itself failed (network to our own server). Honest text.
       const reason = cause instanceof Error ? cause.message : String(cause);
       setFlow((current) =>
-        nextCreateKeyFlowState(current, {
+        nextMintKeyFlowState(current, {
           type: "RESULT",
           result: {
             ok: false,
             failure: {
               outcome: "unreachable",
-              detail: `The studio's key-creation proxy did not answer — ${reason}`,
-              pendingRoute: "POST /v1/api-keys",
+              detail: `The studio's key-mint proxy did not answer — ${reason}`,
+              code: null,
+              param: null,
+              pendingRoute: "POST /v1/account/keys",
               httpStatus: null,
             },
           },
@@ -119,7 +126,7 @@ export function CreateKeyDialog({ open, onClose }: CreateKeyDialogProps) {
     }
   }
 
-  const secret = visibleSecret(flow);
+  const secret = visibleMintedSecret(flow);
 
   return (
     <div
@@ -138,7 +145,7 @@ export function CreateKeyDialog({ open, onClose }: CreateKeyDialogProps) {
           </button>
         </div>
 
-        {flow.phase === "naming" || flow.phase === "submitting" ? (
+        {flow.phase === "choosing" || flow.phase === "submitting" ? (
           <form
             className={styles.form}
             onSubmit={(event) => {
@@ -146,29 +153,6 @@ export function CreateKeyDialog({ open, onClose }: CreateKeyDialogProps) {
               void submit();
             }}
           >
-            <label className={styles.fieldLabel} htmlFor="new-key-name">
-              Key name
-            </label>
-            <input
-              id="new-key-name"
-              className={nameInvalid ? `${styles.input} ${styles.inputInvalid}` : styles.input}
-              value={name}
-              maxLength={KEY_NAME_MAX_LENGTH}
-              placeholder='e.g. "production server"'
-              aria-invalid={nameInvalid}
-              aria-describedby={nameInvalid ? "new-key-name-error" : undefined}
-              disabled={flow.phase === "submitting"}
-              onChange={(event) => {
-                setName(event.target.value);
-                setNameTouched(true);
-              }}
-            />
-            {nameInvalid ? (
-              <p id="new-key-name-error" className={styles.fieldError}>
-                A key name is required (1–{KEY_NAME_MAX_LENGTH} characters).
-              </p>
-            ) : null}
-
             <span className={styles.fieldLabel}>Key kind</span>
             <div className={styles.kindRow} role="radiogroup" aria-label="Key kind">
               <label className={kind === "secret" ? `${styles.kindOption} ${styles.kindSelected}` : styles.kindOption}>
@@ -202,8 +186,16 @@ export function CreateKeyDialog({ open, onClose }: CreateKeyDialogProps) {
             </div>
 
             <p className={styles.modeNote}>
-              The key will be created in the account's current mode:{" "}
+              The key will be minted in the account&apos;s current mode:{" "}
               <Badge uppercase>{mode}</Badge>
+              <span className={styles.modeHint}>
+                (the mint mode rides the dashboard toggle — test keys never touch live traffic)
+              </span>
+            </p>
+
+            <p className={styles.modeNote}>
+              Account keys are unnamed — the API mints <code className={styles.kindHint}>kind + mode</code> only. Names
+              arrive with the developer-platform key store.
             </p>
 
             <div className={styles.dialogActions}>
@@ -224,13 +216,13 @@ export function CreateKeyDialog({ open, onClose }: CreateKeyDialogProps) {
               <div>
                 <strong className={styles.secretWarningTitle}>Store this key now.</strong>
                 <p className={styles.secretWarningBody}>
-                  This is the only time the full secret is shown. Reckon stores only a hash — once
-                  this dialog closes, the secret cannot be recovered or displayed again.
+                  This is the only time the full key is shown. Reckon stores only a hash — once this dialog closes, the
+                  key cannot be recovered or displayed again.
                 </p>
               </div>
             </div>
             <div className={styles.secretRow}>
-              <input className={styles.secretInput} readOnly value={secret} aria-label="Full API key secret" />
+              <input className={styles.secretInput} readOnly value={secret} aria-label="Full API key" />
               <Button
                 variant="secondary"
                 size="md"
@@ -244,7 +236,7 @@ export function CreateKeyDialog({ open, onClose }: CreateKeyDialogProps) {
               <Button
                 variant="primary"
                 size="md"
-                onClick={() => setFlow((current) => nextCreateKeyFlowState(current, { type: "SECRET_STORED" }))}
+                onClick={() => setFlow((current) => nextMintKeyFlowState(current, { type: "SECRET_STORED" }))}
               >
                 I&apos;ve stored it
               </Button>
@@ -255,9 +247,9 @@ export function CreateKeyDialog({ open, onClose }: CreateKeyDialogProps) {
         {flow.phase === "stored" ? (
           <div className={styles.storedBlock}>
             <p className={styles.storedText}>
-              Key <code className={styles.storedCode}>{flow.key.prefix}</code> ({flow.key.name}) is
-              created and ready. The secret has been discarded from this session — it will not be
-              shown again.
+              The <strong>{flow.summary.token}</strong> key (<code className={styles.storedCode}>{flow.summary.keyId}</code>
+              , tier <Badge uppercase>{flow.summary.tier}</Badge>) is minted and ready. The raw key has been discarded
+              from this session — it will not be shown again.
             </p>
             <div className={styles.dialogActions}>
               <Button variant="primary" size="md" onClick={onClose}>
@@ -269,24 +261,30 @@ export function CreateKeyDialog({ open, onClose }: CreateKeyDialogProps) {
 
         {flow.phase === "failed" ? (
           <div className={styles.failedBlock}>
-            <p className={styles.failedTitle}>The key was not created.</p>
+            <p className={styles.failedTitle}>The key was not minted.</p>
             <p className={styles.failedDetail}>{flow.failure.detail}</p>
             {flow.failure.pendingRoute !== null ? (
               <p className={styles.failedPending}>
-                Pending API route: <code>{flow.failure.pendingRoute}</code>
+                API route: <code>{flow.failure.pendingRoute}</code>
               </p>
             ) : null}
             <div className={styles.dialogActions}>
               <Button variant="secondary" size="md" onClick={onClose}>
                 Close
               </Button>
-              <Button
-                variant="primary"
-                size="md"
-                onClick={() => setFlow((current) => nextCreateKeyFlowState(current, { type: "RETRY" }))}
-              >
-                Retry
-              </Button>
+              {flow.failure.outcome === "unauthenticated" ? (
+                <Button variant="primary" size="md" onClick={onClose}>
+                  Sign in again
+                </Button>
+              ) : (
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => setFlow((current) => nextMintKeyFlowState(current, { type: "RETRY" }))}
+                >
+                  Retry
+                </Button>
+              )}
             </div>
           </div>
         ) : null}
@@ -297,61 +295,48 @@ export function CreateKeyDialog({ open, onClose }: CreateKeyDialogProps) {
 
 /* ---- proxy response guards (the studio's own /api/dashboard/keys) ---- */
 
-interface ProxyCreatedKey {
-  readonly key: {
-    readonly id: string;
-    readonly name: string;
-    readonly prefix: string;
-    readonly mode: "live" | "test";
-    readonly kind: "secret" | "publishable";
-    readonly created_at: string;
-    readonly last_used_at?: string | null;
-    readonly secret: string;
-  };
-}
-
-interface ProxyFailure {
-  readonly failure: {
-    readonly outcome: "unconfigured" | "unreachable" | "not-wired" | "error";
-    readonly detail: string;
-    readonly pendingRoute: string | null;
-    readonly httpStatus: number | null;
-  };
-}
-
 function isRecordLike(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function isCreatedKey(value: unknown): value is ProxyCreatedKey {
+function isCreatedKey(value: unknown): value is { key: ProxyCreatedKey } {
   return (
     isRecordLike(value) &&
     value["ok"] === true &&
     isRecordLike(value["key"]) &&
-    typeof (value["key"] as Record<string, unknown>)["secret"] === "string"
+    typeof (value["key"] as Record<string, unknown>)["key"] === "string" &&
+    typeof (value["key"] as Record<string, unknown>)["keyId"] === "string"
   );
 }
 
-function asFailure(value: unknown): ProxyFailure["failure"] {
+function asFailure(value: unknown): AccountSurfaceFailure {
   if (isRecordLike(value) && isRecordLike(value["failure"])) {
     const failure = value["failure"] as Record<string, unknown>;
+    const outcome = failure["outcome"];
     return {
       outcome:
-        failure["outcome"] === "unconfigured" ||
-        failure["outcome"] === "unreachable" ||
-        failure["outcome"] === "not-wired" ||
-        failure["outcome"] === "error"
-          ? failure["outcome"]
+        outcome === "unauthenticated" ||
+        outcome === "unreachable" ||
+        outcome === "not-wired" ||
+        outcome === "error"
+          ? outcome
           : "error",
-      detail: typeof failure["detail"] === "string" ? failure["detail"] : "The proxy returned an unrecognized failure.",
+      detail:
+        typeof failure["detail"] === "string" && failure["detail"].length > 0
+          ? failure["detail"]
+          : "The proxy returned an unrecognized failure.",
+      code: typeof failure["code"] === "string" ? failure["code"] : null,
+      param: typeof failure["param"] === "string" ? failure["param"] : null,
       pendingRoute: typeof failure["pendingRoute"] === "string" ? failure["pendingRoute"] : null,
       httpStatus: typeof failure["httpStatus"] === "number" ? failure["httpStatus"] : null,
     };
   }
   return {
     outcome: "error",
-    detail: "The key-creation proxy returned an unrecognized response — nothing was created.",
-    pendingRoute: "POST /v1/api-keys",
+    detail: "The key-mint proxy returned an unrecognized response — nothing was created.",
+    code: null,
+    param: null,
+    pendingRoute: "POST /v1/account/keys",
     httpStatus: null,
   };
 }

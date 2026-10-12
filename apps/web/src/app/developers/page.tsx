@@ -14,9 +14,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { WorkspacePage } from "@/components/workspace-page";
 import { SurfaceStateSummary } from "@/components/developers/surface-state";
+import { AccountSurfaceStateSummary } from "@/components/developers/account-surface-state";
+import { attemptListKeys, getStudioSessionToken } from "@/lib/account-surface";
 import { getReckonApiDisplayConfig } from "@/lib/reckon-client";
 import { probeReckonApi } from "@/lib/reckon-status";
-import { fetchApiKeys, fetchEvents, fetchRequestLogs } from "@/lib/developers-surface";
+import { fetchEvents, fetchRequestLogs } from "@/lib/developers-surface";
 import { requireWorkspaceRoute } from "@/lib/workspace";
 import styles from "./developers-page.module.css";
 
@@ -30,10 +32,14 @@ export const metadata: Metadata = {
 };
 
 export default async function DevelopersPage() {
+  // TL6-003: the keys card rides the ACCOUNT lane — session-aware. The
+  // request-log and events cards keep the demo-lane pending-route
+  // attempts (S2-002/S2-003 surfaces, unchanged).
+  const hasSession = (await getStudioSessionToken()) !== null;
   const [config, probe, keys, logs, events] = await Promise.all([
     getReckonApiDisplayConfig(),
     probeReckonApi(),
-    fetchApiKeys(),
+    hasSession ? attemptListKeys() : Promise.resolve(null),
     fetchRequestLogs({ limit: 5 }),
     fetchEvents({ limit: 5 }),
   ]);
@@ -76,8 +82,22 @@ export default async function DevelopersPage() {
           href="/developers/keys"
           icon={<KeyRound aria-hidden="true" size={16} strokeWidth={1.75} />}
           title="API keys"
-          description="Create, inspect and revoke the account's sk_/pk_ keys — secrets shown exactly once."
-          state={keys.ok ? <p className={styles.surfaceOk}>{keys.data.keys.length} key(s) listed</p> : <SurfaceStateSummary failure={keys.failure} />}
+          description="Mint, inspect and revoke the account's sk_/pk_ keys — secrets shown exactly once (the account surface, session-authenticated)."
+          state={
+            keys === null ? (
+              <p className={styles.surfaceOk}>
+                Not signed in —{" "}
+                <Link href="/login?next=%2Fdevelopers%2Fkeys&reason=signin" className={styles.keysSigninLink}>
+                  sign in
+                </Link>{" "}
+                to manage this account&apos;s keys.
+              </p>
+            ) : keys.ok ? (
+              <p className={styles.surfaceOk}>{keys.data.length} key(s) listed</p>
+            ) : (
+              <AccountSurfaceStateSummary failure={keys.failure} />
+            )
+          }
         />
         <SurfaceLinkCard
           href="/developers/logs"
