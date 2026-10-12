@@ -34,4 +34,9 @@ export * from "./harness/recording.js";
 export * from "./harness/host-adapter.js";
 export * from "./harness/driver.js";
 export * from "./harness/scorecard.js";
+// SIM-003 (W2): the ladder integration-case machinery — additive extension;
+// no existing exported shape above changes.
+export * from "./integration-cases/scenario.js";
+export * from "./integration-cases/runner.js";
+export * from "./integration-cases/standard-loop.js";
 
