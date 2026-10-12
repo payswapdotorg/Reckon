@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "status": "tl6-ad-complete-simulation-ladder-wave2",
+  "status": "simulation-ladder-waveA-partial-sim002-sim003-merged",
   "implementationComplete": false,
-  "dispatchBaseSha": "c6e9b8b",
+  "dispatchBaseSha": "b903e23",
   "workers": [
     {
       "id": "W1",
@@ -773,7 +773,7 @@
         "SIM-001"
       ],
       "title": "Level 1-4 simulations: static catalog, simple content feed, storefront, notifications",
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "SIM-003",
@@ -782,7 +782,7 @@
         "SIM-001"
       ],
       "title": "Level 5-8 simulations: media feed, ad-supported media, marketplace, travel/booking",
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "SIM-004",
@@ -843,7 +843,7 @@
     "W3": "w3/first-wave"
   },
   "activeHandoff": "docs/handoff/TL6-FINAL-HANDOFF.md",
-  "lastReconciledAt": "2026-10-07T04:35:00Z",
+  "lastReconciledAt": "2026-10-12T13:55:00Z",
   "simulationProgram": {
     "definition": "Reckon-Complete means a host system can integrate Reckon through the public API/contracts, with no custom changes to Reckon core and no provider-specific logic leaking into the kernel, and can exercise the full decision loop plus declared capabilities.",
     "ladderDoc": "docs/simulations/reckon-complete-ladder.md",
