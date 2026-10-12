@@ -37,6 +37,12 @@ const EXPECTED_ROUTE_ORDER = [
   "/models",
   "/data-sources",
   "/analytics",
+  "/ads",
+  "/ads/remembered",
+  "/ads/available",
+  "/ads/consent",
+  "/ads/retention",
+  "/ads/compare",
   "/developers",
   "/developers/keys",
   "/developers/logs",
@@ -111,12 +117,18 @@ describe("workspace registry (S3-001 dashboard IA + foundation routes)", () => {
     }
   });
 
-  it("OPERATE groups the dashboard product sections; DEVELOPERS carries keys/logs/events", () => {
+  it("OPERATE groups the dashboard product sections + the Ads family; DEVELOPERS carries keys/logs/events", () => {
     expect(navRoutesForGroup("operate").map((route) => route.href)).toEqual([
       "/recommendations",
       "/models",
       "/data-sources",
       "/analytics",
+      "/ads",
+      "/ads/remembered",
+      "/ads/available",
+      "/ads/consent",
+      "/ads/retention",
+      "/ads/compare",
     ]);
     expect(navRoutesForGroup("developers").map((route) => route.href)).toEqual([
       "/developers",
@@ -153,9 +165,29 @@ describe("nav tree + parent chain (S3-001 nested routes)", () => {
     ]);
   });
 
-  it("groups without children render flat single-level trees", () => {
+  it("the Ads group renders one parent with its five children (AD-005)", () => {
+    const tree = navTreeForGroup("operate");
+    const ads = tree.find((entry) => entry.route.href === "/ads");
+    expect(ads).toBeDefined();
+    expect(ads?.children.map((child) => child.href)).toEqual([
+      "/ads/remembered",
+      "/ads/available",
+      "/ads/consent",
+      "/ads/retention",
+      "/ads/compare",
+    ]);
+    for (const child of ads?.children ?? []) {
+      expect(child.parentHref).toBe("/ads");
+      expect(child.navGroup).toBe("operate");
+    }
+  });
+
+  it("groups without children render flat single-level trees (Ads and Developers excepted)", () => {
     for (const group of ["operate", "build", "intelligence", "integrate", "account"] as const) {
       for (const entry of navTreeForGroup(group)) {
+        if (entry.route.href === "/ads" || entry.route.href === "/developers") {
+          continue;
+        }
         expect(entry.children).toHaveLength(0);
       }
     }
@@ -179,6 +211,8 @@ describe("nav tree + parent chain (S3-001 nested routes)", () => {
 
   it("nav hints: children carry the parent title, top-level the group label, Home is Home", () => {
     expect(navHintForRoute(requireWorkspaceRoute("/developers/keys"))).toBe("Developers");
+    expect(navHintForRoute(requireWorkspaceRoute("/ads/remembered"))).toBe("Ads");
+    expect(navHintForRoute(requireWorkspaceRoute("/ads"))).toBe("OPERATE");
     expect(navHintForRoute(requireWorkspaceRoute("/"))).toBe("Home");
     expect(navHintForRoute(requireWorkspaceRoute("/recommendations"))).toBe("OPERATE");
     expect(navHintForRoute(requireWorkspaceRoute("/decisions"))).toBe("BUILD");
@@ -210,6 +244,12 @@ describe("route resolution + breadcrumbs", () => {
       "Developers",
       "API keys",
     ]);
+    expect(breadcrumbTrailFor("/ads/consent").map((route) => route.title)).toEqual([
+      "Ads",
+      "Ad consent",
+    ]);
+    // The record detail (not a nav surface) resolves to its Ads section.
+    expect(breadcrumbTrailFor("/ads/records/admem-1").map((route) => route.title)).toEqual(["Ads"]);
     expect(breadcrumbTrailFor("/developers").map((route) => route.title)).toEqual(["Developers"]);
     expect(breadcrumbTrailFor("/").map((route) => route.title)).toEqual(["Home"]);
     expect(breadcrumbTrailFor("/unknown")).toEqual([]);
@@ -491,5 +531,150 @@ describe("TL6-003 account/session law guards", () => {
     // The server-only seam (lib/account-surface.ts) is the one place the
     // token exists; render surfaces receive display-safe metadata only.
     expect(violations, `session-token references in render surfaces: ${violations.join(", ")}`).toEqual([]);
+  });
+});
+
+describe("AD-005 ads components exist (smoke)", () => {
+  const adsComponents = [
+    "ads/ad-provenance-badge.tsx",
+    "ads/advertising-mark.tsx",
+    "ads/ad-facts.tsx",
+    "ads/ad-card.tsx",
+    "ads/ad-lanes.tsx",
+    "ads/ads-query-form.tsx",
+    "ads/ads-unavailable-state.tsx",
+    "ads/remembered-ads-list.tsx",
+    "ads/available-ads-list.tsx",
+    "ads/ad-detail.tsx",
+    "ads/forget-ad-button.tsx",
+    "ads/bulk-forget-panel.tsx",
+    "ads/consent-view.tsx",
+    "ads/retention-view.tsx",
+    "ads/rerank-view.tsx",
+  ] as const;
+
+  it.each(adsComponents)("src/components/%s exists", (relative) => {
+    expect(existsSync(join(componentsRoot, relative)), `missing ${relative}`).toBe(true);
+  });
+
+  it("the ads component CSS modules exist (colocated)", () => {
+    const cssModules = [
+      "ads/ad-provenance-badge.module.css",
+      "ads/advertising-mark.module.css",
+      "ads/ad-facts.module.css",
+      "ads/ad-card.module.css",
+      "ads/ad-lanes.module.css",
+      "ads/ads-query-form.module.css",
+      "ads/remembered-ads-list.module.css",
+      "ads/available-ads-list.module.css",
+      "ads/ad-detail.module.css",
+      "ads/forget-ad-button.module.css",
+      "ads/bulk-forget-panel.module.css",
+      "ads/consent-view.module.css",
+      "ads/retention-view.module.css",
+      "ads/rerank-view.module.css",
+    ] as const;
+    for (const relative of cssModules) {
+      expect(existsSync(join(componentsRoot, relative)), `missing ${relative}`).toBe(true);
+    }
+  });
+
+  it("the ads route pages exist, including the non-nav record detail", () => {
+    for (const page of [
+      "ads/page.tsx",
+      "ads/remembered/page.tsx",
+      "ads/available/page.tsx",
+      "ads/records/[recordId]/page.tsx",
+      "ads/consent/page.tsx",
+      "ads/retention/page.tsx",
+      "ads/compare/page.tsx",
+    ]) {
+      expect(existsSync(join(appRoot, page)), `missing ${page}`).toBe(true);
+    }
+  });
+
+  it("the ads forget proxy route handler exists (the mutation lane)", () => {
+    expect(existsSync(join(appRoot, "api/dashboard/ads/forget/route.ts"))).toBe(true);
+  });
+});
+
+describe("AD-005 ads law guards", () => {
+  it("lib/ads-view.ts is PURE (client-safe): no server-only, no env, no SDK runtime import", () => {
+    const source = readFileSync(join(here, "../src/lib/ads-view.ts"), "utf8");
+    expect(source).not.toMatch(/import\s+"server-only"/);
+    expect(source).not.toMatch(/process\.env/);
+    // type-only imports are erased; the runtime value import would pull
+    // Node crypto into client bundles (the ad-selection helpers live in
+    // ads-rerank.ts, server-side only).
+    expect(source).not.toMatch(/^import \{[^}]*buildAdBearingCandidates/m);
+    expect(source).not.toMatch(/^import \{[^}]*adUserValueRewardTerm/m);
+  });
+
+  it("lib/ads-rerank.ts carries the SDK composition helpers (server-side composition)", () => {
+    const source = readFileSync(join(here, "../src/lib/ads-rerank.ts"), "utf8");
+    expect(source).toMatch(/buildAdBearingCandidates/);
+    expect(source).toMatch(/adUserValueRewardTerm/);
+  });
+
+  it("lib/ads-retrieval.ts is server-only and consumes the SDK seam", () => {
+    const source = readFileSync(join(here, "../src/lib/ads-retrieval.ts"), "utf8");
+    expect(source).toMatch(/import "server-only"/);
+    expect(source).toMatch(/from "\.\/reckon-client/);
+    expect(source).toMatch(/getReckonClient/);
+  });
+
+  it("client components never import the SDK seam or the server loader (the bundle boundary)", () => {
+    const clientComponents = [
+      "forget-ad-button",
+      "bulk-forget-panel",
+      "consent-view",
+      "retention-view",
+      "ad-detail",
+    ];
+    for (const name of clientComponents) {
+      const source = readFileSync(join(componentsRoot, `ads/${name}.tsx`), "utf8");
+      expect(source, `${name} must be a client component`).toMatch(/"use client"/);
+      expect(source, `${name} must not import ads-retrieval`).not.toMatch(/ads-retrieval/);
+      expect(source, `${name} must not import ads-rerank`).not.toMatch(/ads-rerank/);
+      expect(source, `${name} must not import reckon-client`).not.toMatch(/reckon-client/);
+    }
+  });
+
+  it("the ads pages talk to the API ONLY through the SDK seam (no direct DB, no internals)", () => {
+    const walk = (dir: string): string[] => {
+      const found: string[] = [];
+      for (const name of readdirSync(dir)) {
+        const full = join(dir, name);
+        if (statSync(full).isDirectory()) {
+          found.push(...walk(full));
+        } else if (/\.tsx?$/.test(name)) {
+          found.push(full);
+        }
+      }
+      return found;
+    };
+    for (const file of walk(join(appRoot, "ads"))) {
+      const source = readFileSync(file, "utf8");
+      expect(source, `${file} must not import domain internals`).not.toMatch(
+        /@reckon\/(persistence|decision|scheduler|experience|events|observability|world-model|simulation|candidates|policies|agents-runtime|organizations)/,
+      );
+    }
+  });
+
+  it("no second ranking in the UI: the rerank path composes the kernel, never sorts", () => {
+    // The compare page + rerank view compose ONE DecisionRequest; the view
+    // maps the kernel's arrays VERBATIM. The law guard: no .sort( in the
+    // ads view model / rerank view sources.
+    const guardFiles = [
+      "../src/lib/ads-view.ts",
+      "../src/lib/ads-rerank.ts",
+      "../src/components/ads/rerank-view.tsx",
+    ];
+    for (const relative of guardFiles) {
+      const source = readFileSync(join(here, relative), "utf8");
+      expect(source, `${relative} must not sort (the kernel is the ranking authority)`).not.toMatch(
+        /\.sort\(/,
+      );
+    }
   });
 });

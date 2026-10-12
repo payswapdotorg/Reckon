@@ -1,0 +1,127 @@
+/* ConsentView — per-record permission grants (retain/present pills),
+ * append-only history, and the terminal forget affordance. */
+
+.consent {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.changeList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.changeItem {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.records {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.marksRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+
+.recordTitle {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recordTitleText {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.grantsRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+
+.grantPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.grantIcon {
+  flex: none;
+}
+
+.grantGranted {
+  color: #00795a;
+  background-color: #e7f4ee;
+  border: 1px solid color-mix(in srgb, var(--chart-1) 38%, transparent);
+}
+
+.grantRevoked {
+  color: #a03d38;
+  background-color: #fcedec;
+  border: 1px solid color-mix(in srgb, var(--chart-3) 55%, transparent);
+}
+
+.historyList {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.historyItem {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.actionRow {
+  margin-top: 14px;
+}
+
+.outcomeOk,
+.outcomeFailed {
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.outcomeOk {
+  background-color: #e7f4ee;
+  border: 1px solid color-mix(in srgb, var(--chart-1) 38%, transparent);
+  color: #00795a;
+}
+
+.outcomeFailed {
+  background-color: var(--destructive-tint);
+  border: 1px solid var(--destructive-border-soft);
+  color: var(--destructive);
+}
