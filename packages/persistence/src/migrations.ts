@@ -258,6 +258,80 @@ export const MIGRATIONS: readonly Migration[] = [
          ON account_sessions (account_id)`,
     ],
   },
+  {
+    // TL6-002: production webhook mount — durable endpoint / event /
+    // delivery stores. The signing secret is stored ENCRYPTED AT REST
+    // (AES-256-GCM by PgWebhookEndpointStore — never plaintext, never
+    // logged). All three tables are tenant-scoped BY CONSTRUCTION (same
+    // structural law as the wave-1 outcome_events table). Forward-only,
+    // every statement IF NOT EXISTS — no DROP.
+    id: "m006_webhooks",
+    name: "webhook endpoints + events + deliveries (TL6-002; encrypted signing secrets, tenant-scoped)",
+    sql: [
+      `CREATE TABLE IF NOT EXISTS webhook_endpoints (
+  endpoint_id    TEXT NOT NULL,
+  tenant_id      TEXT NOT NULL,
+  workspace_id   TEXT NOT NULL DEFAULT '',
+  url            TEXT NOT NULL,
+  description    TEXT,
+  event_types    JSONB NOT NULL,
+  secret_cipher  BYTEA NOT NULL,
+  secret_iv      BYTEA NOT NULL,
+  secret_tag     BYTEA NOT NULL,
+  status         TEXT NOT NULL CHECK (status IN ('enabled')),
+  created_at     BIGINT NOT NULL,
+  seq            BIGSERIAL,
+  PRIMARY KEY (tenant_id, workspace_id, endpoint_id)
+)`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS webhook_endpoints_seq
+         ON webhook_endpoints (seq)`,
+      `CREATE INDEX IF NOT EXISTS webhook_endpoints_tenant_recent
+         ON webhook_endpoints (tenant_id, workspace_id, seq DESC)`,
+      `CREATE TABLE IF NOT EXISTS webhook_events (
+  tenant_id     TEXT NOT NULL,
+  workspace_id  TEXT NOT NULL DEFAULT '',
+  event_id      TEXT NOT NULL,
+  event_type    TEXT NOT NULL,
+  created_at    BIGINT NOT NULL,
+  event_json    JSONB NOT NULL,
+  content_digest TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, workspace_id, event_id)
+)`,
+      `CREATE INDEX IF NOT EXISTS webhook_events_tenant_recent
+         ON webhook_events (tenant_id, workspace_id, created_at DESC)`,
+      `CREATE INDEX IF NOT EXISTS webhook_events_sweep
+         ON webhook_events (created_at)`,
+      `CREATE TABLE IF NOT EXISTS webhook_deliveries (
+  delivery_id    TEXT NOT NULL,
+  tenant_id      TEXT NOT NULL,
+  workspace_id   TEXT NOT NULL DEFAULT '',
+  event_id       TEXT NOT NULL,
+  endpoint_id    TEXT NOT NULL,
+  attempts       INTEGER NOT NULL,
+  status         TEXT NOT NULL CHECK (status IN ('pending','succeeded','failed')),
+  response_code  INTEGER,
+  latency_ms     INTEGER,
+  error          TEXT,
+  replayed       BOOLEAN NOT NULL,
+  created_at     BIGINT NOT NULL,
+  updated_at     BIGINT NOT NULL,
+  next_attempt_at BIGINT,
+  seq            BIGSERIAL,
+  PRIMARY KEY (tenant_id, workspace_id, delivery_id)
+)`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS webhook_deliveries_seq
+         ON webhook_deliveries (seq)`,
+      `CREATE INDEX IF NOT EXISTS webhook_deliveries_tenant_recent
+         ON webhook_deliveries (tenant_id, workspace_id, seq DESC)`,
+      `CREATE INDEX IF NOT EXISTS webhook_deliveries_tenant_event
+         ON webhook_deliveries (tenant_id, workspace_id, event_id)`,
+      `CREATE INDEX IF NOT EXISTS webhook_deliveries_tenant_endpoint
+         ON webhook_deliveries (tenant_id, workspace_id, endpoint_id)`,
+      `CREATE INDEX IF NOT EXISTS webhook_deliveries_due
+         ON webhook_deliveries (status, next_attempt_at, seq)
+         WHERE status = 'pending'`,
+    ],
+  },
 ];
 
 function migrationChecksum(migration: Migration): string {

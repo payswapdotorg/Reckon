@@ -14,6 +14,11 @@ import { KeyStore } from "./auth.js";
 import { ConfigError } from "./errors.js";
 import type { IdempotencyStore } from "./idempotency.js";
 import { InMemoryIdempotencyStore } from "./idempotency.js";
+import {
+  parseWebhookSecretEncryptionKey,
+  WebhookEncryptionKeyError,
+} from "@reckon/persistence";
+import type { WebhookSecretEncryptionKey } from "@reckon/persistence";
 import type { RateLimiterConfig } from "./rate-limit.js";
 import type { PartialHandlerPorts } from "./ports.js";
 import { ROUTE_SCOPES } from "./types.js";
@@ -261,4 +266,40 @@ export function parseListenConfig(env: Record<string, string | undefined>): List
 /** Convenience for embedding tests: a KeyStore straight from a config list. */
 export function keyStoreFrom(keys: readonly StaticKeyConfig[]): KeyStore {
   return new KeyStore(keys);
+}
+
+/**
+ * TL6-002 — parse the `WEBHOOK_SECRET_ENCRYPTION_KEY` env var into the
+ * 32-byte AES-256 key used to encrypt webhook signing secrets at rest.
+ *
+ * - ACCEPTED FORMATS: a 64-char hex string OR a base64 string that
+ *   decodes to exactly 32 bytes (both are widely-used AES-256 key
+ *   encodings; the parser handles either — the env var is unprefixed).
+ * - ABSENT: returns `undefined` (the dev/test path — the in-memory
+ *   webhook system stays the test infrastructure; no production claim).
+ * - MALFORMED: fails FAST with a typed ConfigError, surfacing the
+ *   underlying WebhookEncryptionKeyError message verbatim — the same
+ *   honesty law as RECKON_PORT / RECKON_RATE_LIMIT_MAX. Production
+ *   never silently falls back to plaintext (the composition's webhook
+ *   mount refuses to boot without a valid key — see composition.ts).
+ *
+ * Re-exporting `parseWebhookSecretEncryptionKey` (the parser in
+ * @reckon/persistence) keeps the env-parse rule authoritative there;
+ * this thin wrapper converts its typed WebhookEncryptionKeyError into
+ * a ConfigError so the boot path emits the SAME error family as every
+ * other env var.
+ */
+export function parseWebhookEncryptionKeyFromEnv(
+  env: Record<string, string | undefined>,
+): WebhookSecretEncryptionKey | undefined {
+  const raw = env.WEBHOOK_SECRET_ENCRYPTION_KEY;
+  if (raw === undefined || raw === "") return undefined;
+  try {
+    return parseWebhookSecretEncryptionKey(raw);
+  } catch (error) {
+    if (error instanceof WebhookEncryptionKeyError) {
+      throw new ConfigError(error.message);
+    }
+    throw error;
+  }
 }

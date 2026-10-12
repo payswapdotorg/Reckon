@@ -51,8 +51,12 @@ import {
   PgResearchJobStore,
   PgPreferenceStore,
   PgPoolExecutor,
+  PgWebhookDeliveryStore,
+  PgWebhookEndpointStore,
+  PgWebhookEventStore,
   applyMigrations,
   type SqlExecutor,
+  type WebhookSecretEncryptionKey,
 } from "@reckon/persistence";
 import type {
   AdapterDeclarationView,
@@ -68,6 +72,13 @@ import { registerAccountRoutes } from "./routes/account.js";
 import type { ReplanRequest, ResolveRequest, ResolveResponse } from "./envelopes.js";
 import type { AuthContext } from "./types.js";
 import { PgObservabilitySink } from "./pg-observability.js";
+// TL6-002: the production webhook mount — the SAME delivery engine the
+// in-memory wave ships, now over PostgreSQL stores. The signing secret
+// is encrypted at rest (AES-256-GCM) by PgWebhookEndpointStore; the
+// outbound POST rides the shipped fetch-based client. The migration
+// (m006_webhooks) creates the tenant-scoped tables + indexes.
+import { createInMemoryWebhookSystem } from "./webhooks/in-memory.js";
+import { FetchWebhookHttpClient } from "./webhooks/http.js";
 
 /** Composition clock: host wall-clock in production, manual in tests. */
 export type CompositionClock = { now(): number };
@@ -85,6 +96,20 @@ export interface ProductionCompositionOptions {
   readonly apiVersion?: string;
   readonly clock?: CompositionClock;
   readonly logger?: boolean;
+  /**
+   * TL6-002: the AES-256 key used to encrypt webhook signing secrets at
+   * rest. Required for production composition (when DATABASE_URL is
+   * present) — the webhook mount refuses to boot without it (honesty
+   * law: never fall back to plaintext silently). Tests inject a
+   * deterministic 32-byte key. The composition never logs the key.
+   */
+  readonly webhookEncryptionKey?: WebhookSecretEncryptionKey;
+  /**
+   * TL6-002: the outbound webhook HTTP client (default: the shipped
+   * fetch-based client). Tests inject a recording/failing client to
+   * assert delivery semantics without a real receiver URL.
+   */
+  readonly webhookHttpClient?: import("./webhooks/ports.js").WebhookHttpClient;
 }
 
 export interface ProductionComposition {
@@ -106,6 +131,10 @@ export interface ProductionComposition {
     readonly accounts: PgAccountStore;
     readonly accountKeys: PgAccountKeyStore;
     readonly accountSessions: PgAccountSessionStore;
+    // TL6-002: the production webhook mount (PG stores + the engine).
+    readonly webhookEndpoints: PgWebhookEndpointStore;
+    readonly webhookEvents: PgWebhookEventStore;
+    readonly webhookDeliveries: PgWebhookDeliveryStore;
   };
   close(): Promise<void>;
 }
@@ -504,6 +533,37 @@ export async function buildProductionServer(
   const accountKeys = new PgAccountKeyStore(executor, () => clock.now());
   const accountSessions = new PgAccountSessionStore(executor, () => clock.now());
   const keyStore = new LayeredKeyAuthenticator(options.keys ?? [], accountKeys);
+
+  // TL6-002: the production webhook mount — the SAME delivery engine
+  // the in-memory wave ships (createInMemoryWebhookSystem is the
+  // frozen delivery engine: emission seam, signing, deterministic
+  // retry pump, terminal-never-dropped). The PG stores plug into the
+  // SAME port seam the in-memory adapters filled — the engine never
+  // changed; only its backing store did. The signing secret is
+  // encrypted at rest by PgWebhookEndpointStore (AES-256-GCM); the
+  // raw key NEVER appears in SQL parameters after creation and NEVER
+  // in logs (the encryption key is held in memory by the store only).
+  // Honesty law: refuse to boot the webhook mount without a valid
+  // encryption key (never fall back to plaintext silently).
+  const webhookEncryptionKey = options.webhookEncryptionKey;
+  if (webhookEncryptionKey === undefined) {
+    throw new CompositionError(
+      "production composition requires WEBHOOK_SECRET_ENCRYPTION_KEY to mount the webhook system (honesty law: never fall back to plaintext signing secrets)",
+    );
+  }
+  const webhookEndpoints = new PgWebhookEndpointStore(executor, webhookEncryptionKey);
+  const webhookEvents = new PgWebhookEventStore(executor);
+  const webhookDeliveries = new PgWebhookDeliveryStore(executor);
+  const webhookHttpClient =
+    options.webhookHttpClient ?? new FetchWebhookHttpClient();
+  const webhooks = createInMemoryWebhookSystem({
+    httpClient: webhookHttpClient,
+    clock: () => clock.now(),
+    endpointStore: webhookEndpoints,
+    eventStore: webhookEvents,
+    deliveryStore: webhookDeliveries,
+  });
+
   const transport = new PgOutboxTransport({
     executor,
     sink,
@@ -646,6 +706,13 @@ export async function buildProductionServer(
       clock: () => clock.now(),
       evidenceClass: "controlled-local",
     },
+    // TL6-002: the production webhook system — endpoint CRUD + delivery
+    // engine + the domain emission seam, all over PostgreSQL stores.
+    // buildServer mounts config.webhooks as the webhookHandler port
+    // AND decorates the wired decision/outcome/preference handlers to
+    // emit thin events (schedule.executed / recommendation.delivered /
+    // preference.updated) — see apps/api/src/server.ts.
+    webhooks,
   });
 
   // TL6-001: mount the account routes (session-auth family) on the SAME
@@ -670,6 +737,13 @@ export async function buildProductionServer(
       accounts,
       accountKeys,
       accountSessions,
+      // TL6-002: the production webhook mount — the PG stores the
+      // delivery engine drives. Exposed for direct test/e2e assertions
+      // (the engine itself is reachable through the wired WebhookSystem
+      // → config.webhooks → deps.handlers.webhookHandler).
+      webhookEndpoints,
+      webhookEvents,
+      webhookDeliveries,
     },
     async close() {
       await app.close();

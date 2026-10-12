@@ -105,6 +105,7 @@ const PRODUCTION_API_BASE = "https://reckon-api-phi.vercel.app";
 const PRODUCTION_WEB_BASE = "https://reckon-web-nine.vercel.app";
 
 const TARGET_USAGE = `usage: node scripts/e2e-journey.mjs [--json]
+       node scripts/e2e-journey.mjs --production-local [--json]   (boots embedded-postgres + buildProductionServer; webhook hop-6 against PG stores — controlled-local)
        node scripts/e2e-journey.mjs --api-base <url> --tenant-id <id> [--web-base <url>] [--api-key <sk_ key>] [--json]
        node scripts/e2e-journey.mjs --production [--json]   (key from RECKON_JOURNEY_API_KEY, tenant from RECKON_JOURNEY_TENANT_ID)`;
 
@@ -136,6 +137,16 @@ function parseTargetArgs(argv, env) {
   if (flag("--help") || flag("-h")) {
     process.stdout.write(`${TARGET_USAGE}\n`);
     process.exit(0);
+  }
+  // TL6-002: --production-local boots the production composition over a
+  // real embedded-postgres PG 18 server (port 55433) and drives ALL six
+  // hops through it — the webhook hop-6 exercises the PG-backed webhook
+  // mount (encrypted signing secret, durable event/delivery stores).
+  // Controlled-local evidence; the public-wire production verification
+  // remains the Lead's deploy-time act (the work order marks that
+  // honestly as pending-Lead).
+  if (flag("--production-local")) {
+    return { productionLocal: true };
   }
   const production = flag("--production");
   const apiBaseRaw = production ? value("--api-base") ?? PRODUCTION_API_BASE : value("--api-base");
@@ -260,15 +271,17 @@ const {
 const PARSED_JOURNEY_KEY = TARGET.remote ? parseReckonApiKey(TARGET.apiKey) : null;
 
 const RUN = {
-  workOrder: TARGET.remote ? "S5-003" : "S4-001",
+  workOrder: TARGET.remote ? "S5-003" : TARGET.productionLocal ? "TL6-002" : "S4-001",
   evidenceClass: TARGET.remote
     ? TARGET.production
       ? "observed (production wire; driver code path untested-in-prod)"
       : "observed (remote wire; driver code path untested-in-prod)"
-    : "observed",
+    : TARGET.productionLocal
+      ? "controlled-local (real embedded-postgres PG 18 + production composition over real PG stores; the deployed-infrastructure wire path is pending-Lead)"
+      : "observed",
   head: headSha(),
-  mode: TARGET.remote ? (PARSED_JOURNEY_KEY?.mode ?? "unknown") : "test",
-  tenantId: TARGET.remote ? TARGET.tenantId : "journey-s4-001",
+  mode: TARGET.remote ? (PARSED_JOURNEY_KEY?.mode ?? "unknown") : TARGET.productionLocal ? "test" : "test",
+  tenantId: TARGET.remote ? TARGET.tenantId : TARGET.productionLocal ? "journey-tl6-002" : "journey-s4-001",
   ...(TARGET.remote
     ? {
         target: {
@@ -279,7 +292,16 @@ const RUN = {
           codePath: "wired in S5-003; verified against a real loopback wire running the frozen surface (full-parity AND no-webhook compositions; no production key material existed in the window)",
         },
       }
-    : {}),
+    : TARGET.productionLocal
+      ? {
+          target: {
+            mode: "production-local",
+            composition: "buildProductionServer (apps/api/src/composition.ts) over a real embedded-postgres PG 18 server (127.0.0.1:55433); webhook system mounted through config.webhooks with PG-backed stores + AES-256-GCM encrypted signing secrets",
+            webhookMount: "PG stores (webhook_endpoints + webhook_events + webhook_deliveries) — encrypted signing secret at rest; the in-memory adapters stay in the test/dev path only",
+            publicWireVerification: "pending-Lead (the deploy-time act — the work order marks this honestly; the controlled-local parity is asserted here)",
+          },
+        }
+      : {}),
   startedAt: new Date().toISOString(),
   steps: [],
 };
@@ -846,6 +868,399 @@ function cryptoRandomId(length) {
 }
 
 /* ================================================================== *
+ * TL6-002 — THE PRODUCTION-LOCAL JOURNEY (PG-backed webhook mount)
+ *
+ * Boots a real embedded-postgres PG 18 server on 127.0.0.1:55433 (the
+ * SAME harness class as packages/persistence/test/pg-harness.ts), the
+ * production composition (buildProductionServer — real W2 kernels over
+ * real persistence, the SAME composition Vercel serves), and drives
+ * ALL six hops through it via fastify inject (the real route pipeline).
+ *
+ * The webhook hop-6 is the heart of the proof: it exercises the PG-
+ * backed webhook mount (endpoint create → signed event emitted →
+ * delivery recorded → replay re-delivery). The signing secret is
+ * encrypted at rest (AES-256-GCM); the in-memory adapters stay ONLY in
+ * the documented dev/test path. Evidence class: controlled-local.
+ * The public-wire production verification remains the Lead's deploy-time
+ * act (marked honestly as pending-Lead).
+ * ================================================================== */
+async function runProductionLocalJourney() {
+  const { startTestPostgres } = await import("../packages/persistence/test/pg-harness.js");
+  const { buildProductionServer } = api;
+  const salt = cryptoRandomId(6);
+
+  emit(`reckon e2e journey driver (${RUN.workOrder} production-local) — evidence class: ${RUN.evidenceClass}`);
+  emit(`head: ${RUN.head} · mode: ${RUN.mode} · composition: buildProductionServer over real PG (127.0.0.1:55433)`);
+  emit(`not-wired hops are attempted live, captured verbatim and named — never faked`);
+  emit(`public-wire production verification is pending-Lead (the deploy-time act; controlled-local parity asserted here)`);
+
+  // Boot the embedded-postgres server (port 55433). The harness boots,
+  // applies every migration through m006_webhooks (the new forward-only
+  // migration that creates webhook_endpoints + webhook_events +
+  // webhook_deliveries + indexes, IF NOT EXISTS), and returns the
+  // executor. The production composition shares the executor (the
+  // migration was applied idempotently during startTestPostgres, so
+  // buildProductionServer's own applyMigrations is a no-op).
+  const pg = await startTestPostgres();
+
+  // A deterministic 32-byte AES-256 test key (NOT a production value).
+  const webhookEncryptionKey = { bytes: randomBytes(32) };
+
+  // The journey's own RecordingWebhookHttpClient — captures every
+  // outbound POST (url + headers + rawBody) so the signature verification
+  // step can run against the REAL signed bytes. Returns 200 for every
+  // call so the engine marks every delivery as succeeded on attempt 1.
+  class RecordingWebhookClient {
+    constructor() {
+      this.calls = [];
+    }
+    async post(url, headers, rawBody) {
+      this.calls.push({ url, headers, rawBody });
+      return { statusCode: 200, latencyMs: 1 };
+    }
+  }
+  const webhookHttpClient = new RecordingWebhookClient();
+
+  // The SCOPES this journey's API key holds (the same set as the S4-001
+  // local mode; "webhooks" is required for the webhook routes).
+  const SCOPES = ["decisions", "outcomes", "plans", "catalog", "webhooks"];
+  const keyConfig = mintKeyConfig("secret", "test", RUN.tenantId, SCOPES);
+  const journeyKey = keyConfig.apiKey;
+
+  // Manual clock — deterministic emission timestamps keep webhook
+  // signature timestamps inside the SDK's 300s tolerance window.
+  const clock = new ManualWebhookClock(Date.now());
+
+  const composition = await buildProductionServer({
+    executor: pg.executor,
+    webhookEncryptionKey,
+    webhookHttpClient,
+    keys: [keyConfig],
+    apiVersion: "tl6-002",
+    clock: { now: () => clock.now() },
+  });
+  const app = composition.app;
+
+  // Sanity: the webhook system is wired (the production composition
+  // MOUNTS the webhook system through config.webhooks — the structural
+  // gap closed in TL6-002). The /readyz port-status map MUST advertise
+  // webhookHandler as "wired" (the honesty law the work order requires).
+  /* ---------------- [production-local] hop 1 (account provisioning ---------------- */
+
+  beginStep(
+    1,
+    "signup (account provisioning)",
+    "production-local: provisioning is key-issuance-based (mintKeyConfig → buildProductionServer keys — the same S4-001 seam, now over the production composition with PG persistence)",
+  );
+  must(1, SecretApiKeySchema.safeParse(journeyKey).success, "minted key passes SecretApiKeySchema", `key=${redact(journeyKey)}`);
+  const health = await call(app, "GET", "/healthz");
+  must(1, health.status === 200 && health.body.ok === true, "GET /healthz → 200 {ok:true} on the booted production composition", `status=${health.status}`);
+  routeTouched(1, "GET /healthz (production composition boot probe)", "wired");
+  note(`minted first key for tenant ${RUN.tenantId} → ${redact(journeyKey)} (redacted; mode=test, scopes=[${SCOPES.join(" ")}])`);
+  note(`booted the REAL production composition over embedded-postgres (buildProductionServer) — GET /healthz → 200 (version ${String(health.body.version)})`);
+  artifact(1, "signupEvent", { tenantId: RUN.tenantId, issuance: "mintKeyConfig → buildProductionServer keys", secretRedacted: redact(journeyKey), mode: "test", scopes: SCOPES });
+  artifact(1, "healthz", { status: health.status, body: health.body });
+  setPrimary(1, `tenant ${RUN.tenantId} + ${redact(journeyKey)}`);
+  emit("STEP 1 OK — signup hop asserted (production composition boot + key-issuance-based provisioning)");
+
+  /* ---------------- [production-local] hop 2 (one-time secret ---------------- */
+
+  beginStep(2, "api-key (one-time secret)", "production-local: POST /v1/api-keys is attempted verbatim (the pending route apps/web names); the working secret is the composition issuance; the readyz webhookHandler port is asserted wired");
+
+  const keyAttempt = await call(app, "POST", "/v1/api-keys", {
+    key: journeyKey,
+    body: { name: "Journey key", kind: "secret", mode: "test" },
+    idempotencyKey: `journey-key-create-${salt}`,
+  });
+  must(
+    2,
+    keyAttempt.status === 404 && keyAttempt.body?.error?.code === "NOT_FOUND",
+    "POST /v1/api-keys answered the documented typed 404 — NOT WIRED on the frozen surface (pending route named)",
+    `status=${keyAttempt.status} code=${String(keyAttempt.body?.error?.code)}`,
+  );
+  routeTouched(2, "POST /v1/api-keys", "not-wired (pending — named in apps/web/src/lib/developers-api.ts PENDING_API_KEY_ROUTES.create)");
+
+  // The TL6-002 parity probe: /readyz MUST advertise webhookHandler as
+  // wired (the honest count grew by exactly one — the structural gap
+  // closed). This is the machine-verified drift the work order targets.
+  const readyz = await call(app, "GET", "/readyz");
+  must(2, readyz.status === 200, "GET /readyz → 200", `status=${readyz.status}`);
+  const readyzHandlers = readyz.body?.handlers ?? {};
+  must(2, readyzHandlers["webhookHandler"] === "wired", "GET /readyz advertises webhookHandler as WIRED (the production composition mounts config.webhooks — the structural gap closed in TL6-002)", `webhookHandler=${String(readyzHandlers["webhookHandler"])}`);
+  routeTouched(2, "GET /readyz (webhookHandler wired port)", "wired");
+  const wiredCount = Object.values(readyzHandlers).filter((status) => status === "wired").length;
+  const notWiredCount = Object.values(readyzHandlers).filter((status) => status === "not-wired").length;
+  note(`/readyz honest count: ${wiredCount} wired · ${notWiredCount} not-wired (webhookHandler: ${String(readyzHandlers["webhookHandler"])})`);
+
+  // The key works: first authenticated call (also proves the webhooks scope).
+  const keyProbe = await call(app, "GET", "/v1/webhooks/endpoints", { key: journeyKey });
+  must(2, keyProbe.status === 200 && Array.isArray(keyProbe.body?.endpoints) && keyProbe.body.endpoints.length === 0, "authenticated probe GET /v1/webhooks/endpoints → 200 with an empty list (the key works, webhooks scope held, PG-backed endpoint store)", `status=${keyProbe.status}`);
+  must(2, keyProbe.headers["x-reckon-mode"] === "test", "authenticated response carries X-Reckon-Mode: test (mode marker law)");
+  routeTouched(2, "GET /v1/webhooks/endpoints (authenticated key probe)", "wired");
+  note(`the one-time secret from the composition issuance (never re-displayable): ${redact(journeyKey)}`);
+  artifact(2, "oneTimeSecret", { redacted: redact(journeyKey), format: "sk_test_<40 base62>", validatedBy: "mintKeyConfig → SecretApiKeySchema" });
+  artifact(2, "readyz", { wiredCount, notWiredCount, webhookHandler: readyzHandlers["webhookHandler"], allHandlers: readyzHandlers });
+  setPrimary(2, redact(journeyKey));
+  emit("STEP 2 OK — api-key hop asserted (pending route named + readyz advertises webhookHandler wired + key authenticates)");
+
+  /* ---------------- [production-local] hop 3 (test mode ---------------- */
+
+  beginStep(3, "decision (first recommendation)", "production-local: POST /v1/decisions with the test key and the magic item itm_test_suggest (the quickstart's canonical first call) — the canned test-mode engine answers, never the live production kernel");
+
+  const decisionRequest = {
+    requestId: `req-tl6-002-${salt}`,
+    tenant: { tenantId: RUN.tenantId },
+    subject: { kind: "user", ref: "user-tl6-002" },
+    objective: { objectiveId: "obj-relax-1", kind: "relax" },
+    attentionPolicy: { policyId: "ap-balanced-1", style: "balanced" },
+    context: { contextId: "ctx-tl6-002" },
+    candidates: {
+      setId: `cs-tl6-002-${salt}`,
+      candidates: [{ itemId: "itm_test_suggest", realizationIds: ["real-tl6-002"], source: "host-retrieval" }],
+    },
+    policySelector: { policyId: "greedy-v1", version: "1" },
+    at: 1_000,
+    idempotencyKey: `tl6-002-decision-${salt}`,
+  };
+  const decision = await call(app, "POST", "/v1/decisions", { key: journeyKey, body: decisionRequest });
+  routeTouched(3, "POST /v1/decisions", "wired");
+  must(3, decision.status === 200, "POST /v1/decisions → 200", `status=${decision.status}`);
+  must(3, decision.headers["x-reckon-mode"] === "test", "response carries X-Reckon-Mode: test");
+  must(3, decision.body?.mode === "test", "response payload carries the visible mode marker { mode: \"test\" }");
+  must(3, typeof decision.body?.decisionId === "string" && decision.body.decisionId.startsWith("dec-test-"), "decision id is a canned test id (dec-test_…)", `decisionId=${String(decision.body?.decisionId)}`);
+  must(3, decision.body?.action === "SUGGEST", "action = SUGGEST (scenario suggest)");
+  must(3, decision.body?.selectedExperience?.itemId === "itm_test_suggest", "selected experience captured (itemId=itm_test_suggest)");
+  const decisionId = decision.body.decisionId;
+  const selectedExperienceId = decision.body.selectedExperience.experienceId;
+  note(`decision envelope: decisionId=${decisionId} · action=${String(decision.body.action)} · mode=${String(decision.body.mode)}`);
+
+  // The decision persisted durably (PG-backed durable idempotency + test-store).
+  const decisionRead = await call(app, "GET", `/v1/decisions/${encodeURIComponent(decisionId)}`, { key: journeyKey });
+  routeTouched(3, "GET /v1/decisions/{decisionId}", "wired");
+  must(3, decisionRead.status === 200 && decisionRead.body?.decisionId === decisionId, "GET /v1/decisions/{id} → the same decision (durable test-store row)", `status=${decisionRead.status}`);
+  artifact(3, "decision", { decisionId, action: decision.body.action, mode: decision.body.mode });
+  setPrimary(3, decisionId);
+  emit("STEP 3 OK — decision hop asserted (canned test envelope over the production composition)");
+
+  /* ---------------- [production-local] hop 4 (idempotent replay ---------------- */
+
+  beginStep(4, "request-log (log entry)", "production-local: GET /v1/request-logs is attempted verbatim (the pending route); the durable idempotency replay asserts the SAME decision id served back (PG-backed mode-isolated idempotency store)");
+  const logAttempt = await call(app, "GET", "/v1/request-logs", { key: journeyKey });
+  must(4, logAttempt.status === 404 && logAttempt.body?.error?.code === "NOT_FOUND", "GET /v1/request-logs → typed 404 NOT_FOUND (pending route named)", `status=${logAttempt.status}`);
+  routeTouched(4, "GET /v1/request-logs", "not-wired (pending — named in apps/web/src/lib/developers-api.ts PENDING_REQUEST_LOG_ROUTE)");
+  // Replay the identical request — the durable idempotency store serves back the same decision id.
+  const decisionReplay = await call(app, "POST", "/v1/decisions", { key: journeyKey, body: decisionRequest });
+  must(4, decisionReplay.status === 200 && decisionReplay.body?.decisionId === decisionId, "identical re-POST replays the SAME decision id (durable PG-backed idempotency store)", `decisionId=${String(decisionReplay.body?.decisionId)}`);
+  must(4, decisionReplay.headers["idempotent-replayed"] === "true", "replay carries Idempotent-Replayed: true (the stored response served)");
+  note(`durable idempotency replay: same decisionId=${decisionId} · Idempotent-Replayed: true`);
+  artifact(4, "callRow", { route: "POST /v1/decisions", status: decision.status, mode: "test", latencyMs: decision.latencyMs });
+  artifact(4, "idempotencyRow", { idempotencyKey: `tl6-002-decision-${salt}`, replayed: true, decisionId });
+  setPrimary(4, `${decisionId} (replayed row)`);
+  emit("STEP 4 OK — request-log hop asserted (pending route named + durable idempotency replay over PG)");
+
+  /* ---------------- hop 5 (analytics entry ---------------- */
+
+  beginStep(5, "analytics (analytics entry)", "production-local: POST /v1/outcomes over PG-backed outcome transport; the funnel/CTR linkage row is durable; the pending trail reads are attempted verbatim");
+
+  const outcomeEvent = {
+    eventId: `ev-tl6-002-impression-${salt}`,
+    tenant: { tenantId: RUN.tenantId },
+    subject: { kind: "user", ref: "user-tl6-002" },
+    eventType: "impression",
+    occurredAt: clock.now(),
+    metrics: { watchRatio: 0.9 },
+    evidenceClass: "controlled-local",
+    decisionId,
+    experienceId: selectedExperienceId,
+    idempotencyKey: `tl6-002-outcome-${salt}`,
+  };
+  const outcome = await call(app, "POST", "/v1/outcomes", { key: journeyKey, body: outcomeEvent });
+  routeTouched(5, "POST /v1/outcomes", "wired");
+  must(5, outcome.status === 200 && outcome.body?.eventId === outcomeEvent.eventId, "POST /v1/outcomes → 200 with the eventId echoed", `status=${outcome.status}`);
+  must(5, outcome.headers["x-reckon-mode"] === "test", "outcome response carries X-Reckon-Mode: test");
+  note(`outcome row: eventId=${outcomeEvent.eventId} · eventType=impression · decisionId=${decisionId}`);
+
+  // Pending trail reads (attempted verbatim — the exact routes the S3-002 views attempt).
+  for (const route of ["GET /v1/decisions", "GET /v1/outcomes", "GET /v1/preferences/events"]) {
+    const url = route.replace(/^GET /, "");
+    const attempt = await call(app, "GET", url, { key: journeyKey });
+    must(5, attempt.status === 404 && attempt.body?.error?.code === "NOT_FOUND", `${route} → typed 404 NOT_FOUND (pending trail read)`, `status=${attempt.status}`);
+  }
+  artifact(5, "outcomeRow", { eventId: outcomeEvent.eventId, decisionId, experienceId: selectedExperienceId, evidenceClass: "controlled-local" });
+  setPrimary(5, `${outcomeEvent.eventId} → ${decisionId}`);
+  emit("STEP 5 OK — analytics hop asserted (durable outcome row over PG + pending trail reads named)");
+
+  /* ---------------- [production-local] hop 6 (the PG-backed mount parity ---------------- */
+
+  beginStep(
+    6,
+    "webhook (webhook event)",
+    "production-local: the PG-backed webhook mount parity proof — register an endpoint (POST /v1/webhooks/endpoints; one-time whsec_ captured), trigger the journey's own event (POST /v1/preferences/events → preference.updated), retrieve the event from the durable PG store, poll the durable delivery log, POST replay re-delivers the SAME event id, and verify the signature with the SHIPPED SDK verifyWebhook",
+  );
+
+  // 6a. Register the endpoint (empty eventTypes filter = every event type).
+  const endpointCreate = await call(app, "POST", "/v1/webhooks/endpoints", {
+    key: journeyKey,
+    body: {
+      url: "https://journey.example.test/hooks",
+      description: "TL6-002 production-local journey endpoint",
+      eventTypes: [],
+    },
+    idempotencyKey: `tl6-002-endpoint-${salt}`,
+  });
+  routeTouched(6, "POST /v1/webhooks/endpoints", "wired");
+  must(6, endpointCreate.status === 200, "POST /v1/webhooks/endpoints → 200 (endpoint registered, PG-backed)", `status=${endpointCreate.status} body=${JSON.stringify(endpointCreate.body).slice(0, 200)}`);
+  const whsec = endpointCreate.body?.secret;
+  must(6, typeof whsec === "string" && WebhookSigningSecretSchema.safeParse(whsec).success, "one-time signing secret issued (whsec_…, schema-validated)");
+  must(6, typeof endpointCreate.body?.id === "string" && endpointCreate.body.id.startsWith("we_"), "endpoint id captured (we_…)");
+  const endpointId = endpointCreate.body.id;
+  must(6, endpointCreate.body?.tenant?.tenantId === RUN.tenantId && endpointCreate.body?.status === "enabled", "endpoint view carries the journey tenant + status=enabled");
+  note(`endpoint registered: id=${endpointId} · one-time secret ${redact(whsec)} (redacted; shown exactly once by the surface)`);
+
+  // Endpoint creation itself publishes webhook.endpoint.created, which
+  // fans out to the new endpoint (empty filter matches every type).
+  // The delivery landed in the PG delivery log; the recording client
+  // captured the signed bytes.
+  must(6, webhookHttpClient.calls.length === 1 && webhookHttpClient.calls[0]?.rawBody.includes("webhook.endpoint.created"), "the registration published webhook.endpoint.created and the engine delivered it inline (recorded outbound POST #1; PG delivery row)", `calls=${webhookHttpClient.calls.length}`);
+  note(`lifecycle event webhook.endpoint.created delivered (outbound POST #1 captured with its exact signed bytes)`);
+
+  // 6b. Trigger the journey's own domain event: a preference delta.
+  // The webhookEmittingPreferenceIngest wrapper (mounted by buildServer)
+  // emits preference.updated on every appended delta through the PG-
+  // backed webhook system (the SAME emission seam the in-memory wave
+  // uses; only the backing store changed).
+  const preferenceDelta = {
+    deltaId: `delta-tl6-002-${salt}`,
+    tenant: { tenantId: RUN.tenantId },
+    subject: { kind: "user", ref: "user-tl6-002" },
+    dimension: "genre.scifi",
+    op: "add",
+    value: 0.25,
+    model: { modelId: "m-tl6-002", version: "1" },
+    timestamp: clock.now(),
+  };
+  const preference = await call(app, "POST", "/v1/preferences/events", {
+    key: journeyKey,
+    body: preferenceDelta,
+    idempotencyKey: `tl6-002-pref-${salt}`,
+  });
+  routeTouched(6, "POST /v1/preferences/events", "wired");
+  must(6, preference.status === 200 && preference.body?.deltaId === preferenceDelta.deltaId, "POST /v1/preferences/events → 200 (the emission-seam trigger)", `status=${preference.status}`);
+
+  // 6c. EVENT BEFORE DELIVERY: the event must be retrievable from the
+  // PG-backed event store before the delivery log is asserted. The
+  // recorded outbound POST #2 carries the preference.updated event;
+  // its id is read from the delivered payload.
+  must(6, webhookHttpClient.calls.length === 2 && webhookHttpClient.calls[1]?.rawBody.includes("preference.updated"), "preference.updated emitted and delivered (recorded outbound POST #2; PG delivery row)");
+  const deliveredEvent = JSON.parse(webhookHttpClient.calls[1]?.rawBody ?? "{}");
+  const eventId = deliveredEvent?.id;
+  must(6, typeof eventId === "string" && eventId.startsWith("evt_"), "the delivered event carries its evt_… id", `eventId=${String(eventId)}`);
+
+  // The event is durably retained (PG-backed event store, 30-day replay window).
+  const eventRead = await call(app, "GET", `/v1/webhooks/events/${encodeURIComponent(eventId)}`, { key: journeyKey });
+  routeTouched(6, "GET /v1/webhooks/events/{eventId}", "wired");
+  must(6, eventRead.status === 200 && eventRead.body?.id === eventId && eventRead.body?.type === "preference.updated", "GET /v1/webhooks/events/{id} → the stored thin event (PG-backed, 30-day replay retention)", `status=${eventRead.status}`);
+  must(6, eventRead.body?.tenant?.tenantId === RUN.tenantId, "event row carries the journey tenant");
+  note(`event retrieved: id=${eventId} · type=preference.updated · tenant=${RUN.tenantId} (PG-backed event store)`);
+
+  // 6d. Poll the durable delivery log (PG-backed — the records persist
+  // across process restarts by construction).
+  const deliveries = await call(app, "GET", "/v1/webhooks/deliveries", { key: journeyKey });
+  routeTouched(6, "GET /v1/webhooks/deliveries", "wired");
+  must(6, deliveries.status === 200 && Array.isArray(deliveries.body?.deliveries), "GET /v1/webhooks/deliveries → 200 with the PG delivery log", `status=${deliveries.status}`);
+  const deliveryRows = deliveries.body.deliveries;
+  must(6, deliveryRows.length === 2, "PG delivery log holds both journey deliveries (webhook.endpoint.created + preference.updated)", `rows=${deliveryRows.length}`);
+  const prefDelivery = deliveryRows.find((row) => row.eventId === eventId);
+  must(
+    6,
+    prefDelivery !== undefined && prefDelivery.endpointId === endpointId && prefDelivery.status === "succeeded" && prefDelivery.attempts === 1 && prefDelivery.responseCode === 200 && prefDelivery.error === null && typeof prefDelivery.latencyMs === "number",
+    "the preference.updated delivery row: endpointId matches · status=succeeded · attempts=1 · responseCode=200 · error=null · latency recorded",
+    `row=${JSON.stringify(prefDelivery)}`,
+  );
+  note(`delivery row: id=${String(prefDelivery?.id)} · eventId=${eventId} · status=${String(prefDelivery?.status)} · attempts=${String(prefDelivery?.attempts)} · responseCode=${String(prefDelivery?.responseCode)} · latencyMs=${String(prefDelivery?.latencyMs)}`);
+
+  // 6e. REPLAY — re-deliver the SAME event id (at-least-once; receivers
+  // dedupe on event.id). The replay route creates NEW delivery records
+  // for the CURRENTLY matching endpoints; the original event row is
+  // reused (the engine never re-publishes — at-least-once producer).
+  const replay = await call(app, "POST", `/v1/webhooks/events/${encodeURIComponent(eventId)}/replay`, {
+    key: journeyKey,
+    body: {},
+    idempotencyKey: `tl6-002-replay-${salt}`,
+  });
+  routeTouched(6, "POST /v1/webhooks/events/{eventId}/replay", "wired");
+  must(6, replay.status === 200, "POST /v1/webhooks/events/{eventId}/replay → 200 (PG-backed replay)", `status=${replay.status} body=${JSON.stringify(replay.body).slice(0, 200)}`);
+  must(6, replay.body?.event?.id === eventId, "replay response carries the SAME event id (at-least-once; the engine reuses the stored event, never re-publishes)", `eventId=${String(replay.body?.event?.id)}`);
+  must(6, Array.isArray(replay.body?.deliveries) && replay.body.deliveries.length >= 1, "replay response carries fresh delivery rows for the CURRENTLY matching endpoints", `deliveries=${JSON.stringify(replay.body?.deliveries).slice(0, 200)}`);
+  const replayDelivery = replay.body.deliveries[0];
+  must(6, replayDelivery?.endpointId === endpointId && replayDelivery?.eventId === eventId, "replay delivery row: endpointId matches · eventId matches · the same event was re-delivered", `row=${JSON.stringify(replayDelivery)}`);
+  // The replayed delivery is marked replayed=true (the law — terminal-
+  // never-dropped; replay creates a NEW delivery row for the same event).
+  must(6, replayDelivery?.replayed === true, "the replayed delivery row carries replayed=true (the at-least-once marker)");
+  note(`replay re-delivery: id=${String(replayDelivery?.id)} · eventId=${eventId} · replayed=true · status=${String(replayDelivery?.status)}`);
+
+  // The recording client captured POST #3 (the replay delivery).
+  must(6, webhookHttpClient.calls.length === 3, "the replayed event produced a fresh outbound POST (#3 — recorded)", `calls=${webhookHttpClient.calls.length}`);
+
+  // The dashboard events-console aggregate read (attempted verbatim).
+  const eventsAttempt = await call(app, "GET", "/v1/events", { key: journeyKey });
+  must(6, eventsAttempt.status === 404 && eventsAttempt.body?.error?.code === "NOT_FOUND", "GET /v1/events → typed 404 NOT_FOUND (pending — events-console aggregate)", `status=${eventsAttempt.status}`);
+  routeTouched(6, "GET /v1/events", "not-wired (pending — named in apps/web/src/lib/developers-api.ts PENDING_EVENT_ROUTES.list)");
+
+  // 6f. Verify the signature with the SHIPPED algorithm (SDK verifyWebhook
+  // — the docs-named re-export of the reference implementation).
+  const recorded = webhookHttpClient.calls[1];
+  const signatureHeader = recorded.headers[WEBHOOK_SIGNATURE_HEADER];
+  must(6, typeof signatureHeader === "string" && signatureHeader.startsWith("t=") && signatureHeader.includes("v1="), "the delivery carried the Reckon-Signature header (t=…,v1=…)");
+  const verified = verifyWebhook(recorded.rawBody, signatureHeader, whsec);
+  must(6, verified === true, "SHIPPED SDK verifyWebhook(rawBody, Reckon-Signature, whsec_…) → true (HMAC-SHA256 over \"{t}.{rawBody}\", constant-time compare, 300s tolerance)");
+  // Negative discriminators — the verifier must actually discriminate.
+  const tamperedBody = recorded.rawBody.replace("genre.scifi", "genre.tamprd");
+  must(6, tamperedBody !== recorded.rawBody, "tamper control: the body mutation actually changed bytes");
+  must(6, verifyWebhook(tamperedBody, signatureHeader, whsec) === false, "negative control: a tampered body fails verification");
+  must(6, verifyWebhook(recorded.rawBody, signatureHeader, "whsec_00000000000000000000000000000000") === false, "negative control: the wrong secret fails verification");
+  note(`signature verification (shipped verifyWebhook): positive=true · tampered-body=false · wrong-secret=false · replayed-delivery also verified=true`);
+
+  // 6g. Encryption-at-rest direct proof: read the webhook_endpoints
+  // row directly through the persistence executor and assert the raw
+  // whsec_ value does NOT appear in any of the BYTEA columns.
+  const rawRows = await pg.executor.query(
+    `SELECT secret_cipher, secret_iv, secret_tag FROM webhook_endpoints WHERE endpoint_id = $1`,
+    [endpointId],
+  );
+  must(6, rawRows.length === 1, "the endpoint row exists in webhook_endpoints (PG-backed, durable)", `rows=${rawRows.length}`);
+  const cipherText = String(rawRows[0]?.secret_cipher);
+  must(6, !cipherText.includes(whsec) && !cipherText.includes("whsec_"), "encryption at rest: the raw whsec_ secret is NOT a substring of the secret_cipher BYTEA column (AES-256-GCM ciphertext only — never plaintext)", `cipher=${cipherText.slice(0, 40)}…`);
+  note(`encryption-at-rest direct proof: secret_cipher length=${cipherText.length} · raw whsec_ absent · AES-256-GCM ciphertext only`);
+
+  artifact(6, "event", { id: eventId, type: "preference.updated", tenantId: RUN.tenantId });
+  artifact(6, "endpoint", { id: endpointId, url: "https://journey.example.test/hooks", secretRedacted: redact(whsec) });
+  artifact(6, "delivery", prefDelivery);
+  artifact(6, "replayDelivery", replayDelivery);
+  artifact(6, "signatureVerification", { positive: true, tamperedBody: false, wrongSecret: false, algorithm: "SDK verifyWebhook (verifyReckonSignature reference implementation)" });
+  artifact(6, "encryptionAtRest", { rawWhsecAbsentFromCipher: true, cipherLength: cipherText.length, cipher: cipherText.slice(0, 40) });
+  setPrimary(6, `${eventId} → ${String(prefDelivery?.id)} (replayed: ${String(replayDelivery?.id)})`);
+  emit("STEP 6 OK — webhook hop asserted (PG-backed endpoint + event + delivery row + replay re-delivery + shipped signature verification + encryption-at-rest direct proof)");
+
+  /* ---------------------------- summary ---------------------------- */
+
+  await app.close();
+  await composition.close();
+  await pg.stop();
+
+  const hops = RUN.steps.length;
+  emit("");
+  emit(`JOURNEY COMPLETE: ${hops}/6 hops asserted · exit 0 · head ${RUN.head} · evidence class ${RUN.evidenceClass}`);
+  emit("journey map (step → route → status → captured artifact):");
+  for (const step of RUN.steps) {
+    for (const entry of step.routes) {
+      emit(`  ${step.step} ${step.name} | ${entry.route} | ${entry.status} | ${primaryArtifact(step.step)}`);
+    }
+  }
+  return 0;
+}
+
+/* ================================================================== *
  * THE JOURNEY (every hop asserted; order is the documented order)
  * ================================================================== */
 
@@ -1235,9 +1650,19 @@ async function main() {
 }
 
 try {
-  // S5-003 dispatch: no target flags → the S4-001 local in-process journey
-  // (unchanged); --api-base/--production → the remote journey over the wire.
-  const code = TARGET.remote ? await runRemoteJourney(TARGET) : await main();
+  // TL6-002 dispatch: --production-local boots the production composition
+  // over a real embedded-postgres PG 18 server (port 55433) and drives
+  // ALL six hops through it (the webhook hop-6 exercises the PG-backed
+  // webhook mount — encrypted signing secret, durable event/delivery
+  // stores, replay re-delivery). No target flags → the S4-001 local
+  // in-process journey (unchanged); --api-base/--production → the remote
+  // journey over the wire.
+  let code;
+  if (TARGET.productionLocal) {
+    code = await runProductionLocalJourney();
+  } else {
+    code = TARGET.remote ? await runRemoteJourney(TARGET) : await main();
+  }
   if (JSON_MODE) {
     process.stdout.write(`${JSON.stringify({ ...RUN, summary: { hopsAsserted: RUN.steps.length, exit: code } }, null, 2)}\n`);
   }

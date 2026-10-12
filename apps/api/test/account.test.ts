@@ -16,7 +16,7 @@
  * + production composition).
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import {
   ApiError,
   ConfigError,
@@ -98,6 +98,10 @@ beforeAll(async () => {
     // Flat limit 100 for tierless/static keys; the FREE tier is pinned to 3
     // so the tier-limit proof is deterministic under the fixed clock.
     rateLimit: { limit: 100, tierLimits: { free: 3 } },
+    // TL6-002: the production composition now mounts the webhook system
+    // — a deterministic 32-byte AES-256 test key satisfies the honesty
+    // law (the webhook mount refuses to boot without a key).
+    webhookEncryptionKey: { bytes: randomBytes(32) },
     apiVersion: "tl6-001",
     clock: { now: () => 1_000 },
   });

@@ -66,3 +66,22 @@ export {
   PgResearchJobStore,
 } from "./state-stores.js";
 export type { StoredPlanVersion, ResearchJob, EnqueueResearchJob } from "./state-stores.js";
+// TL6-002: the production webhook mount — PostgreSQL-backed webhook
+// endpoint/event/delivery stores. The signing secret is encrypted at
+// rest (AES-256-GCM) with the parsed WEBHOOK_SECRET_ENCRYPTION_KEY.
+export {
+  PgWebhookEndpointStore,
+  PgWebhookEventStore,
+  PgWebhookDeliveryStore,
+  parseWebhookSecretEncryptionKey,
+  WebhookEncryptionKeyError,
+} from "./webhook-stores.js";
+export type {
+  WebhookSecretEncryptionKey,
+  StoredWebhookEndpoint,
+  StoredWebhookDelivery,
+  WebhookDeliveryFilter,
+  WebhookEndpointStore,
+  WebhookEventStore,
+  WebhookDeliveryStore,
+} from "./webhook-stores.js";

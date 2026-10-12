@@ -388,7 +388,7 @@ describe("S5-003 production lockstep: driver flags ↔ verify-production ↔ doc
 
   /* ---------------- the driver's target-flag contract ---------------- */
 
-  it("the driver wires the S5-003 target flags and env names (and keeps the local default)", () => {
+  it("the driver wires the S5-003 target flags and env names (and keeps the local default + TL6-002 production-local mode)", () => {
     for (const marker of [
       "--api-base",
       "--web-base",
@@ -406,8 +406,15 @@ describe("S5-003 production lockstep: driver flags ↔ verify-production ↔ doc
     // The remote journey exists exactly once and the local main() is kept.
     expect(driverSourceS5.match(/async function runRemoteJourney\(/g)).toHaveLength(1);
     expect(driverSourceS5.match(/async function main\(\)/g)).toHaveLength(1);
+    // TL6-002: the production-local journey (PG-backed webhook mount parity
+    // proof) exists exactly once; the dispatch routes --production-local to
+    // it before falling back to the S5-003 remote / S4-001 local paths.
+    expect(driverSourceS5.match(/async function runProductionLocalJourney\(/g)).toHaveLength(1);
+    expect(driverSourceS5).toContain('--production-local');
+    expect(driverSourceS5).toContain('if (TARGET.productionLocal)');
+    expect(driverSourceS5).toContain('code = await runProductionLocalJourney()');
     expect(driverSourceS5).toContain(
-      'const code = TARGET.remote ? await runRemoteJourney(TARGET) : await main();',
+      'code = TARGET.remote ? await runRemoteJourney(TARGET) : await main();',
     );
   });
 

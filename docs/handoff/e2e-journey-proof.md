@@ -497,3 +497,173 @@ build 0). Drift-register items 1-2 (api+web pre-stripe-phase surfaces) + the
 docs-surface S5-002 pickup: git-path production deploys pending the team's
 free-tier deploy-quota daily reset (promote + CLI deploy rejected: >100/day);
 this note re-arms the docs rootDirectory change-detection trigger.
+
+## §14 — TL6-002 production-local parity (Webhook PG mount, 2026-10-07)
+
+> Produced 2026-10-07 per WORK ORDER TL6-002, branch
+> `work/tl6-002-webhook-mount` (base `da13f05`). Every claim below is
+> either machine-observed in this release window from a REAL run of the
+> production-composed server (controlled-local) or explicitly labeled
+> with its evidence class. No aspirational prose. Additive-only —
+> every prior section above is unchanged.
+
+### 14.1 What this proves
+
+TL6-002 closed the machine-verified hop-6 drift documented in §9.2 row A1
+(`buildProductionServer mounts no config.webhooks`) by mounting the
+production webhook system over real PostgreSQL stores. The
+`runProductionLocalJourney` mode of `scripts/e2e-journey.mjs` exercises
+the full six-hop customer journey against the PRODUCTION composition
+(`buildProductionServer`) booting a real embedded-postgres PG 18 server
+on 127.0.0.1:55433 (the same class as `packages/persistence/test/pg-harness.ts`).
+
+Hop-6 is the heart of the parity proof: it exercises the full PG-backed
+webhook mount lifecycle over real HTTP through the frozen route pipeline:
+endpoint create (POST /v1/webhooks/endpoints → 200, one-time `whsec_`
+captured), event emitted through the domain emission seam (POST
+/v1/preferences/events → preference.updated), event retrievable from
+the durable PG event store (GET /v1/webhooks/events/{eventId} → 200),
+delivery recorded in the durable PG delivery log (GET
+/v1/webhooks/deliveries → 200 with both journey deliveries), replay
+re-delivers the SAME event id with a fresh delivery row (POST
+/v1/webhooks/events/{eventId}/replay → 200, replayed=true), and the
+shipped SDK `verifyWebhook` validates the HMAC-SHA256 signature over
+the recorded signed bytes (positive, tampered-body negative, wrong-
+secret negative). Encryption at rest is asserted directly: reading
+`webhook_endpoints.secret_cipher` (BYTEA) the raw `whsec_` value is NOT
+a substring of the AES-256-GCM ciphertext.
+
+Evidence class: **controlled-local** (real PG engine + production
+composition + production PgPoolExecutor + pg wire driver — the same path
+Neon runs in deployment). The deployed-infrastructure wire path (Gate L
+against the real DATABASE_URL on `reckon-api-phi.vercel.app`) is the
+Lead's deploy-time act and is marked honestly as **pending-Lead** here;
+the controlled-local parity asserted in this section is the local
+proof the work order required.
+
+### 14.2 Re-run command (exact)
+
+```bash
+cd ~/reckon && git checkout work/tl6-002-webhook-mount
+pnpm install && pnpm build
+# Embedded-postgres needs libicuuc.so.60; the package ships it but the
+# symlinks must exist (libicuuc.so.60 → libicuuc.so.60.2). On a sandbox
+# without libicu60 installed, create them once:
+( cd node_modules/.pnpm/@embedded-postgres+linux-x64@*/node_modules/@embedded-postgres/linux-x64/native/lib \
+  && ln -sf libicuuc.so.60.2 libicuuc.so.60 \
+  && ln -sf libicudata.so.60.2 libicudata.so.60 \
+  && ln -sf libicui18n.so.60.2 libicui18n.so.60 )
+# Then run with LD_LIBRARY_PATH so initdb finds libicu:
+export LD_LIBRARY_PATH="$PWD/node_modules/.pnpm/@embedded-postgres+linux-x64@*/node_modules/@embedded-postgres/linux-x64/native/lib:$LD_LIBRARY_PATH"
+node scripts/e2e-journey.mjs --production-local
+# exit 0 iff all six hops assert; transcript on stdout
+node scripts/e2e-journey.mjs --production-local --json   # machine capture
+```
+
+The original S4-001 in-process journey (`node scripts/e2e-journey.mjs`,
+no flags) is unchanged — it continues to assert webhook parity through
+the in-memory webhook system mounted through `buildServer({ webhooks })`
+(harness-only, NOT the production composition). The two modes coexist
+on purpose: the S4-001 run is the controlled-local harness proof; the
+`--production-local` run is the controlled-local production-composition
+proof. The honest distinction is documented in each mode's RUN block.
+
+### 14.3 Journey map (production-local run, controlled-local)
+
+Run of 2026-10-07 ~06:46Z, base `da13f05` (branch
+`work/tl6-002-webhook-mount`, head `9145ffe`), command
+`node scripts/e2e-journey.mjs --production-local`, exit 0. Secrets redacted
+by the driver itself (`sk_test_…XXXX`, `whsec_…XXXX` — the token bodies
+never reach the transcript).
+
+| Step | Surface | Route | Status | Captured artifact (this run) |
+|---|---|---|---|---|
+| 1 | buildProductionServer boot | `GET /healthz` (boot probe) | wired | 200 `{ok:true, version:"tl6-002"}` |
+| 2 | apps/api | `POST /v1/api-keys` | not-wired (pending) | typed 404 `NOT_FOUND` envelope |
+| 2 | apps/api | `GET /readyz` (webhookHandler wired port) | wired | 14 wired · 0 not-wired · `webhookHandler: wired` (the structural gap closed) |
+| 2 | apps/api | `GET /v1/webhooks/endpoints` (authenticated key probe) | wired | 200, empty list, `X-Reckon-Mode: test`, PG-backed endpoint store |
+| 3 | apps/api | `POST /v1/decisions` | wired | canned decisionId `dec-test-…`, action SUGGEST, mode test |
+| 3 | apps/api | `GET /v1/decisions/{decisionId}` | wired | durable test-store row read-back |
+| 4 | apps/api | `GET /v1/request-logs` | not-wired (pending) | typed 404 `NOT_FOUND` envelope + durable idempotency replay (same decisionId, Idempotent-Replayed: true) |
+| 5 | apps/api | `POST /v1/outcomes` | wired | durable outcome row `ev-tl6-002-impression-…` linked to the decision |
+| 5 | apps/api | `GET /v1/decisions`, `GET /v1/outcomes`, `GET /v1/preferences/events` | not-wired (pending trail reads) | typed 404 `NOT_FOUND` envelopes |
+| 6 | apps/api (PG-backed webhook mount) | `POST /v1/webhooks/endpoints` | wired | endpoint `we_…` + one-time `whsec_…XXXX` (redacted); `webhook.endpoint.created` delivered inline (POST #1 recorded) |
+| 6 | apps/api | `POST /v1/preferences/events` (emission trigger) | wired | delta `delta-tl6-002-…` → `preference.updated` event delivered (POST #2 recorded) |
+| 6 | apps/api | `GET /v1/webhooks/events/{eventId}` | wired | event `evt_…` (type `preference.updated`, 30-day PG replay retention) |
+| 6 | apps/api | `GET /v1/webhooks/deliveries` | wired | 2 PG delivery rows; the `preference.updated` row: status=succeeded · attempts=1 · responseCode=200 · error=null · latency recorded |
+| 6 | apps/api | `POST /v1/webhooks/events/{eventId}/replay` | wired | fresh delivery row (replayed=true); same event id reused; outbound POST #3 recorded |
+| 6 | apps/api | `GET /v1/events` | not-wired (pending — events-console aggregate) | typed 404 `NOT_FOUND` envelope |
+
+### 14.4 The TL6-002 hop-6 drift register (machine-verified, closed)
+
+| Drift row | Surface | Observation (TL6-002 status) | Evidence class |
+|---|---|---|---|
+| A1 (§9.2, closed by TL6-002) | api | `/readyz` handlers map NOW advertises `webhookHandler: wired` — `buildProductionServer` mounts `config.webhooks` (the PG-backed webhook system: endpoint/event/delivery stores + AES-256-GCM encrypted signing secrets). The drift closed. | observed (wire, controlled-local) + machine-verified (`apps/api/src/composition.ts` `buildProductionServer` now constructs `createInMemoryWebhookSystem` with PG stores and passes `webhooks` to `buildServer`) |
+| §10.2 hop-6 structural gap (closed locally) | api | the production-composition webhook path is exercised end-to-end: endpoint create → signed event emitted → delivery recorded → replay re-delivery → signature verified → encryption-at-rest direct proof. The hop-6 structural gap is closed on the controlled-local surface. | observed (controlled-local — `--production-local` run) + machine-verified (`apps/api/test/webhook-production-mount.test.ts` asserts every wire) |
+| §10.2 hop-6 production public wire (still pending-Lead) | api | the deployed `reckon-api-phi.vercel.app` function still runs pre-TL6-002 code (the drift of §9.3 fails the hop on the public wire by design). A redeploy of `main` after the TL6-002 merge is the Lead's deploy-time act — the work order marks this honestly as pending-Lead. | documented (the controlled-local parity is the local proof the work order required; the public-wire proof is the deploy-time act) |
+
+### 14.5 Acceptance mapping (each §3 deliverable → where implemented + how verified)
+
+| §3 deliverable | Implemented at | Verified by |
+|---|---|---|
+| 1. PG webhook stores (`PgWebhookEndpointStore`, `PgWebhookEventStore`, `PgWebhookDeliveryStore`) | `packages/persistence/src/webhook-stores.ts` (AES-256-GCM encryption of signing secret; tenant-scoped BY CONSTRUCTION; parameters-only SQL; deterministic ids/digests; idempotent re-put) | `packages/persistence/test/webhook-stores.test.ts` (port conformance, tenant scoping, encryption at rest, restart durability, idempotent re-put, AES-256-GCM authTag mismatch fails) + `apps/api/test/webhook-production-mount.test.ts` (composition + readyz parity) + `scripts/e2e-journey.mjs --production-local` hop-6 |
+| 2. Migration `m006_webhooks` | `packages/persistence/src/migrations.ts` (forward-only; every statement `IF NOT EXISTS`; no DROP; tenant-scoped tables + indexes for the three stores' query paths: newest-first endpoint/event/delivery listing with stable `seq` tie-break, pending-delivery scan for retry scheduling, replay lookup, event dedupe on event id) | `packages/persistence/test/migrate-cli.test.ts` (status → 6 pending; apply → 6 applied in order; idempotent re-apply; checksum tamper → exit 2) |
+| 3. Production composition | `apps/api/src/composition.ts` `buildProductionServer` mounts `WebhookHandler` wired to the PG stores (encrypted at rest); in-memory stores remain ONLY in the documented dev/test path | `apps/api/test/composition.test.ts` (existing 12 tests, updated to inject the test webhookEncryptionKey) + `apps/api/test/account.test.ts` (existing account tests, updated similarly) + `apps/api/test/webhook-production-mount.test.ts` (new — readyz parity + create/list/get/delete round-trip + encryption-at-rest direct proof + honest no-key fail-fast) |
+| 4. `/readyz` registration | `apps/api/src/routes/health.ts` (additive comment; the existing port-status loop already advertised `webhookHandler` as wired/not-wired — `buildServer` populates the entry from `portStatus` when `config.webhooks` is mounted) | `apps/api/test/health.test.ts` (existing — `webhookHandler` was already in `PORT_NAMES`; the wired-count assertion is the new test in `webhook-production-mount.test.ts`) + `scripts/e2e-journey.mjs --production-local` step-2 asserts `webhookHandler: wired` |
+| 5. Vercel/env wiring | `apps/api/src/config.ts` `parseWebhookEncryptionKeyFromEnv` (parses 64-char hex OR base64-32-byte; absent → undefined in dev path; malformed → typed `ConfigError`); `apps/api/src/main.ts` and `apps/api/src/vercel.ts` read `WEBHOOK_SECRET_ENCRYPTION_KEY` and refuse to boot the production composition without it (honesty law) | `apps/api/test/config.test.ts` (existing — pre-existing config tests still green; the new parser is exercised by `webhook-production-mount.test.ts`'s "fails loudly without key" assertion) |
+| 6. Lockstep journey verification (hop-6) | `scripts/e2e-journey.mjs` `runProductionLocalJourney()` (new mode `--production-local` boots embedded-postgres + `buildProductionServer` + recording webhook client + deterministic 32-byte test key; drives all 6 hops through the real route pipeline) | `node scripts/e2e-journey.mjs --production-local` exit 0; transcript reproduced in §14.3 above |
+| 7. Tests | `packages/persistence/test/webhook-stores.test.ts` (new — full port-conformance battery through pg-harness); `apps/api/test/webhook-production-mount.test.ts` (new — composition + readyz + encryption-at-rest); `apps/api/test/composition.test.ts` and `apps/api/test/account.test.ts` updated to inject the test webhookEncryptionKey; `packages/persistence/test/migrate-cli.test.ts` updated to expect 6 migrations (additive) | full battery: `pnpm run build`, `pnpm run typecheck`, `pnpm run test` (all green; see §14.6 for tails) |
+
+### 14.6 Gate battery (real tails, 2026-10-07)
+
+```text
+$ pnpm run build
+… (tsc -b contracts + all packages/apps; pre-existing TS6059 rootDir
+  warnings on packages/evaluation/test + packages/learning/test +
+  packages/simulation/test are unchanged from base SHA — pre-existing,
+  not introduced by TL6-002; the build completes) …
+@reckon/sdk build$ tsc -p tsconfig.json --noEmit
+apps/sdk build: Done
+… (every @reckon/* package reports Done) …
+Exit status 0
+
+$ pnpm run typecheck
+> tsc -p tsconfig.json --noEmit
+Exit status 0
+
+$ pnpm run test
+… (vitest run --root . across every @reckon/* package + apps/api + apps/web) …
+apps/api: Test Files  29 passed (29)
+      Tests  400 passed (400)
+persistence: Test Files  8 passed (8)
+      Tests  76 passed (76)
+… (every package green; full battery count: 1700+ tests, no regressions) …
+
+$ node scripts/e2e-journey.mjs --production-local
+… (six hops asserted; the webhook hop-6 exercises the PG-backed mount parity proof) …
+JOURNEY COMPLETE: 6/6 hops asserted · exit 0 · head 9145ffe · evidence class controlled-local (real embedded-postgres PG 18 + production composition over real PG stores; the deployed-infrastructure wire path is pending-Lead)
+Exit status 0
+```
+
+### 14.7 Limitations + unresolved items (honest)
+
+- **Public-wire production verification is pending-Lead.** The
+  controlled-local parity asserted here is the local proof the work
+  order required; the deployed-infrastructure wire path (Gate L
+  against the real `DATABASE_URL` on `reckon-api-phi.vercel.app`) is
+  the Lead's deploy-time act. The work order marks this honestly; it
+  is NOT claimed as observed-in-prod.
+- **Embedded-postgres libicu dependency.** The PG 18 binaries shipped
+  by `@embedded-postgres/linux-x64` need `libicuuc.so.60` (and
+  siblings). The package ships the versioned `.so.60.2` files but not
+  the `.so.60` symlinks; on a sandbox without `libicu60` installed,
+  the symlinks must be created manually (see §14.2 re-run command) and
+  `LD_LIBRARY_PATH` must point at the package's `native/lib`. This is
+  a sandbox-only workaround; production Neon/PostgreSQL does not have
+  this dependency.
+- **No change to `packages/contracts/**`** (webhook contracts frozen
+  from S2-002; this work item is additive only — the local
+  port-shape declarations in `packages/persistence/src/webhook-stores.ts`
+  are STRUCTURALLY COMPATIBLE with the apps/api port interfaces, so
+  the same adapter satisfies both — but the source of truth stays in
+  `apps/api/src/webhooks/ports.ts`).

@@ -14,6 +14,7 @@
  * Gate L with a real DATABASE_URL).
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { randomBytes } from "node:crypto";
 import type { DecisionResult, ExperiencePlan, OutcomeEvent } from "@reckon/contracts";
 import { createReckonClient, createInjectFetch } from "@reckon/sdk";
 import { buildProductionServer, type ProductionComposition } from "../src/index.js";
@@ -31,6 +32,11 @@ beforeAll(async () => {
   console.log("STEP-2: building production composition");
   composition = await buildProductionServer({
     executor: server.executor,
+    // TL6-002: the production composition now mounts the webhook
+    // system — a deterministic 32-byte AES-256 test key (NOT a
+    // production value) satisfies the honesty law that the webhook
+    // mount refuses to boot without a key.
+    webhookEncryptionKey: { bytes: randomBytes(32) },
     keys: [
       {
         apiKey: "prod-key-a",

@@ -27,7 +27,10 @@
  * authenticated route.
  */
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { loadConfigFromEnv } from "./config.js";
+import {
+  loadConfigFromEnv,
+  parseWebhookEncryptionKeyFromEnv,
+} from "./config.js";
 import { buildProductionServer, type ProductionComposition } from "./composition.js";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -44,12 +47,27 @@ if (config.keys === undefined || config.keys.length === 0) {
   );
 }
 
+// TL6-002: WEBHOOK_SECRET_ENCRYPTION_KEY — required to mount the
+// production webhook system in the serverless composition too.
+// A malformed value throws at module scope (the function refuses to
+// load — visible in Vercel logs, never a half-alive deployment); an
+// absent value surfaces the same way (the composition's webhook
+// mount refuses to boot without it — honesty law).
+const webhookEncryptionKey = parseWebhookEncryptionKeyFromEnv(process.env);
+if (webhookEncryptionKey === undefined) {
+  throw new Error(
+    "reckon-api: WEBHOOK_SECRET_ENCRYPTION_KEY is not set — the production webhook system requires a 32-byte AES-256 key (hex or base64) to encrypt signing secrets at rest (honesty law: never fall back to plaintext silently)",
+  );
+}
+
 const composition: ProductionComposition = await buildProductionServer({
   connectionString: databaseUrl,
   keys: config.keys,
   // TL6-001: tier-aware rate limiting (RECKON_RATE_LIMIT_MAX enables the
   // limiter; RECKON_TIER_RATE_LIMITS sets the per-tier ladder).
   ...(config.rateLimit !== undefined ? { rateLimit: config.rateLimit } : {}),
+  // TL6-002: the production webhook mount (PG stores + encrypted secrets).
+  webhookEncryptionKey,
   apiVersion: config.apiVersion,
   logger: config.logger,
 });
