@@ -34,4 +34,7 @@ export * from "./harness/recording.js";
 export * from "./harness/host-adapter.js";
 export * from "./harness/driver.js";
 export * from "./harness/scorecard.js";
+// SIM-002: the ladder Levels 1–4 synthetic-host cases (Wave A) —
+// additive extension; no existing exported shape above changes.
+export * from "./levels/index.js";
 
