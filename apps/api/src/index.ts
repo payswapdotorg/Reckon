@@ -134,4 +134,25 @@ export type {
   AdAvailabilitySupply,
   AdRetrievalRuntimeOptions,
 } from "./ad-retrieval.js";
+// AD-004: the ad-selection composition — ad-lane catalog truth for ad
+// candidates declared in a DecisionRequest (the decision-path companion
+// to AD-003's retrieval), plus the ad-encounter memory capture (observed
+// outcome events → Personal Ad Memory through the AD-002 store port).
+export {
+  AD_SELECTION_SOURCES,
+  createAdSelectionSource,
+  isAdCandidateSource,
+} from "./ad-selection.js";
+export type {
+  AdSelectionResolveInput,
+  AdSelectionSource,
+  AdSelectionTruth,
+} from "./ad-selection.js";
+export { createAdEncounterCapture, createAdEncounterResolver } from "./ad-memory-capture.js";
+export type {
+  AdEncounterCapturePolicy,
+  AdEncounterCaptureResult,
+  AdEncounterContext,
+  AdEncounterResolver,
+} from "./ad-memory-capture.js";
 export { PgObservabilitySink } from "./pg-observability.js";

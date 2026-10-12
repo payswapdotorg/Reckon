@@ -283,6 +283,13 @@ export const ResolveRequestSchema = NoTenant.extend({
   items: CatalogItemSchema.array().min(1),
   realizations: RealizationSchema.array(),
   constraints: HardConstraintSchema.array().optional(),
+  /**
+   * AD-004 (additive, API-level): per-ITEM hard constraints keyed by
+   * itemId — the same per-item constraint surface the decision path
+   * projects declared ad eligibility onto. Composed only from frozen
+   * schema objects (mirrors apps/api/src/envelopes.ts).
+   */
+  itemConstraints: z.record(IdSchema, HardConstraintSchema.array()).optional(),
 });
 export type ResolveRequestInput = z.input<typeof ResolveRequestSchema>;
 

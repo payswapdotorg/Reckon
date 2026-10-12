@@ -51,6 +51,7 @@ import {
   contentDigest,
   ExperienceSchema,
   FORMAT_KINDS,
+  HardConstraintSchema,
   ObjectiveSchema,
   RealizationSchema,
   type CatalogItem,
@@ -86,6 +87,20 @@ export interface ExpandInput {
   objective: Objective;
   /** Hard constraints gating eligibility (separate from reward). */
   constraints: HardConstraint[];
+  /**
+   * AD-004 (disclosed additive kernel extension — see
+   * docs/architecture/ad-selection.md): per-ITEM hard constraints, keyed
+   * by itemId. Every experience expanded for that item carries them in
+   * its own `constraints` field (the frozen contract's per-experience
+   * constraint surface, which the policy engine re-applies in its
+   * defense-in-depth pass) and they gate expansion exactly like the
+   * request constraints (same kernel-evaluable kinds, same fail-closed
+   * semantics, evaluated AFTER the request constraints in documented
+   * order). Domain-neutral: any host declaring per-item constraints
+   * (e.g. ad eligibility projected via `adEligibilityToConstraints`)
+   * uses it; absent/empty ⇒ byte-identical legacy behavior.
+   */
+  itemConstraints?: Readonly<Record<string, readonly HardConstraint[]>>;
 }
 
 /**
@@ -258,8 +273,12 @@ function evaluateGates(experience: Experience, constraints: HardConstraint[]): G
 }
 
 /** Deterministic, collision-safe experience id for a
- *  (realization, format) pair. */
-function experienceIdFor(realizationId: string, format: FormatDescriptor): string {
+ *  (realization, format) pair. Exported (AD-004) so compositions that
+ *  need to predict the id a (realization, format) pair expands to —
+ *  e.g. building per-experience reward-term values from declared ad
+ *  user value — compute the SAME id the expander emits (never a second
+ *  id scheme). */
+export function experienceIdFor(realizationId: string, format: FormatDescriptor): string {
   const digest = contentDigest({
     realizationId,
     kind: format.kind,
@@ -475,6 +494,36 @@ export function expandExperiences(
     issues.push({ path: "constraints", message: "must be an array of hard constraints" });
   }
 
+  // AD-004: per-item constraints — object keyed by itemId, each value an
+  // array of HardConstraintSchema-valid entries (typed errors on garbage;
+  // never silently coerced).
+  const rawItemConstraints = input.itemConstraints;
+  if (rawItemConstraints !== undefined) {
+    if (rawItemConstraints === null || typeof rawItemConstraints !== "object" || Array.isArray(rawItemConstraints)) {
+      issues.push({ path: "itemConstraints", message: "must be an object keyed by itemId" });
+    } else {
+      for (const [itemId, entryConstraints] of Object.entries(rawItemConstraints)) {
+        if (!Array.isArray(entryConstraints)) {
+          issues.push({
+            path: `itemConstraints.${itemId}`,
+            message: "must be an array of hard constraints",
+          });
+          continue;
+        }
+        for (let i = 0; i < entryConstraints.length; i++) {
+          const parsedConstraint = HardConstraintSchema.safeParse(entryConstraints[i]);
+          if (!parsedConstraint.success) {
+            issues.push({
+              path: `itemConstraints.${itemId}[${i}]`,
+              message: parsedConstraint.error.issues.map((x) => x.message).join("; "),
+            });
+          }
+        }
+      }
+    }
+  }
+
+
   // Format policy: non-empty allowlist of known format kinds.
   const allowed = input.formatPolicy?.allowedFormats;
   if (
@@ -498,6 +547,13 @@ export function expandExperiences(
   const realizations = parsedRealizations.success ? parsedRealizations.data : [];
   const objective = parsedObjective.success ? parsedObjective.data : (undefined as never);
   const constraints = (input.constraints ?? []) as HardConstraint[];
+  const itemConstraints: Readonly<Record<string, readonly HardConstraint[]>> =
+    rawItemConstraints !== undefined &&
+    rawItemConstraints !== null &&
+    typeof rawItemConstraints === "object" &&
+    !Array.isArray(rawItemConstraints)
+      ? (rawItemConstraints as Record<string, readonly HardConstraint[]>)
+      : {};
   const allowedFormats: ReadonlySet<string> = new Set(allowed as FormatKind[]);
 
   // Host truth indexes (first occurrence wins — deterministic).
@@ -585,6 +641,13 @@ export function expandExperiences(
         if (interpretation.durationSeconds !== undefined) {
           draft["duration"] = interpretation.durationSeconds;
         }
+        // AD-004: per-item constraints ride the experience's own frozen
+        // constraint surface (validated above; the policy engine
+        // re-applies them in its defense-in-depth pass).
+        const perItem = itemConstraints[candidate.itemId] ?? [];
+        if (perItem.length > 0) {
+          draft["constraints"] = [...perItem];
+        }
         if (item.availableFrom !== undefined || item.availableUntil !== undefined) {
           const timing: Record<string, unknown> = {};
           if (item.availableFrom !== undefined) timing["earliestMs"] = item.availableFrom;
@@ -623,8 +686,9 @@ export function expandExperiences(
         }
         const base: Experience = parsed.data;
 
-        // Gate 2: hard constraints (separate from reward).
-        const failures = evaluateGates(base, constraints);
+        // Gate 2: hard constraints (separate from reward) — request
+        // constraints first, then the item's own (documented order).
+        const failures = evaluateGates(base, [...constraints, ...perItem]);
         if (failures.length > 0) {
           exclusions.push({
             kind: "experience-excluded",

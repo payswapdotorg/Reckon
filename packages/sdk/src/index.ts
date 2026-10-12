@@ -81,6 +81,21 @@ export {
   WebhookEndpointPageSchema,
 } from "./client.js";
 export { createInjectFetch } from "./testing.js";
+// AD-004: host-side ad-selection composition helpers (pure, over the
+// frozen contracts — declare ad candidacy alongside organic candidates,
+// and bridge declared ad USER value into the policy engine's existing
+// reward-term channel). See docs/architecture/ad-selection.md.
+export {
+  AD_CANDIDATE_SOURCE_VALUES,
+  adUserValueRewardTerm,
+  buildAdBearingCandidates,
+  isAdCandidateSource,
+  selectAdCandidacy,
+} from "./ad-selection.js";
+export type {
+  AdBearingCandidates,
+  AdCandidacySelection,
+} from "./ad-selection.js";
 
 export {
   mapServerError,

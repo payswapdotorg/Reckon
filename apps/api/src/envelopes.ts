@@ -1,9 +1,11 @@
+import { z } from "zod/v4";
 import {
   CatalogItemSchema,
   CandidateSetSchema,
   ContextReferenceSchema,
   ExperienceSchema,
   HardConstraintSchema,
+  IdSchema,
   RealizationSchema,
   ReplanTriggerSchema,
   TenantScopeSchema,
@@ -39,6 +41,15 @@ export const ResolveRequestSchema = EmptyObject.extend({
   items: CatalogItemSchema.array().min(1),
   realizations: RealizationSchema.array(),
   constraints: HardConstraintSchema.array().optional(),
+  /**
+   * AD-004 (additive, API-level): per-ITEM hard constraints keyed by
+   * itemId — the same per-item constraint surface the decision path
+   * projects declared ad eligibility onto (`adEligibilityToConstraints`
+   * → flight window `time-window`, gates `policy-rights`). Stamped onto
+   * every expanded experience of the item (the frozen per-experience
+   * constraint surface). Composed only from frozen schema objects.
+   */
+  itemConstraints: z.record(IdSchema, HardConstraintSchema.array()).optional(),
 });
 export type ResolveRequest = Parsed<typeof ResolveRequestSchema>;
 

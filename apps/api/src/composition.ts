@@ -29,6 +29,7 @@ import {
   type DecisionRequest,
   type DecisionResult,
   type ExperiencePlan,
+  type HardConstraint,
   type Realization,
   type TenantScope,
 } from "@reckon/contracts";
@@ -89,6 +90,23 @@ import {
   createRuntimeAdRetrievalHandler,
   type AdAvailabilityChannel,
 } from "./ad-retrieval.js";
+// AD-004: the ad-selection composition — ad-lane catalog truth for
+// ad candidates the host declared in a DecisionRequest (resolved from
+// the SAME memory + channel sources AD-003 queries, at the request
+// clock), plus the ad-encounter memory capture (observed outcomes →
+// Personal Ad Memory through the AD-002 store port). See
+// docs/architecture/ad-selection.md.
+import {
+  createAdSelectionSource,
+  isAdCandidateSource,
+  type AdSelectionSource,
+} from "./ad-selection.js";
+import {
+  createAdEncounterCapture,
+  createAdEncounterResolver,
+  type AdEncounterCapturePolicy,
+  type AdEncounterResolver,
+} from "./ad-memory-capture.js";
 
 /** Composition clock: host wall-clock in production, manual in tests. */
 export type CompositionClock = { now(): number };
@@ -126,9 +144,24 @@ export interface ProductionCompositionOptions {
    * observations). Absent/empty = the lane is honestly empty with a
    * disclosed note (never faked supply, never catalog-derived
    * availability — rights are never inferred from catalog presence,
-   * architecture-lock #23).
+   * architecture-lock #23). AD-004: the SAME channels also back the
+   * decision-path ad-selection source and the default encounter
+   * resolver (one composed supply seam, no second channel registry).
    */
   readonly adAvailabilityChannels?: readonly AdAvailabilityChannel[];
+  /**
+   * AD-004: the ad-encounter memory capture — when provided, observed
+   * outcome events for ad experiences (per the policy's event types)
+   * flow into Personal Ad Memory through the AD-002 store port, with
+   * the deployment-declared retention basis (law 1: REQUIRED here —
+   * capture is never silently defaulted). Absent = outcomes still
+   * ingest normally; nothing is captured.
+   */
+  readonly adMemoryCapture?: {
+    readonly policy: AdEncounterCapturePolicy;
+    /** Custom resolver (default: memory + the composed availability channels, by experienceId). */
+    readonly resolver?: AdEncounterResolver;
+  };
 }
 
 export interface ProductionComposition {
@@ -260,15 +293,42 @@ function planStateOf(plan: ExperiencePlan | null): PlanState {
 }
 
 /**
+ * Structural read seams for the runtime decision handler (AD-004:
+ * type-level widening of the handler's parameters so in-process tests
+ * can mount the REAL handler over non-PG stores — PgCatalogStore and
+ * PgPlanStore satisfy both structurally; zero runtime change).
+ */
+export interface CatalogReadAccess {
+  listItems(tenant: TenantScope): Promise<readonly CatalogItem[]>;
+  listRealizations(tenant: TenantScope): Promise<readonly Realization[]>;
+}
+
+export interface PlanReadAccess {
+  get(tenant: TenantScope, planId: string): Promise<{ plan: ExperiencePlan; version: number } | null>;
+}
+
+/**
  * The production decision handler: the REAL kernel chain over persisted
  * catalog/context/plan state. The request itself carries candidates,
  * objective, attention policy, constraints and the caller-supplied `at`.
+ *
+ * AD-004: when the request DECLARES ad candidacy (candidate source ∈
+ * the frozen ad-lane vocabulary — the output of the SDK's
+ * `buildAdBearingCandidates` over an AD-003 query result, or any host
+ * mapping that uses the same sources), the handler resolves ad-lane
+ * catalog truth through the optional `adSelection` source (the SAME
+ * memory + availability-channel seams the /v1/ads routes read, at the
+ * request clock) and merges it with the persisted catalog (catalog
+ * truth first; ad-lane truth fills gaps — deterministic). Ads then flow
+ * through the ONE kernel chain as ordinary candidates carrying
+ * provenance: no second ranking, no ad-specific scoring.
  */
 export function createRuntimeDecisionHandler(handlers: {
-  catalog: PgCatalogStore;
-  plans: PgPlanStore;
+  catalog: CatalogReadAccess;
+  plans: PlanReadAccess;
+  adSelection?: AdSelectionSource;
 }): NonNullable<PartialHandlerPorts["decisionHandler"]> {
-  const { catalog, plans } = handlers;
+  const { catalog, plans, adSelection } = handlers;
   return {
     decide: async (request: DecisionRequest): Promise<DecisionResult> => {
       if (request.at === undefined) {
@@ -287,11 +347,44 @@ export function createRuntimeDecisionHandler(handlers: {
         request.planId !== undefined ? plans.get(request.tenant, request.planId) : Promise.resolve(null),
       ]);
 
-      // Stage 1 — W2-001 candidate normalization over host capability truth.
+      // AD-004 — ad-lane truth for DECLARED ad candidates only. The host
+      // declared the candidacy (ad-lane candidate sources in the request's
+      // candidate set); this resolves the items/realizations/constraints
+      // those candidates need from the ad lane at the request clock. No
+      // ad candidates declared ⇒ this stage is a no-op (organic requests
+      // are byte-identical to the pre-AD-004 path).
+      const catalogItemIds = new Set(items.map((item) => item.itemId));
+      let adItems: CatalogItem[] = [];
+      let adRealizations: Realization[] = [];
+      let itemConstraints: Record<string, readonly HardConstraint[]> = {};
+      const declaredAdItemIds = [
+        ...new Set(
+          request.candidates.candidates
+            .filter((candidate) => isAdCandidateSource(candidate.source))
+            .map((candidate) => candidate.itemId),
+        ),
+      ];
+      if (adSelection !== undefined && declaredAdItemIds.length > 0) {
+        const adTruth = await adSelection.resolve({
+          tenant: request.tenant,
+          subject: request.subject,
+          at: request.at,
+          itemIds: declaredAdItemIds,
+        });
+        // Catalog truth wins; ad-lane truth fills the gaps (an ad the host
+        // ALSO ingested to the catalog resolves from the catalog).
+        adItems = adTruth.items.filter((item) => !catalogItemIds.has(item.itemId));
+        const catalogRealizationIds = new Set(realizations.map((r) => r.realizationId));
+        adRealizations = adTruth.realizations.filter((r) => !catalogRealizationIds.has(r.realizationId));
+        itemConstraints = adTruth.itemConstraints as Record<string, readonly HardConstraint[]>;
+      }
+
+      // Stage 1 — W2-001 candidate normalization over host capability truth
+      // (catalog + resolved ad-lane truth — one candidate universe).
       const normalized = normalizeCandidates({
         candidates: request.candidates,
-        items: [...items],
-        realizations: [...realizations],
+        items: [...items, ...adItems],
+        realizations: [...realizations, ...adRealizations],
         tenant: request.tenant,
       });
       if (!normalized.ok) {
@@ -299,14 +392,17 @@ export function createRuntimeDecisionHandler(handlers: {
       }
 
       // Stage 2 — W2-003 experience expansion (default host format policy:
-      // every declared format; no injected objective-fit — honest absence).
+      // every declared format; no injected objective-fit — honest absence;
+      // AD-004: per-item constraints projected from declared ad eligibility
+      // ride the experience's own frozen constraint surface).
       const expansion = expandExperiences({
         candidates: normalized.value,
-        items: [...items],
-        realizations: [...realizations],
+        items: [...items, ...adItems],
+        realizations: [...realizations, ...adRealizations],
         formatPolicy: { allowedFormats: ALL_FORMATS },
         objective: request.objective,
         constraints: request.constraints,
+        ...(Object.keys(itemConstraints).length > 0 ? { itemConstraints } : {}),
       });
       if (!expansion.ok) {
         throw new CompositionError(`expansion failed: ${expansion.error.message}`);
@@ -315,12 +411,18 @@ export function createRuntimeDecisionHandler(handlers: {
         throw new CompositionError("no expandable experiences (all candidates excluded)");
       }
 
-      // Stage 3 — W2-002 policy evaluation (objective-fit evidence only —
-      // no reward spec is invented here).
+      // Stage 3 — W2-002 policy evaluation. The request's declared reward
+      // spec is passed through VERBATIM when present (AD-004 composition
+      // fix — the frozen DecisionRequest carries `reward` and the policy
+      // engine is its one legitimate consumer; dropping it silently
+      // discarded host-declared evidence. Still no default: absent reward
+      // ⇒ objective-fit evidence only, engagement never implicitly
+      // rewarded — lock #22 unchanged).
       const policy = evaluatePolicy({
         experiences: expansion.value.experiences.map((entry) => entry.experience),
         objective: request.objective,
         constraints: request.constraints,
+        ...(request.reward !== undefined ? { reward: request.reward } : {}),
         policyId: request.policySelector.policyId,
         policyVersion: request.policySelector.version,
       });
@@ -421,6 +523,11 @@ export function createRuntimeExperienceResolver(): NonNullable<
         formatPolicy: { allowedFormats: ALL_FORMATS },
         objective: { objectiveId: "resolve", version: "1", kind: "discover", params: {} },
         constraints: request.constraints ?? [],
+        // AD-004: per-item constraints on the resolve surface — the same
+        // projection the decision path applies to declared ad eligibility.
+        ...(request.itemConstraints !== undefined && Object.keys(request.itemConstraints).length > 0
+          ? { itemConstraints: request.itemConstraints as Record<string, readonly HardConstraint[]> }
+          : {}),
       });
       if (!expansion.ok) {
         throw new CompositionError(`resolve expansion failed: ${expansion.error.message}`);
@@ -601,7 +708,29 @@ export async function buildProductionServer(
   });
   const observability = new PgObservabilitySink({ executor, clock: { now: () => clock.now() } });
 
-  const decisionHandler = createRuntimeDecisionHandler({ catalog, plans });
+  // AD-004: the ad-selection source — the SAME memory store + composed
+  // availability channels the /v1/ads routes read, now also backing the
+  // decision path's ad-candidate truth resolution (activated only when a
+  // request declares ad-lane candidates).
+  const adSelectionChannels: readonly AdAvailabilityChannel[] = options.adAvailabilityChannels ?? [];
+  const adSelection = createAdSelectionSource({ store: adMemory, channels: adSelectionChannels });
+
+  // AD-004: the optional ad-encounter memory capture (observed outcome
+  // events → Personal Ad Memory through the AD-002 store port). Never
+  // defaulted: a deployment that wants capture declares its retention
+  // basis (law 1). The default resolver is the same memory + channel seam.
+  const adCapture =
+    options.adMemoryCapture !== undefined
+      ? createAdEncounterCapture({
+          store: adMemory,
+          policy: options.adMemoryCapture.policy,
+          resolver:
+            options.adMemoryCapture.resolver ??
+            createAdEncounterResolver({ store: adMemory, channels: adSelectionChannels }),
+        })
+      : undefined;
+
+  const decisionHandler = createRuntimeDecisionHandler({ catalog, plans, adSelection });
   const handlers: PartialHandlerPorts = {
     decisionHandler: {
       // Persist decisions behind the idempotent route: the handler runs
@@ -625,6 +754,24 @@ export async function buildProductionServer(
       // sync-port test infrastructure — the ROUTE contract is unchanged).
       ingest: async (event) => {
         const receipt = await transport.publish(event);
+        // AD-004: the ad-encounter memory capture — AFTER the outcome is
+        // durable, best-effort by construction (a capture failure is
+        // logged and never fails the outcome: the outcome stream is the
+        // source of truth; memory is derived from it).
+        if (adCapture !== undefined) {
+          try {
+            const captured = await adCapture.capture(event);
+            if (captured.captured && captured.put?.outcome === "inserted") {
+              process.stderr.write(
+                `[production] ad encounter captured: ${event.eventId} → ${captured.put.record?.recordId ?? "<tombstone>"}\n`,
+              );
+            }
+          } catch (error) {
+            process.stderr.write(
+              `[production] ad encounter capture failed (outcome unaffected): ${event.eventId}: ${error instanceof Error ? error.message : String(error)}\n`,
+            );
+          }
+        }
         if (receipt.status === "delivered" || receipt.status === "duplicate") {
           return receipt.event;
         }
