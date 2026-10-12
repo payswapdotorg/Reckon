@@ -18,11 +18,13 @@ import type {
   CandidateSet,
   CatalogItem,
   DecisionResult,
+  Experience,
   HardConstraint,
   Objective,
   OutcomeEvent,
   PreferenceDelta,
   Realization,
+  RewardSpec,
   SubjectReference,
   TenantScope,
 } from "@reckon/contracts";
@@ -33,9 +35,11 @@ import type {
 import type {
   CatalogItemInput,
   CandidateSetInput,
+  ExperienceInput,
   OutcomeEventInput,
   PreferenceDeltaInput,
   RealizationInput,
+  RewardSpecInput,
 } from "./port.js";
 
 /** Host-owned catalog source (the connect phase ingests these). */
@@ -55,6 +59,26 @@ export interface HostDecisionInputs {
   readonly candidates: CandidateSetInput;
   readonly constraints?: readonly HardConstraint[];
   readonly policySelector: { readonly policyId: string; readonly version?: string };
+  /**
+   * SIM-003 (integration cases): the currently-active experience, when one
+   * is playing/being-configured host-side. Carried on the decision request
+   * (`currentExperience`) so the deciding side can CONTINUE / SWITCH /
+   * INTERRUPT / RESUME rather than only QUEUE. Omitted ⇒ identical request
+   * shape to SIM-001 (byte-compat law for existing runs).
+   */
+  readonly currentExperience?: ExperienceInput;
+  /**
+   * SIM-003: reference to the host's current experience-plan state, when a
+   * rolling plan exists (media queues, itineraries, pacing plans…). Echoed
+   * by the deciding side into `scheduleDelta.planId`.
+   */
+  readonly planId?: string;
+  /**
+   * SIM-003: the host's declared, versioned reward (competing objectives —
+   * marketplace buyer value vs revenue vs policy risk, ad user value vs
+   * commercial value…). Constraints stay separate from reward (lock #21).
+   */
+  readonly reward?: RewardSpecInput;
 }
 
 /** The host's reaction to a decision result. */
@@ -110,8 +134,11 @@ export type {
   OutcomeEvent,
   PreferenceDelta,
   Realization,
+  RewardSpec,
   CatalogItemInput,
   RealizationInput,
+  ExperienceInput,
+  RewardSpecInput,
   SubjectReference,
   TenantScope,
   DecisionResult,

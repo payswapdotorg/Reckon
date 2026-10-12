@@ -205,6 +205,13 @@ export async function runSimulation(
           policyId: inputs.policySelector.policyId,
           version: inputs.policySelector.version ?? "1",
         },
+        // SIM-003 integration-case inputs — ONLY added when the host
+        // provides them, so SIM-001 hosts produce byte-identical requests.
+        ...(inputs.currentExperience !== undefined
+          ? { currentExperience: inputs.currentExperience }
+          : {}),
+        ...(inputs.planId !== undefined ? { planId: inputs.planId } : {}),
+        ...(inputs.reward !== undefined ? { reward: inputs.reward } : {}),
         at: clock.now(),
         idempotencyKey: `idem-${step}`,
       };

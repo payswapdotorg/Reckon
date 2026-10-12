@@ -37,4 +37,9 @@ export * from "./harness/scorecard.js";
 // SIM-002: the ladder Levels 1–4 synthetic-host cases (Wave A) —
 // additive extension; no existing exported shape above changes.
 export * from "./levels/index.js";
+// SIM-003 (W2): the ladder integration-case machinery — additive extension;
+// no existing exported shape above changes.
+export * from "./integration-cases/scenario.js";
+export * from "./integration-cases/runner.js";
+export * from "./integration-cases/standard-loop.js";
 
