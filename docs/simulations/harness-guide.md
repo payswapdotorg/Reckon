@@ -1,6 +1,6 @@
 # Reckon-Complete Simulation Harness — Driver Guide
 
-Status: ACTIVE (SIM-001)  
+Status: ACTIVE (SIM-001; extended by SIM-002 — see "The ladder levels" below)  
 Package: `@reckon/simulation` (`packages/simulation/src/harness/**`)  
 Profile spec: `docs/simulations/reckon-complete-profile.md` · Scorecard: `docs/simulations/scorecard.md`
 
@@ -111,3 +111,7 @@ API operations + SDK methods (from the call log), glue LOC (host-declared), `int
 ## What the fixture proves — and what it does NOT
 
 The scripted responder proves the HOST side and the CONTRACT parity (the SDK validates every request and response against the frozen zod contracts). It is `fixture`-class evidence: it does NOT prove a live deployment. Higher classes require a real port (in-process API via `createInjectFetch` — `@reckon/sdk/testing` — is `controlled-local`; a real deployment is `staging`/`production-observed`). Fixture runs against production-evidence profiles are honestly INCOMPLETE (`OBSERVABILITY_GAP`).
+
+## The ladder levels (SIM-002)
+
+Ladder Levels 1–4 ship as reusable synthetic-host cases in `packages/simulation/src/levels/**` on this common harness — one level profile + one fresh-factory host adapter + deterministic fixtures each, plus the canonical Wave A runner/scorecard/report tables (`runCanonicalLadderWaveA`) and the machine-checked doc-drift gate for `docs/simulations/sim-002-levels-1-4.md`. Conformance proof: `tests/conformance/fixtures/ladder-wave-a.test.ts` + `packages/simulation/test/levels.test.ts`. The level hosts obey every determinism law above (byte-identical replay, honest glue recount, package-local token scan).

@@ -24,11 +24,14 @@ import {
   CatalogItemSchema,
   RealizationSchema,
   CandidateSetSchema,
+  ExperienceSchema,
+  RewardSpecSchema,
 } from "@reckon/contracts";
 import type {
   CandidateSet,
   CatalogItem,
   DecisionResult,
+  Experience,
   OutcomeEvent,
   PreferenceDelta,
   Realization,
@@ -41,6 +44,8 @@ export type PreferenceDeltaInput = z.input<typeof PreferenceDeltaSchema>;
 export type CatalogItemInput = z.input<typeof CatalogItemSchema>;
 export type RealizationInput = z.input<typeof RealizationSchema>;
 export type CandidateSetInput = z.input<typeof CandidateSetSchema>;
+export type ExperienceInput = z.input<typeof ExperienceSchema>;
+export type RewardSpecInput = z.input<typeof RewardSpecSchema>;
 
 /**
  * The public-surface operations the standard decision loop needs
