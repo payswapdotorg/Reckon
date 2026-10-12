@@ -5,3 +5,7 @@ packages:
 
 onlyBuiltDependencies:
   - esbuild
+  - "@embedded-postgres/linux-x64"
+allowBuilds:
+  esbuild: true
+  "@embedded-postgres/linux-x64": true

@@ -332,6 +332,70 @@ export const MIGRATIONS: readonly Migration[] = [
          WHERE status = 'pending'`,
     ],
   },
+  {
+    // AD-002: Personal Ad Memory (ADR-005) — one row per canonical
+    // AdMemoryRecord (recordId = admem-<contentDigest prefix>, derived by
+    // finalizeAdMemoryRecord — idempotent writes). Tenant+subject scoped
+    // BY CONSTRUCTION (same structural law as every table above). The
+    // record itself is persisted VERBATIM as canonical JSON in
+    // record_json; the remaining columns are index/audit projections of
+    // the parsed record (retention_state/basis_kind/expires_at/
+    // forgotten_at/permissions/provenance_kind), never a second schema.
+    //
+    // Upsert policy (the documented AD-002 freedom, ADR-005): at most
+    // ONE current (unsuperseded, non-forgotten) record per
+    // (tenant, workspace, subject, item_id) — enforced structurally by
+    // the ad_memory_records_current_item partial unique index. A
+    // re-encounter with new evidence inserts a new record (new digest)
+    // and marks the previous current row superseded_by_record_id —
+    // superseded rows stay verbatim for audit and never re-enter the
+    // remembered lane. Forgotten is TERMINAL (law 2): rows are updated
+    // in place to the forgotten retention and excluded from the
+    // current-item guard; no un-forget path exists.
+    //
+    // No location/attention/sensor column can exist (law 5) — evidence
+    // lives only inside record_json behind the frozen schema.
+    id: "m007_ad_memory",
+    name: "personal ad memory records (AD-002; tenant+subject scoped, (subject,item) current-upsert, terminal forget)",
+    sql: [
+      `CREATE TABLE IF NOT EXISTS ad_memory_records (
+  record_id        TEXT NOT NULL,
+  tenant_id        TEXT NOT NULL,
+  workspace_id     TEXT NOT NULL DEFAULT '',
+  subject_kind     TEXT NOT NULL,
+  subject_ref      TEXT NOT NULL,
+  item_id          TEXT NOT NULL,
+  lineage_advertiser_ref TEXT,
+  retention_state  TEXT NOT NULL CHECK (retention_state IN ('active','expired','forgotten')),
+  basis_kind       TEXT NOT NULL,
+  expires_at       BIGINT,
+  forgotten_at     BIGINT,
+  permission_retain  TEXT NOT NULL CHECK (permission_retain IN ('granted','revoked')),
+  permission_present TEXT NOT NULL CHECK (permission_present IN ('granted','revoked')),
+  provenance_kind  TEXT NOT NULL CHECK (provenance_kind IN ('observed-encounter','provider-supplied')),
+  recorded_at      BIGINT NOT NULL,
+  idempotency_key  TEXT,
+  record_json      JSONB NOT NULL,
+  content_digest   TEXT NOT NULL,
+  superseded_by_record_id TEXT,
+  superseded_at    BIGINT,
+  PRIMARY KEY (tenant_id, workspace_id, record_id)
+)`,
+      `CREATE INDEX IF NOT EXISTS ad_memory_records_remembered_lane
+         ON ad_memory_records (tenant_id, workspace_id, subject_kind, subject_ref, recorded_at)
+         WHERE superseded_by_record_id IS NULL AND retention_state = 'active'
+           AND permission_retain = 'granted' AND permission_present = 'granted'`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS ad_memory_records_current_item
+         ON ad_memory_records (tenant_id, workspace_id, subject_kind, subject_ref, item_id)
+         WHERE superseded_by_record_id IS NULL AND retention_state <> 'forgotten'`,
+      `CREATE INDEX IF NOT EXISTS ad_memory_records_subject_item
+         ON ad_memory_records (tenant_id, workspace_id, subject_kind, subject_ref, item_id)
+         WHERE retention_state <> 'forgotten'`,
+      `CREATE INDEX IF NOT EXISTS ad_memory_records_subject_advertiser
+         ON ad_memory_records (tenant_id, workspace_id, subject_kind, subject_ref, lineage_advertiser_ref)
+         WHERE retention_state <> 'forgotten' AND lineage_advertiser_ref IS NOT NULL`,
+    ],
+  },
 ];
 
 function migrationChecksum(migration: Migration): string {

@@ -12,7 +12,9 @@
  * DATABASE_URL during deployment verification.
  */
 import { beforeAll, describe, expect, it } from "vitest";
+import { AdForgetRequestSchema, finalizeAdMemoryRecord } from "@reckon/contracts";
 import {
+  PgAdMemoryStore,
   PgCatalogStore,
   PgContextStore,
   PgDecisionStore,
@@ -98,6 +100,63 @@ describe("P1-001 restart durability — Gate L at adapter level", () => {
     const claimed = await jobs.claim("durable-worker", 9_000_000_000);
     expect(claimed?.jobId).toBe("durable-job-1");
 
+    // AD-002: Personal Ad Memory — the state that must survive the restart
+    // below: a current record, its superseded predecessor (re-encounter),
+    // a forgotten tombstone, and an append-only permission history.
+    const adStore = new PgAdMemoryStore(executor);
+    const adMemoryContent = (outcomeEventId: string, recordedAt: number, itemId: string) => ({
+      tenant: tenantA,
+      subject,
+      ad: { itemId, kind: "advertising" as const, labels: ["travel"], attributes: { headline: "Durable hotel ad" } },
+      realizations: [],
+      lineage: { source: "host-ad-server", advertiserRef: "adv-durable", campaignRef: "camp-d", creativeRefs: ["cr-d"] },
+      retention: {
+        state: "active" as const,
+        basis: { kind: "explicit-user-consent" as const, establishedAt: 1_000, basisRef: "consent-durable" },
+        retainedAt: 1_000,
+        expiresAt: 9_000_000,
+      },
+      permissions: { retain: "granted" as const, present: "granted" as const, history: [] },
+      provenance: {
+        kind: "observed-encounter" as const,
+        evidence: {
+          outcomeEventId,
+          evidenceClass: "production-observed" as const,
+          encounteredAt: 1_000,
+          context: { contextId: "ctx-durable" },
+          surface: "in-stream",
+        },
+      },
+      rights: { redistributionPermitted: false, gates: ["host-rights-gate"], usageRestrictions: [] },
+      recordedAt,
+    });
+    const adFirst = finalizeAdMemoryRecord(adMemoryContent("durable-enc-1", 10_000, "durable-ad-1"));
+    const adSecond = finalizeAdMemoryRecord(adMemoryContent("durable-enc-2", 20_000, "durable-ad-1")); // re-encounter: supersedes adFirst
+    await adStore.put(adFirst);
+    await adStore.put(adSecond);
+    const adForgettable = finalizeAdMemoryRecord(adMemoryContent("durable-enc-3", 30_000, "durable-ad-2"));
+    await adStore.put(adForgettable);
+    const adForgotten = await adStore.forget(
+      AdForgetRequestSchema.parse({
+        requestId: "durable-forget-1",
+        tenant: tenantA,
+        subject,
+        target: { kind: "record", recordId: adForgettable.recordId },
+        reason: "restart-durability forget",
+        at: 40_000,
+        idempotencyKey: "durable-forget-idem",
+      }),
+    );
+    expect(adForgotten.forgottenCount).toBe(1);
+    // present-revoke on the current record — the history must survive restart
+    await adStore.applyPermissionTransition(tenantA, adSecond.recordId, {
+      capability: "present",
+      from: "granted",
+      to: "revoked",
+      at: 50_000,
+      reason: "paused for restart",
+    });
+
     // ---------------- Phase 2: full server stop → restart ----------------
     const executor2: PgPoolExecutor = await server.restart();
 
@@ -145,5 +204,38 @@ describe("P1-001 restart durability — Gate L at adapter level", () => {
     const job = await new PgResearchJobStore(executor2, clock).get("durable-job-1");
     expect(job?.state).toBe("leased");
     expect(job?.leaseOwner).toBe("durable-worker");
+
+    // AD-002: ad memory reads identically after the full restart —
+    // current record verbatim (with its permission history), the
+    // superseded predecessor still readable by id, the forgotten
+    // tombstone unretrievable forever, and the lane answering correctly.
+    const adStore2 = new PgAdMemoryStore(executor2);
+    const adCurrent = await adStore2.get(tenantA, adSecond.recordId);
+    expect(adCurrent?.recordId).toBe(adSecond.recordId);
+    expect(adCurrent?.provenance).toEqual(adSecond.provenance);
+    expect(adCurrent?.permissions.history).toEqual([
+      { capability: "present", from: "granted", to: "revoked", at: 50_000, reason: "paused for restart" },
+    ]);
+    expect(await adStore2.get(tenantA, adFirst.recordId)).toEqual(adFirst); // superseded row: verbatim, readable (audit)
+    // the lane: current record is present-revoked, predecessor superseded,
+    // tombstone forgotten → nothing retrievable at any clock after 50_000
+    expect(await adStore2.listRemembered(tenantA, subject, 60_000)).toHaveLength(0);
+    // re-granting present AFTER the restart works and the record returns
+    const regranted = await adStore2.applyPermissionTransition(tenantA, adSecond.recordId, {
+      capability: "present",
+      from: "revoked",
+      to: "granted",
+      at: 70_000,
+    });
+    expect(regranted.effect).toBe("updated");
+    expect((await adStore2.listRemembered(tenantA, subject, 80_000)).map((r) => r.recordId)).toEqual([
+      adSecond.recordId,
+    ]);
+    // the forgotten record stays unretrievable across the restart (law 2)
+    expect(await adStore2.get(tenantA, adForgettable.recordId)).toBeNull();
+    const resurrectAttempt = await adStore2.put(adForgettable);
+    expect(resurrectAttempt.outcome).toBe("duplicate");
+    expect(resurrectAttempt.record).toBeNull();
+    expect(resurrectAttempt.forgottenAt).toBe(40_000);
   }, 180_000);
 });

@@ -85,3 +85,22 @@ export type {
   WebhookEventStore,
   WebhookDeliveryStore,
 } from "./webhook-stores.js";
+// AD-002: Personal Ad Memory persistence over the frozen AD-001
+// contracts (ADR-005) — the production PostgreSQL store + the in-memory
+// TEST-INFRASTRUCTURE implementation of the same port (production =
+// PostgreSQL per ADR-001; the m007_ad_memory migration carries the
+// tenant+subject-scoped table with the terminal-forget and
+// (subject,item) current-upsert laws).
+export {
+  PgAdMemoryStore,
+  InMemoryAdMemoryStore,
+  AdMemoryRecordInvalidError,
+  AdMemoryWriteConflictError,
+  AdMemoryTransitionRejectedError,
+} from "./ad-memory-store.js";
+export type {
+  AdMemoryStore,
+  AdMemoryPutResult,
+  AdMemoryTransitionResult,
+  RememberedAdMemoryQuery,
+} from "./ad-memory-store.js";
