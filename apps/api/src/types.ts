@@ -31,6 +31,8 @@ export type Parsed<S> = S extends Validator<infer T> ? T : never;
  * skeleton requires it yet, but the scope exists so key provisioning can
  * already express it. `webhooks` (S2-002) gates the /v1/webhooks route
  * family (endpoint CRUD, event retrieval, replay, delivery log).
+ * `ads` (AD-003) gates the /v1/ads route family (ad retrieval query +
+ * forget over Personal Ad Memory and availability channels).
  */
 export const ROUTE_SCOPES = [
   "decisions",
@@ -41,6 +43,7 @@ export const ROUTE_SCOPES = [
   "agents",
   "integrations",
   "webhooks",
+  "ads",
 ] as const;
 export type Scope = (typeof ROUTE_SCOPES)[number];
 

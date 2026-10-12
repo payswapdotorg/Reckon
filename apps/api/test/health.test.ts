@@ -45,6 +45,8 @@ describe("GET /readyz", () => {
     "researchHandler",
     "integrationHandler",
     "webhookHandler",
+    // AD-003: the ads route family's port (query + forget).
+    "adRetrievalHandler",
   ];
 
   it("default server reports every handler port as not-wired", async () => {

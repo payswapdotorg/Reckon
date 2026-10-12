@@ -39,6 +39,7 @@ import {
   PgAccountKeyStore,
   PgAccountSessionStore,
   PgAccountStore,
+  PgAdMemoryStore,
   PgCatalogStore,
   PgContextStore,
   PgDecisionStore,
@@ -79,6 +80,15 @@ import { PgObservabilitySink } from "./pg-observability.js";
 // (m006_webhooks) creates the tenant-scoped tables + indexes.
 import { createInMemoryWebhookSystem } from "./webhooks/in-memory.js";
 import { FetchWebhookHttpClient } from "./webhooks/http.js";
+// AD-003: the ad-retrieval runtime — the /v1/ads route family over the
+// AD-002 Personal Ad Memory store port (PgAdMemoryStore in production)
+// plus the host/provider availability channels composed for the
+// available lane (none by default — an honest empty lane, never faked
+// supply; see docs/architecture/ad-retrieval.md).
+import {
+  createRuntimeAdRetrievalHandler,
+  type AdAvailabilityChannel,
+} from "./ad-retrieval.js";
 
 /** Composition clock: host wall-clock in production, manual in tests. */
 export type CompositionClock = { now(): number };
@@ -110,6 +120,15 @@ export interface ProductionCompositionOptions {
    * assert delivery semantics without a real receiver URL.
    */
   readonly webhookHttpClient?: import("./webhooks/ports.js").WebhookHttpClient;
+  /**
+   * AD-003: host/provider availability channels for the /v1/ads query
+   * AVAILABLE lane (the AdAvailability surface — declarations, never
+   * observations). Absent/empty = the lane is honestly empty with a
+   * disclosed note (never faked supply, never catalog-derived
+   * availability — rights are never inferred from catalog presence,
+   * architecture-lock #23).
+   */
+  readonly adAvailabilityChannels?: readonly AdAvailabilityChannel[];
 }
 
 export interface ProductionComposition {
@@ -135,6 +154,8 @@ export interface ProductionComposition {
     readonly webhookEndpoints: PgWebhookEndpointStore;
     readonly webhookEvents: PgWebhookEventStore;
     readonly webhookDeliveries: PgWebhookDeliveryStore;
+    // AD-003: Personal Ad Memory (the remembered-lane source for /v1/ads).
+    readonly adMemory: PgAdMemoryStore;
   };
   close(): Promise<void>;
 }
@@ -523,6 +544,10 @@ export async function buildProductionServer(
   const preferences = new PgPreferenceStore(executor);
   const events = new PgEventQueries(executor);
   const idempotency = new PgIdempotencyStore(executor);
+  // AD-003: Personal Ad Memory over the same SqlExecutor port (the
+  // m007_ad_memory migration ships with applyMigrations — same boot
+  // discipline as every other store; no ad-specific boot code).
+  const adMemory = new PgAdMemoryStore(executor);
 
   const sink = new PgEventSink({ executor });
   // TL6-001: the self-serve account surface — real durable stores (ADR-001;
@@ -663,6 +688,15 @@ export async function buildProductionServer(
         return item;
       },
     },
+    // AD-003: the ad-retrieval runtime — remembered lane through the
+    // AD-002 store port, available lane through the composed host
+    // availability channels (honest empty lane when none are wired).
+    adRetrievalHandler: createRuntimeAdRetrievalHandler({
+      store: adMemory,
+      ...(options.adAvailabilityChannels !== undefined && options.adAvailabilityChannels.length > 0
+        ? { channels: options.adAvailabilityChannels }
+        : {}),
+    }),
     realizationIngest: {
       ingest: async (realization: Realization, auth: AuthContext) => {
         await catalog.putRealization(authTenantScope(auth), realization);
@@ -744,6 +778,10 @@ export async function buildProductionServer(
       webhookEndpoints,
       webhookEvents,
       webhookDeliveries,
+      // AD-003: Personal Ad Memory — exposed for direct test/e2e
+      // assertions (the route family reaches it through the wired
+      // adRetrievalHandler).
+      adMemory,
     },
     async close() {
       await app.close();

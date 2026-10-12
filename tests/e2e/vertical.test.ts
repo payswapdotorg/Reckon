@@ -233,9 +233,10 @@ describe("W3 e2e vertical — SDK → API → transport → store, with observab
 
       // 6. Observability: capability + decision (latency 25 from the
       //    injected clock) + scheduler-action + outcome-linkage records,
-      //    digest-verified on read.
+      //    digest-verified on read. (15 = the 14 pre-AD-003 ports + the
+      //    adRetrievalHandler capability, emitted even when not-wired.)
       const records = new JsonlFileObservabilitySink(observabilityPath).readAll();
-      expect(records.filter((r) => r.kind === "integration-capability")).toHaveLength(14);
+      expect(records.filter((r) => r.kind === "integration-capability")).toHaveLength(15);
       const decisionRecord = records.find((r) => r.kind === "decision");
       expect(decisionRecord).toMatchObject({
         decisionId: decision.decisionId,

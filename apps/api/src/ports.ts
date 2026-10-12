@@ -1,4 +1,8 @@
 import type {
+  AdForgetRequest,
+  AdForgetResult,
+  AdQueryRequest,
+  AdQueryResult,
   AgentBody,
   AgentOrganization,
   CandidateSet,
@@ -152,6 +156,23 @@ export interface ExperienceResolveHandler {
 }
 
 /**
+ * Ad retrieval surface port (AD-003): the /v1/ads route family over the
+ * FROZEN ad contracts (ADR-005) — the retrieval query over both
+ * provenance lanes (Personal Ad Memory through the AD-002 store port +
+ * host/provider availability channels) and the terminal forget.
+ * Implementations compose the AD-002 AdMemoryStore port (see
+ * src/ad-retrieval.ts createRuntimeAdRetrievalHandler); the route
+ * pipeline validates both request contracts and asserts the tenant law
+ * before any method runs.
+ */
+export interface AdRetrievalHandler {
+  /** POST /v1/ads/query — AdQueryRequest → AdQueryResult (mode-consistent lanes, caller clock `at`). */
+  query(request: AdQueryRequest, auth: AuthContext): Promise<AdQueryResult>;
+  /** POST /v1/ads/forget — AdForgetRequest → AdForgetResult (terminal, audit-preserving; law 2). */
+  forget(request: AdForgetRequest, auth: AuthContext): Promise<AdForgetResult>;
+}
+
+/**
  * Webhook endpoint-registration input (S2-002): the validated
  * WebhookEndpointCreate body — url, optional description, event-type
  * filter (EMPTY = every event type; entries validated against the
@@ -215,6 +236,8 @@ export interface HandlerPorts {
   experienceResolver: ExperienceResolveHandler;
   /** S2-002: webhook endpoints/events/replay/delivery-log (NotWired default until a composition mounts it). */
   webhookHandler: WebhookHandler;
+  /** AD-003: ad retrieval query + forget (NotWired default until a composition mounts it). */
+  adRetrievalHandler: AdRetrievalHandler;
 }
 
 export type PartialHandlerPorts = Partial<HandlerPorts>;
@@ -265,6 +288,10 @@ export function notWiredDefaults(): HandlerPorts {
       getEvent: async () => notWired("WebhookHandler", "getEvent"),
       replayEvent: async () => notWired("WebhookHandler", "replayEvent"),
       listDeliveries: async () => notWired("WebhookHandler", "listDeliveries"),
+    },
+    adRetrievalHandler: {
+      query: async () => notWired("AdRetrievalHandler", "query"),
+      forget: async () => notWired("AdRetrievalHandler", "forget"),
     },
   };
 }

@@ -10,9 +10,11 @@
  */
 import type { FastifyInstance } from "fastify";
 import { buildServer } from "../../../apps/api/src/index.js";
+import { createRuntimeAdRetrievalHandler } from "../../../apps/api/src/index.js";
 import type { HandlerPorts } from "../../../apps/api/src/ports.js";
 import type { ApiConfig } from "../../../apps/api/src/config.js";
 import type { StaticKeyConfig } from "../../../apps/api/src/auth.js";
+import { InMemoryAdMemoryStore } from "../../../packages/persistence/src/index.js";
 import {
   createInMemoryWebhookSystem,
   ManualWebhookClock,
@@ -83,6 +85,8 @@ export interface HarnessState {
   resolveCalls: number;
   outcomeTenants: string[];
   decisions: Map<string, DecisionResult>;
+  /** AD-003: the in-memory Personal Ad Memory behind the ads route family. */
+  adMemory: InMemoryAdMemoryStore;
 }
 
 export function newHarnessState(): HarnessState {
@@ -98,6 +102,7 @@ export function newHarnessState(): HarnessState {
     resolveCalls: 0,
     outcomeTenants: [],
     decisions: new Map<string, DecisionResult>(),
+    adMemory: new InMemoryAdMemoryStore(),
   };
 }
 
@@ -260,6 +265,12 @@ export function deterministicHandlers(state: HarnessState): HandlerPorts {
       replayEvent: async () => null,
       listDeliveries: async () => [],
     },
+    // AD-003: the REAL ad-retrieval runtime over the in-memory Personal
+    // Ad Memory (the AD-002 test-infrastructure twin) — no availability
+    // channels by default (the honest empty available lane); ads tests
+    // seed memory through state.adMemory and may override the whole
+    // port via buildHarness({ handlers: { adRetrievalHandler } }).
+    adRetrievalHandler: createRuntimeAdRetrievalHandler({ store: state.adMemory }),
   };
 }
 

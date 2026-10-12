@@ -248,7 +248,9 @@ describe("W3-009 cross-domain E2E — four-domain vertical through the real runt
         expect(
           records.filter((record) => record.kind === "integration-capability" && record.available).length,
         ).toBe(7);
-        expect(records.filter((record) => record.kind === "integration-capability")).toHaveLength(14);
+        // 15 = the 14 pre-AD-003 ports + the adRetrievalHandler capability
+        // (emitted even when not-wired; this composition does not wire it).
+        expect(records.filter((record) => record.kind === "integration-capability")).toHaveLength(15);
         expect(records.filter((record) => record.kind === "error")).toHaveLength(0);
       } finally {
         await app.destroy();

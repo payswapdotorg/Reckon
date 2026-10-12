@@ -32,6 +32,7 @@ export { ROUTE_SCOPES } from "./types.js";
 export type { AuthContext, Parsed, SafeParseResult, SchemaIssue, Scope, Validator } from "./types.js";
 export { notWiredDefaults } from "./ports.js";
 export type {
+  AdRetrievalHandler,
   CandidatesHandler,
   CatalogItemIngestHandler,
   CatalogReader,
@@ -120,4 +121,17 @@ export type {
   ProductionCompositionOptions,
   CompositionClock,
 } from "./composition.js";
+// AD-003: the ad-retrieval engine — the runtime handler factory over the
+// AD-002 store port + the host/provider availability-channel seam for
+// the available lane, plus the deterministic lexical term extractor.
+export {
+  AdAvailabilitySupplySchema,
+  createRuntimeAdRetrievalHandler,
+  extractAdQueryTerms,
+} from "./ad-retrieval.js";
+export type {
+  AdAvailabilityChannel,
+  AdAvailabilitySupply,
+  AdRetrievalRuntimeOptions,
+} from "./ad-retrieval.js";
 export { PgObservabilitySink } from "./pg-observability.js";

@@ -25,6 +25,8 @@ import { registerPlanRoutes } from "./routes/plans.js";
 import { registerPreferenceRoutes } from "./routes/preferences.js";
 import { registerResearchRoutes } from "./routes/research.js";
 import { registerWebhookRoutes } from "./routes/webhooks.js";
+// AD-003: the /v1/ads route family (ad retrieval query + forget).
+import { registerAdsRoutes } from "./routes/ads.js";
 import type { RouteDeps } from "./routes/shared.js";
 import {
   webhookEmittingDecisionHandler,
@@ -238,6 +240,7 @@ export function buildServer(config: ApiConfig): FastifyInstance {
   registerResearchRoutes(app, deps);
   registerIntegrationRoutes(app, deps);
   registerWebhookRoutes(app, deps);
+  registerAdsRoutes(app, deps);
 
   return app;
 }

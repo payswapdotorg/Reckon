@@ -4,6 +4,8 @@ import type { ApiConfig } from "../src/config.js";
 import type { StaticKeyConfig } from "../src/auth.js";
 import { KeyStore } from "../src/auth.js";
 import type { HandlerPorts } from "../src/ports.js";
+import { createRuntimeAdRetrievalHandler } from "../src/ad-retrieval.js";
+import { InMemoryAdMemoryStore } from "@reckon/persistence";
 import { createInMemoryWebhookSystem } from "../src/webhooks/in-memory.js";
 import type { WebhookHttpClient } from "../src/webhooks/ports.js";
 import type { AuthContext } from "../src/types.js";
@@ -213,6 +215,8 @@ export interface StubState {
   observedModes: string[];
   /** The tenant scopes the catalog reader observed (proves tenant scoping). */
   catalogReaderTenants: string[];
+  /** AD-003: the in-memory Personal Ad Memory behind the ads route family. */
+  adMemory: InMemoryAdMemoryStore;
 }
 
 export function stubHandlers(state: StubState): HandlerPorts {
@@ -357,6 +361,10 @@ export function stubHandlers(state: StubState): HandlerPorts {
       },
     },
     webhookHandler,
+    // AD-003: the REAL ad-retrieval runtime over the in-memory Personal
+    // Ad Memory (no availability channels — ads tests override this port
+    // or seed state.adMemory directly).
+    adRetrievalHandler: createRuntimeAdRetrievalHandler({ store: state.adMemory }),
   };
 }
 
@@ -376,6 +384,7 @@ export function newStubState(): StubState {
     catalogItems: new Map<string, CatalogItem>(),
     observedModes: [],
     catalogReaderTenants: [],
+    adMemory: new InMemoryAdMemoryStore(),
   };
 }
 

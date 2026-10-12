@@ -38,6 +38,8 @@ export {
 } from "./client.js";
 export type {
   AdapterDeclarationView,
+  AdForgetRequestInput,
+  AdQueryRequestInput,
   AgentBody,
   AgentBodyInput,
   ResearchJobInput,
@@ -138,6 +140,10 @@ export type {
 // Contract types are re-exported for consumer convenience (types ONLY —
 // frozen public contracts, never internal persistence shapes).
 export type {
+  AdForgetRequest,
+  AdForgetResult,
+  AdQueryRequest,
+  AdQueryResult,
   CandidateSet,
   CatalogItem,
   DecisionRequest,

@@ -25,6 +25,10 @@ import {
   LoginRequestSchema,
   SessionTokenSchema,
   SignupRequestSchema,
+  AdForgetRequestSchema,
+  AdForgetResultSchema,
+  AdQueryRequestSchema,
+  AdQueryResultSchema,
   AgentBodySchema,
   AgentOrganizationSchema,
   ApiVersionSchema,
@@ -57,6 +61,8 @@ import type {
   AccountKey,
   AccountKeyCreated,
   AccountSessionResponse,
+  AdForgetResult,
+  AdQueryResult,
   CandidateSet,
   CatalogItem,
   DecisionResult,
@@ -166,6 +172,15 @@ export type AgentOrganizationInput = z.input<typeof AgentOrganizationSchema>;
 export type CatalogItemInput = z.input<typeof CatalogItemSchema>;
 export type RealizationInput = z.input<typeof RealizationSchema>;
 export type CandidateSetInput = z.input<typeof CandidateSetSchema>;
+
+/* ------------------------------------------------------------------ *
+ * AD-003 — Personal Ad Memory retrieval surface                        *
+ * ------------------------------------------------------------------ */
+
+/** POST /v1/ads/query input (the frozen AdQueryRequest's own optional/defaulted shape). */
+export type AdQueryRequestInput = z.input<typeof AdQueryRequestSchema>;
+/** POST /v1/ads/forget input (the frozen AdForgetRequest's own shape — body idempotencyKey REQUIRED). */
+export type AdForgetRequestInput = z.input<typeof AdForgetRequestSchema>;
 
 /* ------------------------------------------------------------------ *
  * TL6-001 — self-serve account surface (session-token auth)           *
@@ -558,6 +573,36 @@ export interface ReckonClient {
     /** DELETE /v1/account/keys/{keyId} — revoke (204); the key stops authenticating immediately. */
     revokeAccountKey(sessionToken: string, keyId: string, options?: CallOptions): Promise<void>;
   };
+  /**
+   * AD-003: the /v1/ads route family (scope: ads) — retrieval query
+   * over Personal Ad Memory (remembered lane) + host/provider
+   * availability channels (available lane), and the terminal forget.
+   * The caller-supplied `at` clock is REQUIRED on both requests.
+   */
+  readonly ads: {
+    /**
+     * POST /v1/ads/query — retrieval query. Mode `remembered` reads
+     * Personal Ad Memory; `available` reads provider-supplied supply;
+     * `both` (default) keeps the two lanes in separate arrays (law 9).
+     * The frozen contract's body-level idempotencyKey is OPTIONAL
+     * here; when the request omits it, the client sends a generated
+     * Idempotency-Key header (the route requires one or the other).
+     */
+    query(request: AdQueryRequestInput, options?: CallOptions): Promise<AdQueryResult>;
+    /**
+     * POST /v1/ads/forget — forget retained ads (record / item /
+     * advertiser / all targets). Terminal and audit-preserving (law 2);
+     * the frozen contract REQUIRES the body-level idempotencyKey.
+     */
+    forget(request: AdForgetRequestInput, options?: CallOptions): Promise<AdForgetResult>;
+  };
+  /**
+   * AD-003 order-named aliases: `queryAds`/`forgetAds` delegate to the
+   * `ads` family (`reckon.ads.query` / `reckon.ads.forget`) — kept as
+   * top-level conveniences for the work-order's literal method names.
+   */
+  queryAds(request: AdQueryRequestInput, options?: CallOptions): Promise<AdQueryResult>;
+  forgetAds(request: AdForgetRequestInput, options?: CallOptions): Promise<AdForgetResult>;
 }
 
 /* ------------------------------------------------------------------ *
@@ -1241,6 +1286,50 @@ export function createReckonClient(options: ReckonClientOptions): ReckonClient {
         });
       },
     },
+    // AD-003: the /v1/ads route family — full request/response pipeline
+    // against the frozen ad contracts on both sides, typed errors
+    // surfaced, zero internal imports (only @reckon/contracts shapes).
+    ads: {
+      query: async (queryRequest, callOptions) => {
+        // The frozen AdQueryRequest carries an OPTIONAL body-level
+        // idempotencyKey; the route requires either that key or the
+        // Idempotency-Key header (the platform's body-key convention).
+        // The body key is authoritative when present — echo it in the
+        // header (an exact match is always accepted); otherwise send a
+        // generated/explicit header key so callers never trip the 400.
+        const effectiveKey =
+          queryRequest.idempotencyKey ?? callOptions?.idempotencyKey ?? idGenerator();
+        return request<z.output<typeof AdQueryRequestSchema>, AdQueryResult>({
+          method: "POST",
+          path: "/v1/ads/query",
+          requestSchema: AdQueryRequestSchema,
+          requestBody: queryRequest,
+          responseSchema: AdQueryResultSchema,
+          responseContract: "reckon.ad-query-request → reckon.ad-query-result",
+          headers: {
+            "idempotency-key": headerIdempotencyKey(effectiveKey),
+            ...(callOptions?.headers ?? {}),
+          },
+        });
+      },
+      forget: async (forgetRequest, callOptions) =>
+        // The frozen AdForgetRequest REQUIRES the body-level
+        // idempotencyKey (the decisions/outcomes convention) — no
+        // header fallback is needed or sent.
+        request<z.output<typeof AdForgetRequestSchema>, AdForgetResult>({
+          method: "POST",
+          path: "/v1/ads/forget",
+          requestSchema: AdForgetRequestSchema,
+          requestBody: forgetRequest,
+          responseSchema: AdForgetResultSchema,
+          responseContract: "reckon.ad-forget-request → reckon.ad-forget-result",
+          headers: { ...(callOptions?.headers ?? {}) },
+        }),
+    },
+    // AD-003 order-named aliases (queryAds/forgetAds) — thin delegations
+    // to the ads family above.
+    queryAds: (queryRequest, callOptions) => client.ads.query(queryRequest, callOptions),
+    forgetAds: (forgetRequest, callOptions) => client.ads.forget(forgetRequest, callOptions),
   };
   return client;
 }

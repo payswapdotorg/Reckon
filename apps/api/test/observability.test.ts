@@ -151,8 +151,10 @@ describe("W3-004 apps/api — records flow from the composition root", () => {
 
     const records = sink.records();
     // 9 capability records + decision + scheduler-action + outcome-linkage
-    // + the S2-002 webhook-handler capability (not-wired by default).
-    expect(records.filter((r) => r.kind === "integration-capability")).toHaveLength(14);
+    // + the S2-002 webhook-handler capability + the AD-003
+    // ad-retrieval-handler capability (both emitted even when not-wired —
+    // every port of the HandlerPorts map is recorded).
+    expect(records.filter((r) => r.kind === "integration-capability")).toHaveLength(15);
 
     const decision = records.find((r) => r.kind === "decision");
     expect(decision).toMatchObject({
@@ -338,7 +340,8 @@ describe("W3-004 apps/api — records flow from the composition root", () => {
       expect(response.statusCode).toBe(200);
 
       const records: readonly ObservabilityRecord[] = new JsonlFileObservabilitySink(path).readAll();
-      expect(records.filter((r) => r.kind === "integration-capability")).toHaveLength(14);
+      // 15 = the 14 pre-AD-003 capabilities + adRetrievalHandler.
+      expect(records.filter((r) => r.kind === "integration-capability")).toHaveLength(15);
       expect(records.find((r) => r.kind === "decision")).toMatchObject({ latencyMs: 42, status: "ok" });
       expect(records.find((r) => r.kind === "scheduler-action")).toBeDefined();
     } finally {
