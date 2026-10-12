@@ -1,0 +1,305 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "default": "reckon.complete.capability-manifest",
+      "type": "string",
+      "const": "reckon.complete.capability-manifest"
+    },
+    "schemaVersion": {
+      "default": "0.1.0",
+      "type": "string"
+    },
+    "manifestId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "manifestVersion": {
+      "default": "1",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "hostSystem": {
+      "type": "object",
+      "properties": {
+        "hostId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "hostAdapterId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "hostId",
+        "name",
+        "hostAdapterId",
+        "version"
+      ]
+    },
+    "declaredAt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "supportedCapabilities": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "capability": {
+                "type": "string",
+                "enum": [
+                  "tenant-identity",
+                  "catalog-registration",
+                  "realization-declaration",
+                  "candidate-retrieval",
+                  "context-snapshots",
+                  "objective-declaration",
+                  "constraint-declaration",
+                  "attention-policy",
+                  "decision-request",
+                  "decision-retrieval",
+                  "experience-resolution",
+                  "plan-management",
+                  "schedule-execution",
+                  "outcome-return",
+                  "preference-feedback",
+                  "evidence-retrieval",
+                  "webhook-delivery",
+                  "ad-memory",
+                  "agent-delegation",
+                  "conformance-verification"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "const": "supported"
+              },
+              "evidenceClass": {
+                "type": "string",
+                "enum": [
+                  "fixture",
+                  "controlled-local",
+                  "staging",
+                  "production-observed",
+                  "simulated",
+                  "counterfactual"
+                ]
+              },
+              "apiOperations": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "sdkMethods": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            },
+            "required": [
+              "capability",
+              "status",
+              "evidenceClass"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "capability": {
+                "type": "string",
+                "enum": [
+                  "tenant-identity",
+                  "catalog-registration",
+                  "realization-declaration",
+                  "candidate-retrieval",
+                  "context-snapshots",
+                  "objective-declaration",
+                  "constraint-declaration",
+                  "attention-policy",
+                  "decision-request",
+                  "decision-retrieval",
+                  "experience-resolution",
+                  "plan-management",
+                  "schedule-execution",
+                  "outcome-return",
+                  "preference-feedback",
+                  "evidence-retrieval",
+                  "webhook-delivery",
+                  "ad-memory",
+                  "agent-delegation",
+                  "conformance-verification"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "const": "partial"
+              },
+              "evidenceClass": {
+                "type": "string",
+                "enum": [
+                  "fixture",
+                  "controlled-local",
+                  "staging",
+                  "production-observed",
+                  "simulated",
+                  "counterfactual"
+                ]
+              },
+              "friction": {
+                "type": "string",
+                "enum": [
+                  "CONTRACT_GAP",
+                  "API_GAP",
+                  "SDK_GAP",
+                  "COMPOSITION_GAP",
+                  "PERSISTENCE_GAP",
+                  "CAPABILITY_GAP",
+                  "ADAPTER_GAP",
+                  "OBSERVABILITY_GAP",
+                  "UX_DX_GAP",
+                  "HOST_RESPONSIBILITY",
+                  "RIGHTS_POLICY_BOUNDARY"
+                ]
+              },
+              "apiOperations": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "sdkMethods": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            },
+            "required": [
+              "capability",
+              "status",
+              "evidenceClass",
+              "friction"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "capability": {
+                "type": "string",
+                "enum": [
+                  "tenant-identity",
+                  "catalog-registration",
+                  "realization-declaration",
+                  "candidate-retrieval",
+                  "context-snapshots",
+                  "objective-declaration",
+                  "constraint-declaration",
+                  "attention-policy",
+                  "decision-request",
+                  "decision-retrieval",
+                  "experience-resolution",
+                  "plan-management",
+                  "schedule-execution",
+                  "outcome-return",
+                  "preference-feedback",
+                  "evidence-retrieval",
+                  "webhook-delivery",
+                  "ad-memory",
+                  "agent-delegation",
+                  "conformance-verification"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "const": "gap"
+              },
+              "friction": {
+                "type": "string",
+                "enum": [
+                  "CONTRACT_GAP",
+                  "API_GAP",
+                  "SDK_GAP",
+                  "COMPOSITION_GAP",
+                  "PERSISTENCE_GAP",
+                  "CAPABILITY_GAP",
+                  "ADAPTER_GAP",
+                  "OBSERVABILITY_GAP",
+                  "UX_DX_GAP",
+                  "HOST_RESPONSIBILITY",
+                  "RIGHTS_POLICY_BOUNDARY"
+                ]
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            },
+            "required": [
+              "capability",
+              "status",
+              "friction"
+            ]
+          }
+        ]
+      }
+    },
+    "checksum": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "required": [
+    "manifestId",
+    "hostSystem",
+    "declaredAt",
+    "supportedCapabilities",
+    "checksum"
+  ],
+  "$id": "https://reckon.dev/schemas/reckon-complete-capability-manifest.schema.json"
+}

@@ -27,6 +27,11 @@ import {
   AdQueryResultSchema,
   AdForgetRequestSchema,
   AdForgetResultSchema,
+  ReckonCompleteProfileDeclarationSchema,
+  ReckonCompleteCapabilityManifestSchema,
+  ReckonCompleteConformanceVerdictSchema,
+  IntegrationEffortRecordSchema,
+  IntegrationEffortScorecardSchema,
 } from "./index.js";
 
 const OUT_DIR = join(import.meta.dirname, "..", "schemas");
@@ -50,6 +55,13 @@ const targets: Record<string, z.ZodTypeAny> = {
   "ad-query-result.schema.json": AdQueryResultSchema,
   "ad-forget-request.schema.json": AdForgetRequestSchema,
   "ad-forget-result.schema.json": AdForgetResultSchema,
+  // SIM-001: Reckon-Complete conformance profile contracts — additive
+  // registrations; every target above is unchanged.
+  "reckon-complete-profile-declaration.schema.json": ReckonCompleteProfileDeclarationSchema,
+  "reckon-complete-capability-manifest.schema.json": ReckonCompleteCapabilityManifestSchema,
+  "reckon-complete-conformance-verdict.schema.json": ReckonCompleteConformanceVerdictSchema,
+  "integration-effort-record.schema.json": IntegrationEffortRecordSchema,
+  "integration-effort-scorecard.schema.json": IntegrationEffortScorecardSchema,
 };
 
 mkdirSync(OUT_DIR, { recursive: true });

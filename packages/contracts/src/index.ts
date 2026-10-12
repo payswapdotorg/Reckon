@@ -40,3 +40,9 @@ export * from "./ads.js";
 // basis, rights, query modes, forget/expiry semantics, ad→CandidateSet
 // mapping) — additive extension; no existing exported shape above changes.
 export * from "./ads.js";
+// SIM-001: Reckon-Complete conformance profile contracts (profile
+// declaration, versioned+checksummed capability manifest, conformance
+// verdict, integration-effort record + scorecard, frozen capability/
+// evidence/friction vocabularies) — additive extension; no existing
+// exported shape above changes. See docs/simulations/reckon-complete-profile.md.
+export * from "./reckon-complete.js";

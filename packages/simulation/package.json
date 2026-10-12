@@ -1,15 +1,19 @@
 {
   "name": "@reckon/simulation",
   "version": "0.1.0",
-  "description": "Deterministic sequential simulator + world model (W1 lane)",
+  "description": "Deterministic sequential simulator + world model (W1 lane) and the Reckon-Complete common simulation harness (SIM-001)",
   "type": "module",
   "private": true,
   "main": "./src/index.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json --noEmit || true",
+    "build": "tsc -p tsconfig.json",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@reckon/contracts": "workspace:*"
+    "@reckon/contracts": "workspace:*",
+    "@reckon/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "zod": "^3.25.76"
   }
 }

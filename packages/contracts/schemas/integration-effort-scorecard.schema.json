@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "default": "reckon.complete.integration-effort-scorecard",
+      "type": "string",
+      "const": "reckon.complete.integration-effort-scorecard"
+    },
+    "schemaVersion": {
+      "default": "0.1.0",
+      "type": "string"
+    },
+    "scorecardId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "generatedAt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "aggregate": {
+      "type": "object",
+      "properties": {
+        "runCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "distinctHosts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "distinctLevels": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "medianGlueLoc": {
+          "type": "number",
+          "minimum": 0
+        },
+        "p95GlueLoc": {
+          "type": "number",
+          "minimum": 0
+        },
+        "medianFirstDecisionMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "p95FirstDecisionMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "medianFullLoopMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "p95FullLoopMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "medianLatencyP50Ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "p95LatencyP95Ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "meanCapabilityCoverageRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "totalFailures": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "totalRetries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "runCount",
+        "distinctHosts",
+        "distinctLevels",
+        "medianGlueLoc",
+        "p95GlueLoc",
+        "medianFirstDecisionMs",
+        "p95FirstDecisionMs",
+        "medianFullLoopMs",
+        "p95FullLoopMs",
+        "medianLatencyP50Ms",
+        "p95LatencyP95Ms",
+        "meanCapabilityCoverageRatio",
+        "totalFailures",
+        "totalRetries"
+      ]
+    },
+    "recurringGaps": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "capability": {
+            "type": "string",
+            "enum": [
+              "tenant-identity",
+              "catalog-registration",
+              "realization-declaration",
+              "candidate-retrieval",
+              "context-snapshots",
+              "objective-declaration",
+              "constraint-declaration",
+              "attention-policy",
+              "decision-request",
+              "decision-retrieval",
+              "experience-resolution",
+              "plan-management",
+              "schedule-execution",
+              "outcome-return",
+              "preference-feedback",
+              "evidence-retrieval",
+              "webhook-delivery",
+              "ad-memory",
+              "agent-delegation",
+              "conformance-verification"
+            ]
+          },
+          "friction": {
+            "type": "string",
+            "enum": [
+              "CONTRACT_GAP",
+              "API_GAP",
+              "SDK_GAP",
+              "COMPOSITION_GAP",
+              "PERSISTENCE_GAP",
+              "CAPABILITY_GAP",
+              "ADAPTER_GAP",
+              "OBSERVABILITY_GAP",
+              "UX_DX_GAP",
+              "HOST_RESPONSIBILITY",
+              "RIGHTS_POLICY_BOUNDARY"
+            ]
+          },
+          "ladderLevels": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            }
+          },
+          "domainCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "runCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "platformUpgradeCandidate": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "capability",
+          "friction",
+          "ladderLevels",
+          "domainCount",
+          "runCount",
+          "platformUpgradeCandidate"
+        ]
+      }
+    },
+    "records": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "recordId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          },
+          "runId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          },
+          "hostAdapterId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          },
+          "ladderLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          },
+          "recordChecksum": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "recordId",
+          "runId",
+          "hostAdapterId",
+          "recordChecksum"
+        ]
+      }
+    },
+    "checksum": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "required": [
+    "scorecardId",
+    "generatedAt",
+    "aggregate",
+    "records",
+    "checksum"
+  ],
+  "$id": "https://reckon.dev/schemas/integration-effort-scorecard.schema.json"
+}

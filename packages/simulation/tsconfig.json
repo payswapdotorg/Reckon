@@ -3,13 +3,17 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "noEmit": true,
+    "noEmit": false,
     "types": [
       "node"
     ]
   },
   "include": [
-    "src/**/*.ts",
-    "test/**/*.ts"
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "test",
+    "dist",
+    "node_modules"
   ]
 }
