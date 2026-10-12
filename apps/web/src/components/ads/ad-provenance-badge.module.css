@@ -1,0 +1,54 @@
+/* AdProvenanceBadge — law 9: three visually-distinct origin treatments.
+ *
+ * Hue + border-style + icon triple-differentiation (the
+ * EvidenceClassBadge accessibility law); hues derive from the reference
+ * chart palette (§3): chart-1 green (remembered — grounded in memory),
+ * chart-4 teal (retrieved — memory seeded from supply), chart-5 gray
+ * (provider-supplied — a declaration, dashed = not an observation).
+ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.icon {
+  flex: none;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+/* remembered — grounded in Personal Ad Memory via an OBSERVED encounter
+ * (chart-1 green family, SOLID border = grounded). */
+.remembered {
+  color: #00795a;
+  background-color: #e7f4ee;
+  border: 1px solid color-mix(in srgb, var(--chart-1) 38%, transparent);
+}
+
+/* retrieved — held in memory, seeded from supply (chart-4 teal family,
+ * DASHED border = seeded, not observed). */
+.retrieved {
+  color: #00776c;
+  background-color: #e6f4f3;
+  border: 1px dashed color-mix(in srgb, var(--chart-4) 45%, transparent);
+}
+
+/* provider-supplied — a channel's availability declaration, never an
+ * observation, never in memory (chart-5 gray family, dashed). */
+.providerSupplied {
+  color: #4b4b55;
+  background-color: #ececf1;
+  border: 1px dashed #a9a9b3;
+}

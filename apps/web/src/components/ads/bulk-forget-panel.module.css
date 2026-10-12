@@ -1,0 +1,107 @@
+/* BulkForgetPanel — the retention workspace's bulk forget controls.
+ * Radio group + ref input + optional reason, then the mode-gated forget
+ * button and the inline outcome banner (ok/failed treatments like the
+ * api-keys manager). */
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.kindControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+}
+
+.kindOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+.kindOption input {
+  accent-color: var(--primary);
+  margin: 0;
+}
+
+.refWrap,
+.reasonWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 420px;
+}
+
+.label {
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.input {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--input);
+  background-color: var(--secondary);
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 18px;
+  transition:
+    border-color var(--transition),
+    background-color var(--transition);
+}
+
+.input::placeholder {
+  color: var(--muted-foreground);
+  font-family: var(--font-sans);
+}
+
+.input:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+  background-color: var(--card);
+}
+
+.actionRow {
+  margin-top: 4px;
+}
+
+.validation {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+.outcomeOk,
+.outcomeFailed {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.outcomeOk {
+  background-color: #e7f4ee;
+  border: 1px solid color-mix(in srgb, var(--chart-1) 38%, transparent);
+  color: #00795a;
+}
+
+.outcomeFailed {
+  background-color: var(--destructive-tint);
+  border: 1px solid var(--destructive-border-soft);
+  color: var(--destructive);
+}

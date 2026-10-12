@@ -1,0 +1,101 @@
+/* AdDetail — the record workspace: fact cards in the foundation card
+ * language, with the permission grants, append-only history and the
+ * terminal forget affordance. */
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.marksRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.granted {
+  color: #00795a;
+}
+
+.revoked {
+  color: var(--destructive);
+}
+
+.historyBlock {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.historyTitle {
+  margin: 0;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.historyList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.historyItem {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.forgetRow {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.forgetNote {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+  max-width: 640px;
+}
+
+.outcomeOk,
+.outcomeFailed {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.outcomeOk {
+  background-color: #e7f4ee;
+  border: 1px solid color-mix(in srgb, var(--chart-1) 38%, transparent);
+  color: #00795a;
+}
+
+.outcomeFailed {
+  background-color: var(--destructive-tint);
+  border: 1px solid var(--destructive-border-soft);
+  color: var(--destructive);
+}

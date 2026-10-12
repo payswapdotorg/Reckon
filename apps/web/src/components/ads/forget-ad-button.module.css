@@ -1,0 +1,6 @@
+/* ForgetAdButton — the terminal forget affordance. Mirrors the
+ * revoke-key-button conventions: compact ghost variant for dense rows. */
+
+.compact {
+  /* row-variant sizing handled by the button's sm size */
+}

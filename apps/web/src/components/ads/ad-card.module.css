@@ -1,0 +1,117 @@
+/* AdCard — one ad, one card. The card header carries the two always-on
+ * marks (law 8 AdvertisingMark + law 9 AdProvenanceBadge); the body is
+ * the foundation row language. Provider-supplied cards get a subtle
+ * dashed left edge echoing the badge's "declaration, not observation". */
+
+.card {
+  min-width: 0;
+}
+
+.header {
+  gap: 8px;
+}
+
+.marksRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+
+.title {
+  margin: 0;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.titleLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.titleLink:hover,
+.titleLink:focus-visible {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.labels {
+  color: var(--muted-foreground);
+  font-weight: 400;
+}
+
+.itemId {
+  margin: 0;
+}
+
+.encounter,
+.availability,
+.retention,
+.userValue,
+.commercialValue {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+
+.factIcon {
+  position: relative;
+  top: 2px;
+  margin-right: 2px;
+  color: var(--muted-foreground);
+  flex: none;
+}
+
+.encounterDetail {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.rightsDefault {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.rightsGranted {
+  color: var(--muted-foreground);
+}
+
+.whyList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.whyItem {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.whyScore {
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.valueReasons {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 18px;
+}

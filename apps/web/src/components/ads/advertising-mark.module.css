@@ -1,0 +1,36 @@
+/* AdvertisingMark — law 8: the explicit advertising identifier.
+ *
+ * The chart-2 amber family marks the commercial-signal class (the same
+ * palette hue the evidence badges use for fixture data — a semantic
+ * marker, never the emerald brand accent). Solid border: advertising is
+ * a declared fact, not an estimate.
+ */
+
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #96590a;
+  background-color: #fbf1e0;
+  border: 1px solid color-mix(in srgb, var(--chart-2) 45%, transparent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.icon {
+  flex: none;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+.compact .label {
+  letter-spacing: 0.05em;
+}
