@@ -1,0 +1,62 @@
+/* AdLanes — the two SEPARATE lanes (law 9). Each lane is its own section
+ * with its own header; the cards stack in a single column per the
+ * reference's content rhythm. */
+
+.lanes {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.lane {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.laneHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.laneTitle {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.laneSubtitle {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--muted-foreground);
+  max-width: 720px;
+}
+
+.laneLaw {
+  color: var(--secondary-foreground);
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.clock {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+}
+
+@media (max-width: 767px) {
+  .lanes {
+    gap: 32px;
+  }
+}

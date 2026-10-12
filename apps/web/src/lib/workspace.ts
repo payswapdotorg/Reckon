@@ -27,6 +27,12 @@ export type NavIconId =
   | "models"
   | "dataSources"
   | "analytics"
+  | "ads"
+  | "rememberedAds"
+  | "availableAds"
+  | "adConsent"
+  | "adRetention"
+  | "adCompare"
   | "developers"
   | "apiKeys"
   | "requestLogs"
@@ -136,6 +142,77 @@ export const WORKSPACE_ROUTES: readonly WorkspaceRoute[] = [
     navGroup: "operate",
     icon: "analytics",
     relatedHrefs: ["/research"],
+  },
+  {
+    href: "/ads",
+    title: "Ads",
+    navLabel: "Ads",
+    subtitle:
+      "Personal Ad Memory — query what your agent remembers (\"What laptop ads have I seen?\"), see current provider-supplied ads, and keep the two provenances visibly separate.",
+    emptyStateReason:
+      "connect the API — remembered ads and provider-supplied availability answer in separate lanes with their own provenance once the ads surface answers.",
+    navGroup: "operate",
+    icon: "ads",
+  },
+  {
+    href: "/ads/remembered",
+    title: "Remembered ads",
+    navLabel: "Remembered ads",
+    subtitle:
+      "The remembered lane — every ad your agent retains, with encounter time, evidence trail, retention and expiry, filterable by text, labels, surfaces and encounter window.",
+    emptyStateReason:
+      "connect the API — retained ads appear here as encounters are captured with an explicit retention basis.",
+    navGroup: "operate",
+    icon: "rememberedAds",
+    parentHref: "/ads",
+  },
+  {
+    href: "/ads/available",
+    title: "Current ads",
+    navLabel: "Current ads",
+    subtitle:
+      "The provider-supplied lane — availability declarations from host/provider channels, never observations, never in memory until retained.",
+    emptyStateReason:
+      "connect the API — current supply appears here when availability channels declare eligible ads.",
+    navGroup: "operate",
+    icon: "availableAds",
+    parentHref: "/ads",
+  },
+  {
+    href: "/ads/consent",
+    title: "Ad consent",
+    navLabel: "Consent",
+    subtitle:
+      "What your agent is permitted to retain and present — per-ad grants with their append-only history, and the forget action the public surface offers.",
+    emptyStateReason:
+      "connect the API — per-ad retain/present grants and their transition history appear here.",
+    navGroup: "operate",
+    icon: "adConsent",
+    parentHref: "/ads",
+  },
+  {
+    href: "/ads/retention",
+    title: "Ad retention",
+    navLabel: "Retention",
+    subtitle:
+      "What the agent retains, on which explicit basis, for how long — per-ad and bulk management with expiry shown and terminal forget.",
+    emptyStateReason:
+      "connect the API — retention states, bases and expiries appear here once the ads surface answers.",
+    navGroup: "operate",
+    icon: "adRetention",
+    parentHref: "/ads",
+  },
+  {
+    href: "/ads/compare",
+    title: "Ad compare",
+    navLabel: "Compare",
+    subtitle:
+      "Before/after â the retrieval lanes’ order against the decision kernel’s re-rank, with the defer/present/suppress reasons the kernel returned.",
+    emptyStateReason:
+      "connect the API â run a query here and the kernel’s re-ranked order appears with its reasons.",
+    navGroup: "operate",
+    icon: "adCompare",
+    parentHref: "/ads",
   },
   {
     href: "/developers",

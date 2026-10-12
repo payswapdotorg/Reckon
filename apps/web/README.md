@@ -30,6 +30,12 @@ OPERATE     Recommendations           /recommendations   (placeholder — dashbo
             Models                    /models            (placeholder — dashboard backend)
             Data Sources              /data-sources      (placeholder — dashboard backend)
             Analytics                 /analytics         (S3-002 views)
+            Ads                       /ads               (AD-005 Ad Query — both lanes, provenance)
+              Remembered ads          /ads/remembered    (AD-005 remembered-lane browser)
+              Current ads             /ads/available     (AD-005 provider-supplied lane)
+              Consent                 /ads/consent       (AD-005 retain/present grants + forget)
+              Retention               /ads/retention     (AD-005 retention + bulk forget)
+              Compare                 /ads/compare       (AD-005 kernel re-rank, before/after)
 DEVELOPERS  Developers                /developers        (live surface states)
               API keys                /developers/keys   (key manager)
               Request logs            /developers/logs   (cursor pagination)
@@ -39,6 +45,22 @@ INTELLIGENCE Agents · Research
 INTEGRATE   Integrations
 ACCOUNT     Settings                  /settings          (placeholder)
 ```
+
+- **Ads** (`/ads`, AD-005): the Personal Ad Memory + Ad Query product
+  surface over the frozen ad lane (AD-001..AD-004): query your ad
+  memory in plain language, browse remembered ads and provider-supplied
+  supply in SEPARATE lanes with distinct provenance (law 9), inspect a
+  record's full evidence trail (`/ads/records/{recordId}` — reached
+  from ad cards, not the nav), manage consent (retain/present grants +
+  terminal forget), manage retention (basis/expiry + per-ad and bulk
+  forget), and compare the retrieval order against the decision
+  kernel's re-rank with its defer/present/suppress reasons. All ad data
+  flows through the SDK seam (`POST /v1/ads/query`,
+  `POST /v1/ads/forget`, `/v1/decisions`, `/v1/experiences/resolve`);
+  the forget mutation rides the studio proxy
+  (`POST /api/dashboard/ads/forget`). Scope:
+  `RECKON_DEMO_TENANT_ID` (default "demo") + `RECKON_DEMO_SUBJECT_REF`
+  (default "demo-user"). UX notes: `docs/ux/ad-005-ux.md`.
 
 - **Home** (`/`): account status strip (live `/healthz` probe + account
   mode badge + quick links), the "Serve your first recommendation"
@@ -204,6 +226,8 @@ ModeBadge). Developers: `src/components/developers/`. Home:
 | `RECKON_DEMO_API_KEY` | — | Bearer key for the demo tenant (**secret**, server-only) |
 | `RECKON_ENV` | from `NODE_ENV` | Honest environment label for the `ENV:` badge |
 | `RECKON_DOCS_BASE_URL` | `https://docs.reckon.dev` | Docs portal origin for the quickstart link (non-secret) |
+| `RECKON_DEMO_TENANT_ID` | `demo` | Ad-lane tenant the Ads section queries for (non-secret, display-safe) |
+| `RECKON_DEMO_SUBJECT_REF` | `demo-user` | Ad-lane subject whose Personal Ad Memory the Ads section browses (non-secret, display-safe) |
 
 `src/lib/reckon-client.ts` is guarded by `import "server-only"`: any
 accidental client import fails the build. Display helpers expose only

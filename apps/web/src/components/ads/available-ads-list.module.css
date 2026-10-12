@@ -1,0 +1,26 @@
+/* AvailableAdsList — the provider-supplied lane's card list + lane-law
+ * header card + honest notes. */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notesList {
+  margin: 0;
+  padding: 0 0 0 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--foreground);
+}
