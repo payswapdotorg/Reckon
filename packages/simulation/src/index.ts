@@ -43,3 +43,6 @@ export * from "./integration-cases/scenario.js";
 export * from "./integration-cases/runner.js";
 export * from "./integration-cases/standard-loop.js";
 
+// SIM-004 (W3): the API-only measurement driver — additive extension;
+// no existing exported shape above changes.
+export * from "./api-only/driver.js";

@@ -59,7 +59,8 @@ describe("SIM-002 levels determinism token scan (W1 law, package-local)", () => 
 
   it("every level host module carries the honest-glue adapter markers", () => {
     const levelModules = files.filter((file) => /level-\d/.test(file));
-    expect(levelModules).toHaveLength(4);
+    // Levels 1–4 (SIM-002, Wave A) + Levels 9–12 (SIM-004, Wave B).
+    expect(levelModules).toHaveLength(8);
     for (const file of levelModules) {
       const source = readFileSync(file, "utf8");
       expect(source).toContain("// --- glue:adapter:begin");
