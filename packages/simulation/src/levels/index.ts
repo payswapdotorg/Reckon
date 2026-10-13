@@ -66,3 +66,55 @@ export {
   type LadderWaveRun,
   type LadderWaveAResult,
 } from "./wave-a.js";
+
+// ---------------------------------------------------------------------------
+// SIM-004 — Wave B (W3): ladder Levels 9–12 + the API-only measurement
+// driver. Additive extension; no exported shape above changes.
+// ---------------------------------------------------------------------------
+
+export {
+  level9FoodDeliveryProfile,
+  createLevel9FoodDeliveryHost,
+  level9FoodDeliveryMeta,
+  type Level9Host,
+  type Level9WorldView,
+} from "./level-9-food-delivery.js";
+
+export {
+  level10MobilityProfile,
+  createLevel10MobilityHost,
+  level10MobilityMeta,
+  type Level10Host,
+  type Level10WorldView,
+} from "./level-10-mobility.js";
+
+export {
+  level11SocialFeedProfile,
+  createLevel11SocialFeedHost,
+  level11SocialFeedMeta,
+  type Level11Host,
+  type Level11WorldView,
+} from "./level-11-social-feed.js";
+
+export {
+  level12FinanceProfile,
+  createLevel12FinanceHost,
+  level12FinanceMeta,
+  type Level12Host,
+  type Level12WorldView,
+} from "./level-12-finance.js";
+
+export {
+  LADDER_WAVE_B_FIXTURES,
+  LADDER_WAVE_B_ENSEMBLE_SEEDS,
+  LADDER_WAVE_B_CASES,
+  runLadderWaveBLevelFixture,
+  runCanonicalLadderWaveB,
+  renderLadderWaveBMarkdownTable,
+  renderLadderWaveBGapsTable,
+  renderLadderWaveBScorecardSummary,
+  crossWaveRecurringGaps,
+  renderCrossWaveRecurringGapsTable,
+  type LadderWaveBResult,
+  type LadderWaveBRun,
+} from "./wave-b.js";
