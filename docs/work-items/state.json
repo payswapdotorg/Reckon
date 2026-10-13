@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "status": "simulation-ladder-waveA-ad005-merged",
+  "status": "simulation-ladder-waveB-sim004-merged",
   "implementationComplete": false,
-  "dispatchBaseSha": "ed75217",
+  "dispatchBaseSha": "88054e3",
   "workers": [
     {
       "id": "W1",
@@ -791,7 +791,7 @@
         "SIM-001"
       ],
       "title": "Level 9-12 simulations: food delivery, mobility, social feed, finance/offer system",
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "SIM-005",
