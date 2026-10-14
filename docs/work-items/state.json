@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "simulation-ladder-waveC-sim005-merged",
+  "status": "simulation-ladder-waveC-sim005-ad006-merged",
   "implementationComplete": false,
   "dispatchBaseSha": "0944d7c",
   "workers": [
@@ -754,7 +754,7 @@
         "AD-005"
       ],
       "title": "Ad-lane E2E, privacy/rights proof, production evidence and deployment verification",
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "SIM-001",
@@ -843,7 +843,7 @@
     "W3": "w3/first-wave"
   },
   "activeHandoff": "docs/handoff/TL6-FINAL-HANDOFF.md",
-  "lastReconciledAt": "2026-10-14T13:49:43Z",
+  "lastReconciledAt": "2026-10-14T14:15:51Z",
   "simulationProgram": {
     "definition": "Reckon-Complete means a host system can integrate Reckon through the public API/contracts, with no custom changes to Reckon core and no provider-specific logic leaking into the kernel, and can exercise the full decision loop plus declared capabilities.",
     "ladderDoc": "docs/simulations/reckon-complete-ladder.md",
