@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "status": "simulation-ladder-waveC-sim005-ad006-merged",
+  "status": "simulation-ladder-waveC-complete-sim006-merged",
   "implementationComplete": false,
-  "dispatchBaseSha": "0944d7c",
+  "dispatchBaseSha": "0a3f235",
   "workers": [
     {
       "id": "W1",
@@ -812,7 +812,7 @@
         "SIM-004"
       ],
       "title": "Level 17-20 simulations: multi-agent operations, multi-surface realtime, resource-constrained orchestration, adversarial/uncertain environments",
-      "status": "queued"
+      "status": "done"
     },
     {
       "id": "SIM-007",
@@ -843,7 +843,7 @@
     "W3": "w3/first-wave"
   },
   "activeHandoff": "docs/handoff/TL6-FINAL-HANDOFF.md",
-  "lastReconciledAt": "2026-10-14T14:15:51Z",
+  "lastReconciledAt": "2026-10-14T14:28:43Z",
   "simulationProgram": {
     "definition": "Reckon-Complete means a host system can integrate Reckon through the public API/contracts, with no custom changes to Reckon core and no provider-specific logic leaking into the kernel, and can exercise the full decision loop plus declared capabilities.",
     "ladderDoc": "docs/simulations/reckon-complete-ladder.md",
