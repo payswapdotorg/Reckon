@@ -118,3 +118,76 @@ export {
   type LadderWaveBResult,
   type LadderWaveBRun,
 } from "./wave-b.js";
+
+// ---------------------------------------------------------------------------
+// SIM-006 — Wave C (W2): ladder Levels 17–20 (multi-agent operations,
+// multi-surface realtime, resource-constrained adaptive,
+// adversarial/uncertain) + the law-mandated auxiliary runs (the Level 17
+// single-agent baseline, the capability probes, the Level 20 capability
+// churn phase). Additive extension; no exported shape above changes.
+// ---------------------------------------------------------------------------
+
+export {
+  level17MultiAgentProfile,
+  createLevel17MultiAgentHost,
+  level17MultiAgentMeta,
+  level17SingleAgentBaselineProfile,
+  createLevel17SingleAgentBaselineHost,
+  level17SingleAgentBaselineMeta,
+  level17AgentDelegationProbeProfile,
+  createLevel17AgentDelegationProbeHost,
+  level17AgentDelegationProbeMeta,
+  type Level17Host,
+  type Level17BaselineHost,
+  type Level17WorldView,
+} from "./level-17-multi-agent.js";
+
+export {
+  level18MultiSurfaceProfile,
+  createLevel18MultiSurfaceHost,
+  level18MultiSurfaceMeta,
+  level18WebhookDeliveryProbeProfile,
+  createLevel18WebhookDeliveryProbeHost,
+  level18WebhookDeliveryProbeMeta,
+  type Level18Host,
+  type Level18WorldView,
+} from "./level-18-multi-surface.js";
+
+export {
+  level19ResourceConstrainedProfile,
+  createLevel19ResourceConstrainedHost,
+  level19ResourceConstrainedMeta,
+  type Level19Host,
+  type Level19WorldView,
+} from "./level-19-resource-constrained.js";
+
+export {
+  level20AdversarialProfile,
+  createLevel20StormwatchHost,
+  level20AdversarialMeta,
+  level20ChurnDegradedMeta,
+  type Level20Host,
+  type Level20WorldView,
+  type Level20HostOptions,
+} from "./level-20-adversarial.js";
+
+export {
+  LADDER_WAVE_C_FIXTURES,
+  LADDER_WAVE_C_ENSEMBLE_SEEDS,
+  LADDER_WAVE_C_CASES,
+  LADDER_WAVE_C_AUX_CASES,
+  runLadderWaveCLevelFixture,
+  runLadderWaveCAuxCase,
+  runCanonicalLadderWaveC,
+  renderLadderWaveCMarkdownTable,
+  renderLadderWaveCGapsTable,
+  renderLadderWaveCAuxTable,
+  renderLadderWaveCScorecardSummary,
+  renderLadderWaveCLevelDocTables,
+  type LadderWaveCLevelDocTables,
+  type LadderWaveCAuxKind,
+  type LadderWaveCAuxCase,
+  type LadderWaveCAuxRun,
+  type LadderWaveCResult,
+  type LadderWaveCRun,
+} from "./wave-c.js";
