@@ -118,3 +118,58 @@ export {
   type LadderWaveBResult,
   type LadderWaveBRun,
 } from "./wave-b.js";
+
+// ---------------------------------------------------------------------------
+// SIM-005 — Wave C-1 (W1): ladder Levels 13–16 + the canonical Wave C
+// fixtures/runner/scorecard and the cross-wave 3-domain analysis
+// extended through Wave C. Additive extension; no exported shape above
+// changes (parallel-safety: SIM-006 owns Levels 17–20 + wave-d.ts on
+// its own branch — nothing here touches them).
+// ---------------------------------------------------------------------------
+
+export {
+  level13HealthcareProfile,
+  createLevel13HealthcareHost,
+  level13HealthcareMeta,
+  type Level13Host,
+  type Level13WorldView,
+} from "./level-13-healthcare.js";
+
+export {
+  level14EducationProfile,
+  createLevel14EducationHost,
+  level14EducationMeta,
+  type Level14Host,
+  type Level14WorldView,
+} from "./level-14-education.js";
+
+export {
+  level15B2bSaasProfile,
+  createLevel15B2bSaasHost,
+  level15B2bSaasMeta,
+  type Level15Host,
+  type Level15WorldView,
+} from "./level-15-b2b-saas.js";
+
+export {
+  level16EnterpriseWorkflowProfile,
+  createLevel16EnterpriseWorkflowHost,
+  level16EnterpriseWorkflowMeta,
+  type Level16Host,
+  type Level16WorldView,
+} from "./level-16-enterprise-workflow.js";
+
+export {
+  LADDER_WAVE_C_FIXTURES,
+  LADDER_WAVE_C_ENSEMBLE_SEEDS,
+  LADDER_WAVE_C_CASES,
+  runLadderWaveCLevelFixture,
+  runCanonicalLadderWaveC,
+  renderLadderWaveCMarkdownTable,
+  renderLadderWaveCGapsTable,
+  renderLadderWaveCScorecardSummary,
+  crossWaveRecurringGapsThroughWaveC,
+  renderCrossWaveRecurringGapsThroughWaveCTable,
+  type LadderWaveCResult,
+  type LadderWaveCRun,
+} from "./wave-c.js";
